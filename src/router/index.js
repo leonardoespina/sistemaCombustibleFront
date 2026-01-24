@@ -159,6 +159,11 @@ const routes = [
         name: "cupo-list",
         component: () => import("../pages/cupos/CupoPage.vue"),
       },
+      {
+        path: "precios",
+        name: "precio-management",
+        component: () => import("../pages/precios/PrecioPage.vue"),
+      },
 
       // Aquí puedes seguir añadiendo más rutas protegidas, como /vehiculos, etc.
     ],

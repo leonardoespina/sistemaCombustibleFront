@@ -84,7 +84,58 @@
               </q-item>
             </q-list>
           </q-expansion-item>
+          <q-expansion-item
+            expand-separator
+            icon="directions_car"
+            label="Vehículos"
+            class="text-grey-8"
+          >
+            <q-list class="q-pl-md">
+              <q-item
+                clickable
+                v-ripple
+                to="/vehiculos/lista"
+                @click="leftDrawerOpen = false"
+              >
+                <q-item-section avatar>
+                  <q-icon name="list" size="xs" />
+                </q-item-section>
+                <q-item-section>
+                  <q-item-label>Gestion Vehicular</q-item-label>
+                </q-item-section>
+              </q-item>
 
+              <q-item
+                clickable
+                v-ripple
+                to="/vehiculos/marcas"
+                @click="leftDrawerOpen = false"
+              >
+                <q-item-section avatar>
+                  <q-icon name="branding_watermark" size="xs" />
+                </q-item-section>
+                <q-item-section>
+                  <q-item-label>Marcas</q-item-label>
+                  <q-item-label caption>Gestionar marcas</q-item-label>
+                </q-item-section>
+              </q-item>
+
+              <q-item
+                clickable
+                v-ripple
+                to="/vehiculos/modelos"
+                @click="leftDrawerOpen = false"
+              >
+                <q-item-section avatar>
+                  <q-icon name="model_training" size="xs" />
+                </q-item-section>
+                <q-item-section>
+                  <q-item-label>Modelos</q-item-label>
+                  <q-item-label caption>Gestionar modelos</q-item-label>
+                </q-item-section>
+              </q-item>
+            </q-list>
+          </q-expansion-item>
           <q-list class="q-pl-md">
             <q-item
               clickable
@@ -116,6 +167,16 @@
                 ><q-icon name="assignment"
               /></q-item-section>
               <q-item-section>Gestión de Cupos</q-item-section>
+            </q-item>
+
+            <q-item
+              clickable
+              v-ripple
+              to="/precios"
+              @click="leftDrawerOpen = false"
+            >
+              <q-item-section avatar><q-icon name="payments" /></q-item-section>
+              <q-item-section>Relación de Precios</q-item-section>
             </q-item>
             <!-- Huella -->
             <q-item

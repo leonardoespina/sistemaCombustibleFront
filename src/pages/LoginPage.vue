@@ -8,7 +8,10 @@
           <q-card-section class="text-center">
             <!-- Coloca tu logo en la carpeta `public` -->
             <div class="text-grey-8">
-              <b> Gerencia de Prevencion y Control de Perdidas</b>
+              <b>
+                Gerencia de Tecnologia y de Información TI
+                <b>Sistema de Registro y Control de Combustible</b></b
+              ><TR> </TR>
             </div>
 
             <q-img
