@@ -58,6 +58,7 @@
 
     <!-- Diálogo de Formulario -->
     <UserFormDialog
+      :key="editingUser?.id_usuario || 'new'"
       v-model="isFormDialogVisible"
       :initial-data="editingUser"
       :is-editing="!!editingUser"
@@ -152,7 +153,8 @@ function openAddDialog() {
 }
 
 function openEditDialog(user) {
-  editingUser.value = { ...user }; // Modo edición
+  // Copia profunda para asegurar que las relaciones anidadas se pasen correctamente
+  editingUser.value = JSON.parse(JSON.stringify(user));
   isFormDialogVisible.value = true;
 }
 

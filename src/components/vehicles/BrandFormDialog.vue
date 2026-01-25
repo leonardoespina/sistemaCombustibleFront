@@ -40,7 +40,8 @@
 </template>
 
 <script setup>
-import { ref, watch } from "vue";
+import { ref, watch, onMounted, onUnmounted } from "vue";
+import socket from "../../services/socket.js";
 
 const props = defineProps({
   modelValue: Boolean,
@@ -48,9 +49,25 @@ const props = defineProps({
   isEditing: Boolean,
 });
 
-const emit = defineEmits(["update:modelValue", "save"]);
+const emit = defineEmits(["update:modelValue", "save", "dataUpdated"]);
 
 const formData = ref({});
+
+// Listeners de Socket.io
+onMounted(() => {
+  socket.on("marca:creado", (data) => {
+    emit("dataUpdated", data);
+  });
+
+  socket.on("marca:actualizado", (data) => {
+    emit("dataUpdated", data);
+  });
+});
+
+onUnmounted(() => {
+  socket.off("marca:creado");
+  socket.off("marca:actualizado");
+});
 
 watch(
   () => props.modelValue,

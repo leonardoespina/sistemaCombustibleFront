@@ -4,6 +4,7 @@ import { defineStore } from "pinia";
 import { ref } from "vue";
 import { useQuasar } from "quasar";
 import api from "../api/index.js";
+import socket from "../services/socket";
 
 export const useModelStore = defineStore("models", () => {
   const $q = useQuasar();
@@ -103,6 +104,16 @@ export const useModelStore = defineStore("models", () => {
     }
   }
 
+  function initSocket() {
+    socket.on("modelo:creado", () => fetchModels());
+    socket.on("modelo:actualizado", () => fetchModels());
+  }
+
+  function cleanupSocket() {
+    socket.off("modelo:creado");
+    socket.off("modelo:actualizado");
+  }
+
   return {
     rows,
     loading,
@@ -114,5 +125,7 @@ export const useModelStore = defineStore("models", () => {
     updateModel,
     deleteModel,
     fetchAllBrands, // Exponemos la acción
+    initSocket,
+    cleanupSocket,
   };
 });

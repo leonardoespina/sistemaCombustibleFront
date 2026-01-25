@@ -4,6 +4,7 @@ import { defineStore } from "pinia";
 import { ref } from "vue";
 import { useQuasar } from "quasar";
 import api from "../api/index.js";
+import socket from "../services/socket";
 
 export const useBrandStore = defineStore("brands", () => {
   const $q = useQuasar();
@@ -85,6 +86,16 @@ export const useBrandStore = defineStore("brands", () => {
     }
   }
 
+  function initSocket() {
+    socket.on("marca:creado", () => fetchBrands());
+    socket.on("marca:actualizado", () => fetchBrands());
+  }
+
+  function cleanupSocket() {
+    socket.off("marca:creado");
+    socket.off("marca:actualizado");
+  }
+
   return {
     rows,
     loading,
@@ -94,5 +105,7 @@ export const useBrandStore = defineStore("brands", () => {
     createBrand,
     updateBrand,
     deleteBrand,
+    initSocket,
+    cleanupSocket,
   };
 });

@@ -64,7 +64,8 @@
 </template>
 
 <script setup>
-import { ref, watch, toRefs } from "vue";
+import { ref, watch, toRefs, onMounted, onUnmounted } from "vue";
+import socket from "../../services/socket.js";
 
 const props = defineProps({
   modelValue: Boolean,
@@ -73,10 +74,26 @@ const props = defineProps({
   brands: { type: Array, default: () => [] },
 });
 
-const emit = defineEmits(["update:modelValue", "save"]);
+const emit = defineEmits(["update:modelValue", "save", "dataUpdated"]);
 const { brands } = toRefs(props);
 const formData = ref({});
 const filteredBrandOptions = ref([]); // Array local para las opciones filtradas
+
+// Listeners de Socket.io
+onMounted(() => {
+  socket.on("modelo:creado", (data) => {
+    emit("dataUpdated", data);
+  });
+
+  socket.on("modelo:actualizado", (data) => {
+    emit("dataUpdated", data);
+  });
+});
+
+onUnmounted(() => {
+  socket.off("modelo:creado");
+  socket.off("modelo:actualizado");
+});
 
 // --- Lógica de inicialización ---
 watch(

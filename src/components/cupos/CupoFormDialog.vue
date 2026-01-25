@@ -3,7 +3,9 @@
     <q-card style="min-width: 500px">
       <q-card-section class="row items-center">
         <div class="text-h6">
-          {{ isEdit ? "Editar Configuración de Cupo" : "Nueva Asignación de Cupo" }}
+          {{
+            isEdit ? "Editar Configuración de Cupo" : "Nueva Asignación de Cupo"
+          }}
         </div>
         <q-space />
         <q-btn icon="close" flat round dense v-close-popup />
@@ -11,7 +13,6 @@
 
       <q-card-section>
         <q-form @submit="onSubmit" class="q-gutter-md">
-          
           <!-- Select Categoría -->
           <q-select
             v-model="form.id_categoria"
@@ -155,48 +156,70 @@ const combustibleOptions = ref([]);
 // --- CARGA DE DATOS ---
 
 const loadCombustibles = async () => {
-    try {
-        const { data } = await api.get("/tipos-combustible/lista");
-        combustibleOptions.value = data.data;
-    } catch (e) { console.error(e); }
+  try {
+    const { data } = await api.get("/tipos-combustible/lista");
+    combustibleOptions.value = data;
+  } catch (e) {
+    console.error(e);
+  }
 };
 
 const filterCategoria = async (val, update) => {
   update(async () => {
     try {
-      const { data } = await api.get("/categorias/jerarquia", { params: { search: val } });
+      const { data } = await api.get("/categorias/jerarquia", {
+        params: { search: val },
+      });
       categoriaOptions.value = data.data;
-    } catch (e) { console.error(e); }
+    } catch (e) {
+      console.error(e);
+    }
   });
 };
 
 const filterDependencia = async (val, update) => {
   if (!form.value.id_categoria) {
-    update(() => { dependenciaOptions.value = []; });
+    update(() => {
+      dependenciaOptions.value = [];
+    });
     return;
   }
   update(async () => {
     try {
       const { data } = await api.get("/categorias/jerarquia", {
-        params: { type: "categoria", parentId: form.value.id_categoria, search: val }
+        params: {
+          type: "categoria",
+          parentId: form.value.id_categoria,
+          search: val,
+        },
       });
       dependenciaOptions.value = data.data;
-    } catch (e) { console.error(e); }
+    } catch (e) {
+      console.error(e);
+    }
   });
 };
 
 const filterSubdependencia = async (val, update) => {
   if (!form.value.id_dependencia) {
-    update(() => { subdependenciaOptions.value = []; });
+    update(() => {
+      subdependenciaOptions.value = [];
+    });
     return;
   }
   update(async () => {
     try {
       const { data } = await api.get("/categorias/jerarquia", {
-        params: { type: "dependencia", parentId: form.value.id_dependencia, search: val }
+        params: {
+          type: "dependencia",
+          parentId: form.value.id_dependencia,
+          search: val,
+        },
       });
       subdependenciaOptions.value = data.data;
-    } catch (e) { console.error(e); }
+    } catch (e) {
+      console.error(e);
+    }
   });
 };
 
@@ -213,7 +236,7 @@ watch(
       await filterDependencia("", (fn) => fn());
       // Cargar subdependencias si existe dependencia
       if (val.id_dependencia) {
-          await filterSubdependencia("", (fn) => fn());
+        await filterSubdependencia("", (fn) => fn());
       }
     } else {
       form.value = {
@@ -225,29 +248,30 @@ watch(
       };
     }
   },
-  { immediate: true }
+  { immediate: true },
 );
 
 watch(
-    () => form.value.id_categoria,
-    () => {
-        if (!isEdit.value) { // Solo limpiar si es nuevo
-            form.value.id_dependencia = null;
-            form.value.id_subdependencia = null;
-            dependenciaOptions.value = [];
-            subdependenciaOptions.value = [];
-        }
+  () => form.value.id_categoria,
+  () => {
+    if (!isEdit.value) {
+      // Solo limpiar si es nuevo
+      form.value.id_dependencia = null;
+      form.value.id_subdependencia = null;
+      dependenciaOptions.value = [];
+      subdependenciaOptions.value = [];
     }
+  },
 );
 
 watch(
-    () => form.value.id_dependencia,
-    () => {
-        if (!isEdit.value) {
-            form.value.id_subdependencia = null;
-            subdependenciaOptions.value = [];
-        }
+  () => form.value.id_dependencia,
+  () => {
+    if (!isEdit.value) {
+      form.value.id_subdependencia = null;
+      subdependenciaOptions.value = [];
     }
+  },
 );
 
 // --- SUBMIT ---
@@ -255,17 +279,14 @@ watch(
 const onSubmit = async () => {
   let success;
   if (isEdit.value) {
-    success = await store.updateCupoBase(
-      props.initialData.id_cupo_base,
-      {
-          cantidad_mensual: form.value.cantidad_mensual,
-          activo: form.value.activo
-      }
-    );
+    success = await store.updateCupoBase(props.initialData.id_cupo_base, {
+      cantidad_mensual: form.value.cantidad_mensual,
+      activo: form.value.activo,
+    });
   } else {
     success = await store.createCupoBase({
-        ...form.value,
-        id_subdependencia: form.value.id_subdependencia || null
+      ...form.value,
+      id_subdependencia: form.value.id_subdependencia || null,
     });
   }
 
@@ -275,6 +296,6 @@ const onSubmit = async () => {
 };
 
 onMounted(() => {
-    loadCombustibles();
+  loadCombustibles();
 });
 </script>

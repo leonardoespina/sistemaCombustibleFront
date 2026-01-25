@@ -78,12 +78,12 @@
 
     <!-- Diálogo de Formulario -->
     <VehicleFormDialog
+      :key="editingVehicle?.id_vehiculo || 'new'"
       v-model="isFormDialogVisible"
       :initial-data="editingVehicle"
       :is-editing="!!editingVehicle"
       :brands="allBrands"
       :models="modelsForSelectedBrand"
-      :managements="allManagements"
       :loading-models="loadingModels"
       @save="onFormSave"
       @brand-changed="handleBrandChange"
@@ -116,7 +116,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from "vue";
+import { ref, onMounted, onUnmounted } from "vue";
 import { storeToRefs } from "pinia";
 import { useVehicleStore } from "../../stores/vehicleStore.js";
 import VehicleFormDialog from "../../components/vehicles/VehicleFormDialog.vue";
@@ -130,7 +130,6 @@ const {
   allBrands,
   modelsForSelectedBrand,
   loadingModels,
-  allManagements,
 } = storeToRefs(vehicleStore);
 
 const isFormDialogVisible = ref(false);
@@ -159,11 +158,22 @@ const columns = ref([
     sortable: false,
   },
   {
-    name: "gerencia",
-    label: "Gerencia",
-    field: (row) => row.Gerencium?.nombre || "N/A",
-    sortable: false,
-    align: "center",
+    name: "categoria",
+    label: "Categoría",
+    field: (row) => row.Categoria?.nombre,
+    sortable: true,
+  },
+  {
+    name: "dependencia",
+    label: "Dependencia",
+    field: (row) => row.Dependencia?.nombre_dependencia,
+    sortable: true,
+  },
+  {
+    name: "combustible",
+    label: "Combustible",
+    field: (row) => row.TipoCombustible?.nombre,
+    sortable: true,
   },
   { name: "anio", label: "Año", field: "anio", sortable: true },
   { name: "estado", label: "Estado", field: "estado" },
@@ -176,13 +186,14 @@ function handleRequest(props) {
   vehicleStore.fetchVehicles();
 }
 
-function openAddDialog() {
+  function openAddDialog() {
   editingVehicle.value = null;
   isFormDialogVisible.value = true;
 }
 
 function openEditDialog(vehicle) {
-  editingVehicle.value = { ...vehicle };
+  // Copia profunda para asegurar que las relaciones anidadas se pasen correctamente
+  editingVehicle.value = JSON.parse(JSON.stringify(vehicle));
   isFormDialogVisible.value = true;
 }
 
@@ -216,8 +227,12 @@ function handleBrandChange(brandId) {
 }
 
 onMounted(() => {
+  vehicleStore.initSocket();
   vehicleStore.fetchVehicles();
   vehicleStore.fetchAllBrands();
-  vehicleStore.fetchAllManagements();
+});
+
+onUnmounted(() => {
+  vehicleStore.cleanupSocket();
 });
 </script>

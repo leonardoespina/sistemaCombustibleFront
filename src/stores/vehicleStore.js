@@ -2,6 +2,7 @@ import { defineStore } from "pinia";
 import { ref } from "vue";
 import { useQuasar } from "quasar";
 import api from "../api/index.js";
+import socket from "../services/socket";
 
 export const useVehicleStore = defineStore("vehicles", () => {
   const $q = useQuasar();
@@ -18,10 +19,9 @@ export const useVehicleStore = defineStore("vehicles", () => {
     rowsNumber: 0,
   });
 
-  // Listas para los selects del formulario
+  // Listas auxiliares (Marcas y Modelos)
   const allBrands = ref([]);
   const modelsForSelectedBrand = ref([]);
-  const allManagements = ref([]);
   const loadingModels = ref(false);
 
   // --- ACTIONS (CRUD) ---
@@ -38,8 +38,6 @@ export const useVehicleStore = defineStore("vehicles", () => {
       };
       const response = await api.get("/vehiculos", { params });
       rows.value = response.data.data;
-
-      console.log(rows.value);
       pagination.value.rowsNumber = response.data.pagination.totalItems;
     } catch (error) {
       console.error("Error al obtener vehículos:", error);
@@ -87,17 +85,14 @@ export const useVehicleStore = defineStore("vehicles", () => {
     }
   }
 
-  // --- ACCIONES PARA FORMULARIOS ---
+  // --- ACCIONES AUXILIARES (Marcas/Modelos) ---
 
   async function fetchAllBrands() {
     try {
       const response = await api.get("/marcas/lista");
       allBrands.value = response.data;
     } catch (error) {
-      $q.notify({
-        type: "negative",
-        message: "No se pudo cargar la lista de marcas.",
-      });
+      console.error("Error brands:", error);
     }
   }
 
@@ -112,25 +107,25 @@ export const useVehicleStore = defineStore("vehicles", () => {
       modelsForSelectedBrand.value = response.data;
     } catch (error) {
       modelsForSelectedBrand.value = [];
-      $q.notify({
-        type: "negative",
-        message: "No se pudieron cargar los modelos.",
-      });
     } finally {
       loadingModels.value = false;
     }
   }
+  
+  // --- SOCKET IO ---
+  
+  function initSocket() {
+    socket.on("vehiculo:creado", () => {
+      fetchVehicles();
+    });
+    socket.on("vehiculo:actualizado", () => {
+      fetchVehicles();
+    });
+  }
 
-  async function fetchAllManagements() {
-    try {
-      const response = await api.get("/gerencias/lista");
-      allManagements.value = response.data;
-    } catch (error) {
-      $q.notify({
-        type: "negative",
-        message: "No se pudo cargar la lista de gerencias.",
-      });
-    }
+  function cleanupSocket() {
+    socket.off("vehiculo:creado");
+    socket.off("vehiculo:actualizado");
   }
 
   return {
@@ -138,16 +133,18 @@ export const useVehicleStore = defineStore("vehicles", () => {
     loading,
     filter,
     pagination,
+    // Listas
     allBrands,
     modelsForSelectedBrand,
     loadingModels,
-    allManagements,
+    // Actions
     fetchVehicles,
     createVehicle,
     updateVehicle,
     deleteVehicle,
     fetchAllBrands,
     fetchModelsByBrand,
-    fetchAllManagements,
+    initSocket,
+    cleanupSocket
   };
 });

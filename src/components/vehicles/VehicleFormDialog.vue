@@ -4,7 +4,7 @@
     @update:model-value="(val) => emit('update:modelValue', val)"
     persistent
   >
-    <q-card style="width: 700px; max-width: 80vw">
+    <q-card style="width: 800px; max-width: 90vw">
       <q-card-section>
         <div class="text-h6">
           {{ isEditing ? "Editar Registro" : "Nuevo Registro" }}
@@ -32,64 +32,24 @@
           </div>
 
           <div class="row q-col-gutter-md">
-            <!-- Placa / Código Dinámico -->
-            <div class="col-12 col-md-6">
+            <!-- Sección: Identificación -->
+            <div class="col-12 text-subtitle2 text-primary">Identificación</div>
+
+            <div class="col-12">
               <q-input
                 dense
                 v-model="formData.placa"
-                :label="
-                  formData.es_generador
-                    ? 'Código de Activo (Ej: GEN-01)'
-                    : 'Placa Vehículo'
-                "
-                :rules="[(val) => !!val || 'Requerido']"
-                :hint="
-                  formData.es_generador
-                    ? 'Identificador único'
-                    : 'Formato: AAA-0000'
-                "
-              />
-            </div>
-
-            <div class="col-12 col-md-6">
-              <q-input
-                dense
-                v-model="formData.anio"
-                label="Año"
-                type="number"
+                :label="formData.es_generador ? 'Código de Activo' : 'Placa'"
                 :rules="[(val) => !!val || 'Requerido']"
               />
             </div>
 
-            <div class="col-12 col-md-6">
-              <q-input
-                dense
-                v-model="formData.color"
-                label="Color"
-                :rules="[(val) => !!val || 'Requerido']"
-              />
-            </div>
-
-            <div class="col-12 col-md-6">
-              <q-select
-                dense
-                filled
-                v-model="formData.id_gerencia"
-                label="Gerencia Asignada (Opcional)"
-                :options="managements"
-                option-value="id_gerencia"
-                option-label="nombre"
-                emit-value
-                map-options
-                clearable
-              />
-            </div>
-
-            <div class="col-12 text-subtitle2 text-primary q-pt-lg">
+            <!-- Sección: Datos Técnicos -->
+            <div class="col-12 text-subtitle2 text-primary q-pt-sm">
               Datos Técnicos
             </div>
 
-            <div class="col-12 col-md-6">
+            <div class="col-12 col-md-4">
               <q-select
                 dense
                 filled
@@ -105,7 +65,7 @@
                 :rules="[(val) => !!val || 'Requerido']"
               />
             </div>
-            <div class="col-12 col-md-6">
+            <div class="col-12 col-md-4">
               <q-select
                 dense
                 filled
@@ -121,17 +81,77 @@
                 :rules="[(val) => !!val || 'Requerido']"
               />
             </div>
-
-            <div class="col-12 col-md-6">
+            <div class="col-12 col-md-4">
               <q-select
                 dense
                 filled
-                v-model="formData.tipoCombustible"
+                v-model="formData.id_tipo_combustible"
                 label="Tipo de Combustible"
-                :options="['GASOIL', 'GASOLINA']"
+                :options="fuelTypeOptions"
+                option-value="id_tipo_combustible"
+                option-label="nombre"
                 emit-value
                 map-options
                 :rules="[(val) => !!val || 'Requerido']"
+              />
+            </div>
+
+            <!-- Sección: Ubicación Jerárquica -->
+            <div class="col-12 text-subtitle2 text-primary q-pt-sm">
+              Ubicación Jerárquica
+            </div>
+
+            <div class="col-12 col-md-4">
+              <q-select
+                dense
+                filled
+                v-model="formData.id_categoria"
+                label="Categoría"
+                :options="categoryOptions"
+                use-input
+                input-debounce="300"
+                @filter="filterCategory"
+                option-value="id_categoria"
+                option-label="nombre"
+                emit-value
+                map-options
+                :rules="[(val) => !!val || 'Requerido']"
+              />
+            </div>
+            <div class="col-12 col-md-4">
+              <q-select
+                dense
+                filled
+                v-model="formData.id_dependencia"
+                label="Dependencia"
+                :options="dependencyOptions"
+                :disable="!formData.id_categoria"
+                use-input
+                input-debounce="300"
+                @filter="filterDependency"
+                option-value="id_dependencia"
+                option-label="nombre_dependencia"
+                emit-value
+                map-options
+                :rules="[(val) => !!val || 'Requerido']"
+              />
+            </div>
+            <div class="col-12 col-md-4">
+              <q-select
+                dense
+                filled
+                v-model="formData.id_subdependencia"
+                label="Subdependencia (Opcional)"
+                :options="subdependencyOptions"
+                :disable="!formData.id_dependencia"
+                use-input
+                input-debounce="300"
+                @filter="filterSubdependency"
+                option-value="id_subdependencia"
+                option-label="nombre"
+                emit-value
+                map-options
+                clearable
               />
             </div>
 
@@ -158,7 +178,8 @@
 </template>
 
 <script setup>
-import { ref, watch, toRefs, nextTick } from "vue";
+import { ref, watch, onMounted, toRefs, nextTick } from "vue";
+import api from "../../api";
 
 const props = defineProps({
   modelValue: Boolean,
@@ -166,7 +187,6 @@ const props = defineProps({
   isEditing: Boolean,
   brands: { type: Array, default: () => [] },
   models: { type: Array, default: () => [] },
-  managements: { type: Array, default: () => [] },
   loadingModels: Boolean,
 });
 
@@ -176,72 +196,173 @@ const formData = ref({});
 const { brands, models } = toRefs(props);
 const filteredBrandOptions = ref([]);
 
-// --- INICIALIZACIÓN ---
-watch(
-  () => props.modelValue,
-  (isNowOpen) => {
-    if (isNowOpen) {
-      formData.value = {
-        placa: props.initialData?.placa || "",
-        anio: props.initialData?.anio || null,
-        color: props.initialData?.color || "",
-        id_marca: props.initialData?.id_marca || null,
-        id_modelo: props.initialData?.id_modelo || null,
-        id_gerencia: props.initialData?.id_gerencia || null,
-        // NUEVO CAMPO
-        es_generador: props.initialData?.es_generador || false,
-        tipoCombustible: props.initialData?.tipoCombustible || "GASOIL",
-        estado: props.initialData?.estado || "ACTIVO",
-      };
-      filteredBrandOptions.value = brands.value;
+// Opciones Locales
+const categoryOptions = ref([]);
+const dependencyOptions = ref([]);
+const subdependencyOptions = ref([]);
+const fuelTypeOptions = ref([]);
 
-      if (props.isEditing && formData.value.id_marca) {
-        emit("brand-changed", formData.value.id_marca);
-      }
-    }
-  }
-);
+// Flag de inicialización
+const isInitializing = ref(false);
 
-// --- LÓGICA DE SELECTS EN CASCADA ---
-watch(
-  () => formData.value.id_marca,
-  (newBrandId, oldBrandId) => {
-    if (newBrandId !== oldBrandId) {
-      formData.value.id_modelo = null;
-      emit("brand-changed", newBrandId);
-    }
-  }
-);
-
-// --- REFRESCAR MODELO EN EDICIÓN ---
-watch(models, (newModels) => {
-  if (newModels.length > 0 && props.initialData?.id_modelo) {
-    if (newModels.some((m) => m.id_modelo === props.initialData.id_modelo)) {
-      formData.value.id_modelo = props.initialData.id_modelo;
-    }
-  }
+onMounted(async () => {
+    if (props.modelValue) await initializeForm();
 });
 
-// --- FILTRO DE MARCAS ---
+watch(() => props.modelValue, async (val) => {
+    if (val) await initializeForm();
+});
+
+async function initializeForm() {
+    isInitializing.value = true;
+    
+    // 1. Limpiar estado local
+    categoryOptions.value = [];
+    dependencyOptions.value = [];
+    subdependencyOptions.value = [];
+    formData.value = {};
+
+    const data = props.initialData ? { ...props.initialData } : {};
+    
+    // 2. Inyección Proactiva de Opciones (Eager Loading)
+    if (props.isEditing) {
+        if (data.Categoria) categoryOptions.value = [data.Categoria];
+        if (data.Dependencia) dependencyOptions.value = [data.Dependencia];
+        if (data.Subdependencia) subdependencyOptions.value = [data.Subdependencia];
+        if (data.TipoCombustible) fuelTypeOptions.value = [data.TipoCombustible];
+        
+        // Disparar carga de modelos para la marca actual
+        if (data.id_marca) emit("brand-changed", data.id_marca);
+    } else {
+        // Cargar listas iniciales si es nuevo registro
+        await filterCategory("", (opts) => opts());
+        await loadFuelTypes();
+    }
+
+    // 3. Mapeo de valores (Asegurando tipos numéricos)
+    formData.value = {
+        placa: data.placa || "",
+        es_generador: !!data.es_generador,
+        id_marca: data.id_marca ? Number(data.id_marca) : null,
+        id_modelo: data.id_modelo ? Number(data.id_modelo) : null,
+        id_tipo_combustible: data.id_tipo_combustible ? Number(data.id_tipo_combustible) : null,
+        id_categoria: data.id_categoria ? Number(data.id_categoria) : null,
+        id_dependencia: data.id_dependencia ? Number(data.id_dependencia) : null,
+        id_subdependencia: data.id_subdependencia ? Number(data.id_subdependencia) : null,
+        estado: data.estado || "ACTIVO",
+    };
+
+    // Cargas asíncronas de fondo (si no se inyectaron)
+    if (fuelTypeOptions.value.length === 0) loadFuelTypes();
+    filteredBrandOptions.value = brands.value;
+
+    await nextTick();
+    isInitializing.value = false;
+}
+
+async function loadFuelTypes() {
+  try {
+    const response = await api.get("/tipos-combustible/lista");
+    const list = Array.isArray(response.data) ? response.data : (response.data?.data || []);
+    fuelTypeOptions.value = list;
+  } catch (error) { console.error(error); }
+}
+
+// --- FILTROS JERÁRQUICOS ---
+
+async function filterCategory(val, update) {
+  update(async () => {
+    try {
+      const { data } = await api.get("/categorias/jerarquia", { params: { search: val } });
+      categoryOptions.value = data.data;
+    } catch (error) { console.error(error); }
+  });
+}
+
+async function filterDependency(val, update) {
+  if (!formData.value.id_categoria) {
+    update(() => { dependencyOptions.value = []; });
+    return;
+  }
+  update(async () => {
+    try {
+      const { data } = await api.get("/categorias/jerarquia", {
+        params: { type: "categoria", parentId: formData.value.id_categoria, search: val },
+      });
+      dependencyOptions.value = data.data;
+    } catch (error) { console.error(error); }
+  });
+}
+
+async function filterSubdependency(val, update) {
+  if (!formData.value.id_dependencia) {
+    update(() => { subdependencyOptions.value = []; });
+    return;
+  }
+  update(async () => {
+    try {
+      const { data } = await api.get("/categorias/jerarquia", {
+        params: { type: "dependencia", parentId: formData.value.id_dependencia, search: val },
+      });
+      subdependencyOptions.value = data.data;
+    } catch (error) { console.error(error); }
+  });
+}
+
+// --- CASCADA (Alineada con UserFormDialog) ---
+
+watch(() => formData.value.id_marca, (newVal, oldVal) => {
+    if (isInitializing.value) return;
+    if (newVal !== oldVal) {
+        if (oldVal !== undefined && oldVal !== null) formData.value.id_modelo = null;
+        if (newVal) emit("brand-changed", newVal);
+    }
+});
+
+watch(() => formData.value.id_categoria, (newVal, oldVal) => {
+    if (isInitializing.value) return;
+    if (newVal !== oldVal) {
+        if (oldVal !== undefined && oldVal !== null) {
+            formData.value.id_dependencia = null;
+            formData.value.id_subdependencia = null;
+            dependencyOptions.value = [];
+            subdependencyOptions.value = [];
+        }
+    }
+});
+
+watch(() => formData.value.id_dependencia, (newVal, oldVal) => {
+    if (isInitializing.value) return;
+    if (newVal !== oldVal) {
+        if (oldVal !== undefined && oldVal !== null) {
+            formData.value.id_subdependencia = null;
+            subdependencyOptions.value = [];
+        }
+    }
+});
+
 function filterBrandFn(val, update) {
   if (val === "") {
-    update(() => {
-      filteredBrandOptions.value = brands.value;
-    });
+    update(() => { filteredBrandOptions.value = brands.value; });
     return;
   }
   update(() => {
     const needle = val.toLowerCase();
-    if (Array.isArray(brands.value)) {
-      filteredBrandOptions.value = brands.value.filter(
-        (v) => v && v.nombre && v.nombre.toLowerCase().indexOf(needle) > -1
-      );
-    }
+    filteredBrandOptions.value = brands.value.filter(v => v.nombre.toLowerCase().indexOf(needle) > -1);
   });
 }
 
 async function onSave() {
   await nextTick();
-  emit("save", formData.value);
+  const payload = {
+    ...formData.value,
+    id_marca: formData.value.id_marca ? Number(formData.value.id_marca) : null,
+    id_modelo: formData.value.id_modelo ? Number(formData.value.id_modelo) : null,
+    id_categoria: formData.value.id_categoria ? Number(formData.value.id_categoria) : null,
+    id_dependencia: formData.value.id_dependencia ? Number(formData.value.id_dependencia) : null,
+    id_tipo_combustible: formData.value.id_tipo_combustible ? Number(formData.value.id_tipo_combustible) : null,
+    id_subdependencia: formData.value.id_subdependencia ? Number(formData.value.id_subdependencia) : null,
+  };
+  emit("save", payload);
 }
 </script>

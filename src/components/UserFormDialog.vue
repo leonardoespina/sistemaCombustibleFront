@@ -102,9 +102,7 @@
             v-model="formData.id_subdependencia"
             :options="subdependenciaOptions"
             label="Subdependencia"
-            :disable="
-              !formData.id_dependencia || subdependenciaOptions.length === 0
-            "
+            :disable="!formData.id_dependencia"
             use-input
             input-debounce="300"
             @filter="filterSubdependencia"
@@ -112,12 +110,7 @@
             option-value="id_subdependencia"
             emit-value
             map-options
-            :rules="[
-              (val) =>
-                subdependenciaOptions.length === 0 ||
-                !!val ||
-                'Campo requerido cuando existen subdependencias',
-            ]"
+            clearable
           />
         </q-card-section>
 
@@ -131,7 +124,7 @@
 </template>
 
 <script setup>
-import { ref, watch, onMounted, onUnmounted } from "vue";
+import { ref, watch, onMounted, onUnmounted, nextTick } from "vue";
 import socket from "../services/socket.js";
 import api from "../api";
 
@@ -148,8 +141,11 @@ const categoriaOptions = ref([]);
 const dependenciaOptions = ref([]);
 const subdependenciaOptions = ref([]);
 
+// Flag para proteger la inicialización
+const isInitializing = ref(false);
+
 // Listeners de Socket.io
-onMounted(() => {
+onMounted(async () => {
   socket.on("usuarios:creado", (data) => {
     emit("dataUpdated", data);
   });
@@ -157,6 +153,10 @@ onMounted(() => {
   socket.on("usuarios:actualizado", (data) => {
     emit("dataUpdated", data);
   });
+
+  if (props.modelValue) {
+    await initializeForm();
+  }
 });
 
 onUnmounted(() => {
@@ -164,82 +164,76 @@ onUnmounted(() => {
   socket.off("usuarios:actualizado");
 });
 
-// Cuando el diálogo se abre, poblamos el formulario
+// Watch para cuando se abre el diálogo (por si acaso, aunque la key forzará remount)
 watch(
   () => props.modelValue,
-  async (isNowOpen) => {
-    if (isNowOpen) {
-      formData.value = { ...props.initialData };
-      if (!props.isEditing) {
-        // Valores por defecto para un nuevo usuario
-        formData.value.tipo_usuario = "INSPECTOR";
-        formData.value.estado = "ACTIVO";
-        categoriaOptions.value = [];
-        dependenciaOptions.value = [];
-        subdependenciaOptions.value = [];
-      } else {
-        // Precargar categoría actual para que el select muestre el nombre
-        try {
-          const { data } = await api.get("/categorias/jerarquia", {
-            params: { search: "" }, // Cargar iniciales
-          });
-          categoriaOptions.value = data.data;
-        } catch (e) {
-          console.error(e);
-        }
-
-        // Si estamos editando, cargar las opciones de las dependencias y subdependencias
-        if (formData.value.id_categoria) {
-          try {
-            const { data } = await api.get("/categorias/jerarquia", {
-              params: {
-                type: "categoria",
-                parentId: formData.value.id_categoria,
-              },
-            });
-            dependenciaOptions.value = data.data;
-          } catch (e) {
-            console.error(e);
-          }
-        }
-        if (formData.value.id_dependencia) {
-          try {
-            const { data } = await api.get("/categorias/jerarquia", {
-              params: {
-                type: "dependencia",
-                parentId: formData.value.id_dependencia,
-              },
-            });
-            subdependenciaOptions.value = data.data;
-          } catch (e) {
-            console.error(e);
-          }
-        }
-      }
-    }
-  },
+  async (val) => {
+    if (val) await initializeForm();
+  }
 );
 
-// Watchers para cascada
+async function initializeForm() {
+  isInitializing.value = true;
+  
+  console.log("Iniciando formulario de usuario...", props.initialData);
+
+  // 1. Limpiar estado local
+  categoriaOptions.value = [];
+  dependenciaOptions.value = [];
+  subdependenciaOptions.value = [];
+  formData.value = {}; // Reset total
+
+  const data = props.initialData ? { ...props.initialData } : {};
+
+  // 2. Inyección Proactiva de Opciones (Eager Loading)
+  if (props.isEditing) {
+    if (data.Categoria) {
+        console.log("Inyectando categoría:", data.Categoria);
+        categoriaOptions.value = [data.Categoria];
+    }
+    if (data.Dependencia) {
+        console.log("Inyectando dependencia:", data.Dependencia);
+        dependenciaOptions.value = [data.Dependencia];
+    }
+    if (data.Subdependencia) {
+        console.log("Inyectando subdependencia:", data.Subdependencia);
+        subdependenciaOptions.value = [data.Subdependencia];
+    }
+  } else {
+    // Si es nuevo, cargamos las categorías iniciales
+    await filterCategoria("", (opts) => opts());
+  }
+
+  // 3. Mapeo de datos al formulario
+  formData.value = {
+    nombre: data.nombre || "",
+    apellido: data.apellido || "",
+    cedula: data.cedula || "",
+    password: "", 
+    tipo_usuario: data.tipo_usuario || "INSPECTOR",
+    estado: data.estado || "ACTIVO",
+    id_categoria: data.id_categoria || null,
+    id_dependencia: data.id_dependencia || null,
+    id_subdependencia: data.id_subdependencia || null,
+  };
+
+  await nextTick();
+  isInitializing.value = false;
+  console.log("Formulario inicializado. isInitializing released.");
+}
+
+// Watchers para cascada (Protegidos)
 watch(
   () => formData.value.id_categoria,
-  async (newVal, oldVal) => {
-    // Solo limpiar si el cambio es manual (el usuario cambió la categoría)
-    // No limpiar si se está poblando el formulario al abrir el diálogo de edición
-    if (oldVal !== undefined && props.modelValue) {
-      formData.value.id_dependencia = null;
-      formData.value.id_subdependencia = null;
-    }
-    dependenciaOptions.value = [];
-    subdependenciaOptions.value = [];
-    if (newVal) {
-      try {
-        const { data } = await api.get("/categorias/jerarquia", {
-          params: { type: "categoria", parentId: newVal },
-        });
-        dependenciaOptions.value = data.data;
-      } catch (error) {
-        console.error("Error precargando dependencias:", error);
+  (newVal, oldVal) => {
+    if (isInitializing.value) return;
+    if (newVal !== oldVal) {
+      if (oldVal !== undefined && oldVal !== null) {
+        console.log("Cambio manual de categoría detected. Limpiando hijos.");
+        formData.value.id_dependencia = null;
+        formData.value.id_subdependencia = null;
+        dependenciaOptions.value = [];
+        subdependenciaOptions.value = [];
       }
     }
   },
@@ -247,20 +241,14 @@ watch(
 
 watch(
   () => formData.value.id_dependencia,
-  async (newVal, oldVal) => {
-    if (oldVal !== undefined && props.modelValue) {
-      formData.value.id_subdependencia = null;
-    }
-    subdependenciaOptions.value = [];
-    if (newVal) {
-      try {
-        const { data } = await api.get("/categorias/jerarquia", {
-          params: { type: "dependencia", parentId: newVal },
-        });
-        subdependenciaOptions.value = data.data;
-      } catch (error) {
-        console.error("Error precargando subdependencias:", error);
-      }
+  (newVal, oldVal) => {
+    if (isInitializing.value) return;
+    if (newVal !== oldVal) {
+       if (oldVal !== undefined && oldVal !== null) {
+        console.log("Cambio manual de dependencia detected. Limpiando hijos.");
+        formData.value.id_subdependencia = null;
+        subdependenciaOptions.value = [];
+       }
     }
   },
 );
@@ -326,6 +314,10 @@ const filterSubdependencia = async (val, update) => {
 };
 
 function onSave() {
-  emit("save", formData.value);
+  // Asegurar que subdependencia sea null si no está seleccionada
+  const payload = { ...formData.value };
+  if (!payload.id_subdependencia) payload.id_subdependencia = null;
+  
+  emit("save", payload);
 }
 </script>
