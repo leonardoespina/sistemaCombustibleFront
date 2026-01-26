@@ -1,278 +1,267 @@
 <template>
-  <q-card flat bordered class="q-pa-md bg-grey-1">
-    <!-- Status Header -->
-    <div class="row items-center justify-between q-mb-md">
-      <div class="text-h6 text-primary">
-        <q-icon name="fingerprint" size="md" /> Registro Biométricos
+  <q-card flat bordered class="bg-grey-1 full-height overflow-hidden no-shadow">
+    <!-- Status Header - Muy compacto -->
+    <q-card-section
+      class="row items-center justify-between bg-white q-py-xs border-bottom"
+    >
+      <div class="row items-center q-gutter-sm">
+        <q-icon name="fingerprint" color="primary" size="sm" />
+        <div class="text-subtitle1 text-primary text-weight-bold uppercase">
+          Registro Biométrico
+        </div>
       </div>
       <q-chip
         :color="readers.length > 0 ? 'positive' : 'negative'"
         text-color="white"
         icon="usb"
-        outline
+        dense
+        size="sm"
+        class="text-weight-bold"
       >
-        {{ readers.length > 0 ? "Lector Conectado" : "Lector Desconectado" }}
+        {{ readers.length > 0 ? "CONECTADO" : "DESCONECTADO" }}
       </q-chip>
-    </div>
+    </q-card-section>
 
-    <q-form @submit="onSubmit">
-      <!-- Datos Personales Section -->
-      <q-list bordered class="rounded-borders bg-white q-mb-md">
-        <q-item-label header class="text-weight-bold text-uppercase"
-          >Datos de Identidad</q-item-label
-        >
-        <q-item>
-          <q-item-section>
-            <div class="row q-col-gutter-md">
-              <div class="col-12 col-md-4">
-                <q-input
-                  v-model="form.cedula"
-                  label="Cédula"
-                  outlined
-                  dense
-                  :rules="[(val) => !!val || 'Campo requerido']"
-                >
-                  <template v-slot:prepend><q-icon name="badge" /></template>
-                </q-input>
+    <q-card-section class="q-pa-sm">
+      <q-form @submit="onSubmit" class="row q-col-gutter-sm">
+        <!-- COLUMNA IZQUIERDA: DATOS -->
+        <div class="col-12 col-md-5 column q-gutter-y-sm">
+          <!-- DATOS DE IDENTIDAD -->
+          <q-card flat bordered class="bg-white">
+            <q-card-section class="q-pa-sm">
+              <div class="text-caption text-weight-bold text-grey-7 q-mb-xs">
+                IDENTIDAD
               </div>
-              <div class="col-12 col-md-8">
-                <q-input
-                  v-model="form.nombre"
-                  label="Nombre Completo"
-                  outlined
-                  dense
-                  :rules="[(val) => !!val || 'Campo requerido']"
-                >
-                  <template v-slot:prepend><q-icon name="person" /></template>
-                </q-input>
+              <div class="row q-col-gutter-sm">
+                <div class="col-5">
+                  <q-input
+                    v-model="form.cedula"
+                    label="Cédula"
+                    outlined
+                    dense
+                    bg-color="grey-1"
+                    :rules="[(val) => !!val || 'Requerido']"
+                    hide-bottom-space
+                  />
+                </div>
+                <div class="col-7">
+                  <q-input
+                    v-model="form.nombre"
+                    label="Nombre Completo"
+                    outlined
+                    dense
+                    bg-color="grey-1"
+                    :rules="[(val) => !!val || 'Requerido']"
+                    hide-bottom-space
+                  />
+                </div>
               </div>
-            </div>
-          </q-item-section>
-        </q-item>
-      </q-list>
+            </q-card-section>
+          </q-card>
 
-      <!-- Ubicación Organizacional Section -->
-      <q-list bordered class="rounded-borders bg-white q-mb-md">
-        <q-item-label header class="text-weight-bold text-uppercase"
-          >Estructura Organizacional</q-item-label
-        >
-        <q-item>
-          <q-item-section>
-            <div class="row q-col-gutter-md">
-              <div class="col-12 col-md-3">
+          <!-- ESTRUCTURA ORGANIZACIONAL -->
+          <q-card flat bordered class="bg-white">
+            <q-card-section class="q-pa-sm">
+              <div class="text-caption text-weight-bold text-grey-7 q-mb-xs">
+                UBICACIÓN
+              </div>
+              <div class="column q-gutter-y-xs">
                 <q-select
                   v-model="form.rol"
                   :options="['RETIRO', 'ALMACEN', 'AMBOS']"
                   label="Rol"
                   outlined
                   dense
-                  :rules="[(val) => !!val || 'Campo requerido']"
-                >
-                  <template v-slot:prepend
-                    ><q-icon name="assignment_ind"
-                  /></template>
-                </q-select>
-              </div>
-              <div class="col-12 col-md-3">
-                <q-select
-                  v-model="form.categoria"
-                  :options="categoriaOptions"
-                  label="Categoría"
-                  outlined
-                  dense
-                  use-input
-                  @filter="filterCategoria"
-                  option-label="nombre"
-                  option-value="id_categoria"
-                  emit-value
-                  map-options
-                  :rules="[(val) => !!val || 'Campo requerido']"
+                  bg-color="grey-1"
+                  :rules="[(val) => !!val || 'Requerido']"
+                  hide-bottom-space
                 />
-              </div>
-              <div class="col-12 col-md-3">
-                <q-select
-                  v-model="form.dependencia"
-                  :options="dependenciaOptions"
-                  label="Dependencia"
-                  outlined
-                  dense
-                  :disable="!form.categoria"
-                  use-input
-                  @filter="filterDependencia"
-                  option-label="nombre_dependencia"
-                  option-value="id_dependencia"
-                  emit-value
-                  map-options
-                  :rules="[(val) => !!val || 'Campo requerido']"
-                />
-              </div>
-              <div class="col-12 col-md-3">
-                <q-select
-                  v-model="form.subdependencia"
-                  :options="subdependenciaOptions"
-                  label="Subdependencia"
-                  outlined
-                  dense
-                  :disable="
-                    !form.dependencia || subdependenciaOptions.length === 0
-                  "
-                  use-input
-                  @filter="filterSubdependencia"
-                  option-label="nombre"
-                  option-value="id_subdependencia"
-                  emit-value
-                  map-options
-                />
-              </div>
-            </div>
-          </q-item-section>
-        </q-item>
-      </q-list>
-
-      <!-- Biometría Section -->
-      <q-card flat bordered class="bg-white q-mb-md">
-        <q-card-section class="bg-primary text-white q-py-xs">
-          <div class="text-subtitle2">CAPTURA DE HUELLAS</div>
-        </q-card-section>
-
-        <q-card-section class="column items-center">
-          <!-- Circular Progress Dashboard -->
-          <div class="row q-gutter-md q-py-md">
-            <div v-for="n in 4" :key="n" class="column items-center">
-              <q-circular-progress
-                show-value
-                :value="
-                  samples.length >= n
-                    ? 100
-                    : capturing && samples.length === n - 1
-                      ? 100
-                      : 0
-                "
-                size="60px"
-                :thickness="0.2"
-                :color="
-                  samples.length >= n
-                    ? 'positive'
-                    : capturing && samples.length === n - 1
-                      ? 'primary'
-                      : 'grey-4'
-                "
-                track-color="grey-2"
-                :indeterminate="capturing && samples.length === n - 1"
-              >
-                <q-icon
-                  :name="samples.length >= n ? 'check' : 'fingerprint'"
-                  :color="
-                    samples.length >= n
-                      ? 'positive'
-                      : capturing && samples.length === n - 1
-                        ? 'primary'
-                        : 'grey-4'
-                  "
-                  size="24px"
-                />
-              </q-circular-progress>
-              <div class="text-caption q-mt-xs">Paso {{ n }}</div>
-            </div>
-          </div>
-
-          <div class="text-h6 text-grey-8 q-mb-md">
-            {{
-              samples.length === 4
-                ? "Captura Completa"
-                : `Huella ${samples.length + 1} de 4`
-            }}
-          </div>
-
-          <!-- Controls -->
-          <div class="row q-gutter-sm">
-            <q-btn
-              color="primary"
-              label="Iniciar Sensor"
-              icon="play_arrow"
-              @click="startCapture"
-              :disable="capturing || samples.length >= 4"
-            />
-            <q-btn
-              color="negative"
-              label="Detener"
-              icon="stop"
-              @click="stopCapture"
-              :disable="!capturing"
-            />
-            <q-btn
-              color="grey-7"
-              label="Reiniciar"
-              icon="refresh"
-              flat
-              @click="clearSamples"
-              v-if="samples.length > 0"
-            />
-          </div>
-        </q-card-section>
-
-        <q-separator />
-
-        <!-- Preview Grid -->
-        <q-card-section>
-          <div class="row q-col-gutter-md justify-center">
-            <div
-              v-for="(sample, index) in samples"
-              :key="index"
-              class="col-auto"
-            >
-              <q-card bordered flat>
-                <q-img :src="sample.image" style="width: 80px; height: 110px" />
-                <div class="bg-grey-2 text-center text-caption">
-                  Muestra {{ index + 1 }}
+                <div class="bg-grey-1 q-pa-xs rounded-borders border-light">
+                  <OrganizationalHierarchy
+                    v-model:categoryId="form.categoria"
+                    v-model:dependencyId="form.dependencia"
+                    v-model:subdependencyId="form.subdependencia"
+                    :initial-category="mappedCategory"
+                    :initial-dependency="mappedDependency"
+                    :initial-subdependency="mappedSubdependency"
+                  />
                 </div>
-              </q-card>
-            </div>
-            <div
-              v-for="n in 4 - samples.length"
-              :key="'empty-' + n"
-              class="col-auto"
-            >
-              <q-card
-                bordered
-                flat
-                class="bg-grey-1"
-                style="
-                  width: 80px;
-                  height: 110px;
-                  display: flex;
-                  align-items: center;
-                  justify-content: center;
-                "
-              >
-                <q-icon name="fingerprint" color="grey-3" size="40px" />
-              </q-card>
-            </div>
-          </div>
-        </q-card-section>
-      </q-card>
+              </div>
+            </q-card-section>
+          </q-card>
 
-      <!-- Submit Footer -->
-      <div class="row justify-end q-mt-lg">
-        <q-btn
-          label="Guardar Registro"
-          type="submit"
-          color="primary"
-          icon-right="save"
-          :disable="samples.length < 4"
-          size="md"
-        />
-      </div>
-    </q-form>
+          <!-- BOTÓN GUARDAR -->
+          <div class="row justify-center q-mt-xs">
+            <q-btn
+              label="Guardar Registro"
+              type="submit"
+              color="primary"
+              icon="save"
+              :disable="samples.length < 4"
+              dense
+              class="q-px-lg shadow-2"
+              unelevated
+            />
+          </div>
+        </div>
+
+        <!-- COLUMNA DERECHA: CAPTURA -->
+        <div class="col-12 col-md-7">
+          <q-card flat bordered class="bg-white full-height column">
+            <q-card-section class="bg-primary text-white q-py-xs text-center">
+              <div class="text-caption text-weight-bold uppercase">
+                Proceso de Captura
+              </div>
+            </q-card-section>
+
+            <q-card-section
+              class="col column items-center justify-center q-pa-sm"
+            >
+              <!-- Indicadores de Paso Compactos -->
+              <div class="row q-gutter-md justify-center q-mb-sm">
+                <div v-for="n in 4" :key="n" class="column items-center">
+                  <q-circular-progress
+                    show-value
+                    :value="
+                      samples.length >= n
+                        ? 100
+                        : capturing && samples.length === n - 1
+                          ? 100
+                          : 0
+                    "
+                    size="50px"
+                    :thickness="0.15"
+                    :color="
+                      samples.length >= n
+                        ? 'positive'
+                        : capturing && samples.length === n - 1
+                          ? 'primary'
+                          : 'grey-3'
+                    "
+                    track-color="grey-2"
+                    :indeterminate="capturing && samples.length === n - 1"
+                  >
+                    <q-icon
+                      :name="samples.length >= n ? 'check' : 'fingerprint'"
+                      :color="
+                        samples.length >= n
+                          ? 'positive'
+                          : capturing && samples.length === n - 1
+                            ? 'primary'
+                            : 'grey-4'
+                      "
+                      size="22px"
+                    />
+                  </q-circular-progress>
+                  <div
+                    class="text-overline q-mt-xs"
+                    :class="
+                      samples.length >= n ? 'text-positive' : 'text-grey-6'
+                    "
+                  >
+                    P{{ n }}
+                  </div>
+                </div>
+              </div>
+
+              <!-- Estado -->
+              <div class="text-subtitle2 text-grey-8 q-mb-sm">
+                <template v-if="validating">
+                  <q-spinner-dots color="primary" size="20px" />
+                  Validando consistencia...
+                </template>
+                <template v-else>
+                  {{
+                    samples.length === 4
+                      ? "Captura Completa"
+                      : `Muestra ${samples.length + 1} de 4`
+                  }}
+                </template>
+              </div>
+
+              <!-- Controles -->
+              <div class="row q-gutter-sm">
+                <q-btn
+                  color="primary"
+                  label="Capturar"
+                  icon="play_arrow"
+                  @click="startCapture"
+                  :disable="capturing || samples.length >= 4 || validating"
+                  size="sm"
+                  unelevated
+                />
+                <q-btn
+                  color="negative"
+                  label="Parar"
+                  icon="stop"
+                  @click="stopCapture"
+                  :disable="!capturing"
+                  size="sm"
+                  flat
+                />
+                <q-btn
+                  color="grey-7"
+                  icon="refresh"
+                  flat
+                  round
+                  dense
+                  @click="clearSamples"
+                  v-if="samples.length > 0"
+                >
+                  <q-tooltip>Reiniciar</q-tooltip>
+                </q-btn>
+              </div>
+            </q-card-section>
+
+            <q-separator />
+
+            <!-- Grid de Muestras muy compacto -->
+            <q-card-section class="bg-grey-1 q-pa-sm">
+              <div class="row q-col-gutter-xs justify-center">
+                <div
+                  v-for="(sample, index) in samples"
+                  :key="index"
+                  class="col-auto"
+                >
+                  <q-card bordered flat class="bg-white overflow-hidden">
+                    <q-img
+                      :src="sample.image"
+                      style="width: 70px; height: 95px"
+                    />
+                    <div class="bg-grey-3 text-center text-overline q-py-none">
+                      M{{ index + 1 }}
+                    </div>
+                  </q-card>
+                </div>
+
+                <div
+                  v-for="n in 4 - samples.length"
+                  :key="'empty-' + n"
+                  class="col-auto"
+                >
+                  <div
+                    class="column items-center justify-center border-dashed rounded-borders bg-white"
+                    style="width: 70px; height: 50px"
+                  >
+                    <q-icon name="fingerprint" color="grey-2" size="30px" />
+                  </div>
+                </div>
+              </div>
+            </q-card-section>
+          </q-card>
+        </div>
+      </q-form>
+    </q-card-section>
   </q-card>
 </template>
 
 <script setup>
-import { ref, onMounted, onBeforeUnmount, reactive, watch } from "vue";
+import { ref, onMounted, onBeforeUnmount, reactive, computed } from "vue";
 import { useQuasar } from "quasar";
 import websdkUrl from "./websdk.client.ui.js?url";
 import fingerprintSdkUrl from "./fingerprint.sdk.min.js?url";
 import api from "../../api";
+import OrganizationalHierarchy from "../OrganizationalHierarchy.vue";
 
 const $q = useQuasar();
 
@@ -291,108 +280,34 @@ const form = reactive({
   subdependencia: null,
 });
 
-const categoriaOptions = ref([]);
-const dependenciaOptions = ref([]);
-const subdependenciaOptions = ref([]);
+// Mapeo manual de objetos iniciales para OrganizationalHierarchy
+const mappedCategory = computed(() => {
+  if (!props.initialData?.Categoria) return null;
+  return {
+    id_categoria: props.initialData.id_categoria,
+    nombre: props.initialData.Categoria.nombre,
+  };
+});
 
-watch(
-  () => form.categoria,
-  async (newVal) => {
-    form.dependencia = null;
-    form.subdependencia = null;
-    dependenciaOptions.value = [];
-    subdependenciaOptions.value = [];
-    if (newVal) {
-      try {
-        const { data } = await api.get("/categorias/jerarquia", {
-          params: { type: "categoria", parentId: newVal },
-        });
-        dependenciaOptions.value = data.data;
-      } catch (error) {
-        console.error("Error precargando dependencias:", error);
-      }
-    }
-  },
-);
-/////refactorizar
-watch(
-  () => form.dependencia,
-  async (newVal) => {
-    form.subdependencia = null;
-    subdependenciaOptions.value = [];
-    if (newVal) {
-      try {
-        const { data } = await api.get("/categorias/jerarquia", {
-          params: { type: "dependencia", parentId: newVal },
-        });
-        subdependenciaOptions.value = data.data;
-      } catch (error) {
-        console.error("Error precargando subdependencias:", error);
-      }
-    }
-  },
-);
+const mappedDependency = computed(() => {
+  if (!props.initialData?.Dependencia) return null;
+  return {
+    id_dependencia: props.initialData.id_dependencia,
+    nombre_dependencia: props.initialData.Dependencia.nombre_dependencia,
+  };
+});
 
-const filterCategoria = async (val, update) => {
-  update(async () => {
-    try {
-      const { data } = await api.get("/categorias/jerarquia", {
-        params: { search: val },
-      });
-      categoriaOptions.value = data.data;
-    } catch (error) {
-      console.error("Error cargando categorías:", error);
-    }
-  });
-};
-
-const filterDependencia = async (val, update) => {
-  if (!form.categoria) {
-    update(() => {
-      dependenciaOptions.value = [];
-    });
-    return;
-  }
-  update(async () => {
-    try {
-      const { data } = await api.get("/categorias/jerarquia", {
-        params: {
-          type: "categoria",
-          parentId: form.categoria,
-          search: val,
-        },
-      });
-      dependenciaOptions.value = data.data;
-    } catch (error) {
-      console.error("Error cargando dependencias:", error);
-    }
-  });
-};
-
-const filterSubdependencia = async (val, update) => {
-  if (!form.dependencia) {
-    update(() => {
-      subdependenciaOptions.value = [];
-    });
-    return;
-  }
-  update(async () => {
-    try {
-      const { data } = await api.get("/categorias/jerarquia", {
-        params: {
-          type: "dependencia",
-          parentId: form.dependencia,
-          search: val,
-        },
-      });
-      subdependenciaOptions.value = data.data;
-    } catch (error) {
-      console.error("Error cargando subdependencias:", error);
-    }
-  });
-};
+const mappedSubdependency = computed(() => {
+  if (!props.initialData?.Subdependencia) return null;
+  return {
+    id_subdependencia: props.initialData.id_subdependencia,
+    nombre: props.initialData.Subdependencia.nombre,
+  };
+});
 
 const capturing = ref(false);
+const validating = ref(false);
+const validationError = ref(false);
 const errorMessage = ref("");
 const readers = ref([]);
 const samples = ref([]);
@@ -421,50 +336,50 @@ const initApi = async () => {
     Fingerprint = window.Fingerprint;
 
     if (!Fingerprint) {
-      errorMessage.value = "Fingerprint SDK no cargado correctamente.";
+      errorMessage.value = "SDK no cargado.";
       return;
     }
 
-    fingerprintApi = new Fingerprint.WebApi({
-      debug: true,
-    });
+    // Usar la API global si ya existe para mantener los listeners
+    if (!window.fingerprintApiInstance) {
+      window.fingerprintApiInstance = new Fingerprint.WebApi();
+    }
+    fingerprintApi = window.fingerprintApiInstance;
 
-    fingerprintApi.onCommunicationFailed = (event) => handleError(event.error);
-    fingerprintApi.onAcquisitionStarted = (event) =>
-      console.log(`Iniciado en ${event.deviceUid}`);
-    fingerprintApi.onAcquisitionStopped = (event) => {
-      console.log(`Detenido en ${event.deviceUid}`);
+    fingerprintApi.onCommunicationFailed = (event) => {
+      readers.value = [];
+      setTimeout(refreshReadersView, 3000);
+    };
+
+    fingerprintApi.onAcquisitionStopped = () => {
       capturing.value = false;
     };
+
     fingerprintApi.onSamplesAcquired = onSamplesAcquired;
-    fingerprintApi.onQualityReported = (event) =>
-      console.log(`Calidad: ${event.quality}`);
-    fingerprintApi.onErrorOccurred = (event) => handleError(event.error);
-    fingerprintApi.onDeviceConnected = async (event) => {
-      console.log(`Conectado: ${event.deviceUid}`);
-      await refreshReadersView();
+
+    // EVENTOS DE HARDWARE EN TIEMPO REAL
+    fingerprintApi.onDeviceConnected = (event) => {
+      console.log("Hardware detectado:", event);
+      refreshReadersView();
     };
-    fingerprintApi.onDeviceDisconnected = async (event) => {
-      console.log(`Desconectado: ${event.deviceUid}`);
-      await refreshReadersView();
+
+    fingerprintApi.onDeviceDisconnected = (event) => {
+      console.log("Hardware removido:", event);
+      refreshReadersView();
     };
+
+    // Primera detección
+    await refreshReadersView();
+
   } catch (e) {
-    errorMessage.value = "Error inicializando API: " + e.message;
+    errorMessage.value = "Error: " + e.message;
   }
 };
 
 const startCapture = async () => {
   if (capturing.value || !fingerprintApi) return;
-  if (samples.value.length >= 4) {
-    $q.notify({ type: "warning", message: "Ya se han capturado 4 huellas" });
-    return;
-  }
+  if (samples.value.length >= 4) return;
   try {
-    // SEGÚN ANALISIS, EL FORMATO 5 (PNG) ES EL MÁS ESTABLE PARA ESTE CLIENTE LITE
-    // Para el matching usaremos un algoritmo de comparación de imágenes o FMD extraído de la imagen.
-    console.log(
-      "Iniciando captura en formato PngImage (Format 5) para estabilidad...",
-    );
     await fingerprintApi.startAcquisition(Fingerprint.SampleFormat.PngImage);
     capturing.value = true;
     errorMessage.value = "";
@@ -489,52 +404,80 @@ const clearSamples = () => {
 
 const refreshReadersView = async () => {
   try {
+    if (!fingerprintApi) return;
     const devices = await fingerprintApi.enumerateDevices();
-    readers.value = devices;
+    readers.value = devices || [];
+    console.log("Lectores actualizados:", readers.value.length);
   } catch (error) {
-    handleError(error);
+    readers.value = [];
+    console.error("Error enumerando:", error);
   }
 };
 
-const onSamplesAcquired = (event) => {
+const onSamplesAcquired = async (event) => {
   try {
     const sampleDataArr = JSON.parse(event.samples);
-    console.log("=== EVENTO DE CAPTURA RECIBIDO ===");
-    console.log("Formato de muestra (SampleFormat):", event.sampleFormat);
-
     if (sampleDataArr.length > 0) {
       const sampleObj = sampleDataArr[0];
-      const rawData =
-        typeof sampleObj === "string" ? sampleObj : sampleObj.Data;
+      const rawData = typeof sampleObj === "string" ? sampleObj : sampleObj.Data;
 
       if (!rawData) return;
-
-      console.log("Dato crudo (Base64):", rawData.substring(0, 100) + "...");
-      console.log("Longitud Total:", rawData.length);
 
       let imageBase64 = "";
       let imageDataUrl = "";
 
       if (event.sampleFormat === Fingerprint.SampleFormat.PngImage) {
-        // Convertir los datos del SDK a imagen PNG real
         const pngData = Fingerprint.b64UrlToUtf8(rawData);
-        imageBase64 = btoa(pngData); // Base64 estándar de la imagen PNG
+        imageBase64 = btoa(pngData);
         imageDataUrl = `data:image/png;base64,${imageBase64}`;
-        console.log("PNG Base64 length:", imageBase64.length);
       } else {
-        // Si no es PNG, saltar
-        console.warn("Formato no soportado, solo se acepta PngImage");
         return;
+      }
+
+      // VALIDACIÓN DE CONSISTENCIA (Match contra la primera huella)
+      if (samples.value.length > 0) {
+        validating.value = true;
+        validationError.value = false;
+        try {
+          const response = await api.post("/biometria/comparar", {
+            muestra1: samples.value[0].data,
+            muestra2: imageBase64,
+          });
+
+          if (!response.data.match) {
+            validationError.value = true;
+            $q.notify({
+              type: "warning",
+              message: "La huella no coincide con la primera muestra. Use el mismo dedo.",
+              position: "bottom",
+            });
+            return; // No agregar la huella
+          }
+        } catch (err) {
+          console.error("Error validando consistencia:", err);
+          $q.notify({
+            type: "negative",
+            message: "Error al validar consistencia de la huella",
+          });
+          return;
+        } finally {
+          validating.value = false;
+        }
       }
 
       if (samples.value.length < 4) {
         samples.value.push({
-          image: imageDataUrl, // Para previsualización
-          data: imageBase64, // ESTE ES EL PNG BASE64 REAL para el backend
+          image: imageDataUrl,
+          data: imageBase64,
         });
 
         if (samples.value.length === 4) {
           stopCapture();
+          $q.notify({
+            type: "positive",
+            message: "Captura consistente completada",
+            timeout: 1000,
+          });
         }
       }
     }
@@ -545,8 +488,7 @@ const onSamplesAcquired = (event) => {
 };
 
 const handleError = (error) => {
-  errorMessage.value =
-    error?.message || error?.type || "Error de comunicación con el sensor";
+  errorMessage.value = error?.message || "Error sensor";
   console.error(error);
 };
 
@@ -566,13 +508,12 @@ const onSubmit = async () => {
     $q.notify({
       type: "positive",
       message: "Registro Exitoso",
-      icon: "check",
     });
     emit("success");
   } catch (error) {
     $q.notify({
       type: "negative",
-      message: error.response?.data?.msg || "Error en el servidor",
+      message: error.response?.data?.msg || "Error",
     });
   } finally {
     $q.loading.hide();
@@ -590,9 +531,6 @@ onMounted(async () => {
       form.subdependencia = props.initialData.id_subdependencia;
   }
   await initApi();
-  if (fingerprintApi) {
-    await refreshReadersView();
-  }
 });
 
 onBeforeUnmount(async () => {
@@ -601,8 +539,16 @@ onBeforeUnmount(async () => {
 </script>
 
 <style scoped>
-/* Estilos mínimos para complementar Quasar */
-.q-card {
-  border-radius: 8px;
+.border-bottom {
+  border-bottom: 1px solid #e0e0e0;
+}
+.border-light {
+  border: 1px solid #f0f0f0;
+}
+.border-dashed {
+  border: 1px dashed #ccc;
+}
+.uppercase {
+  text-transform: uppercase;
 }
 </style>

@@ -178,6 +178,16 @@
               <q-item-section avatar><q-icon name="payments" /></q-item-section>
               <q-item-section>Relación de Precios</q-item-section>
             </q-item>
+
+            <q-item
+              clickable
+              v-ripple
+              to="/llenaderos"
+              @click="leftDrawerOpen = false"
+            >
+              <q-item-section avatar><q-icon name="ev_station" /></q-item-section>
+              <q-item-section>Llenaderos</q-item-section>
+            </q-item>
             <!-- Huella -->
             <q-item
               clickable

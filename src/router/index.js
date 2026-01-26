@@ -164,6 +164,11 @@ const routes = [
         name: "precio-management",
         component: () => import("../pages/precios/PrecioPage.vue"),
       },
+      {
+        path: "llenaderos",
+        name: "llenadero-list",
+        component: () => import("../pages/llenaderos/LlenaderoPage.vue"),
+      },
 
       // Aquí puedes seguir añadiendo más rutas protegidas, como /vehiculos, etc.
     ],

@@ -1,151 +1,161 @@
+<!-- src/pages/cupos/CupoPage.vue -->
 <template>
   <q-page class="q-pa-md">
-    <!-- Header -->
-    <div class="row items-center justify-between q-mb-md">
-      <h4 class="text-h4 q-my-none">Gestión de Cupos</h4>
-      <div class="q-gutter-sm">
-        <q-btn
-          color="secondary"
-          icon="local_gas_station"
-          label="Tipos de Combustible"
-          to="/tipos-combustible"
-          outline
-        />
-        <q-btn
-          color="accent"
-          icon="analytics"
-          label="Estado Actual (Mes en Curso)"
-          @click="openStatusDialog"
-          outline
-        />
-        <q-btn
-          color="primary"
-          icon="add"
-          label="Nueva Asignación"
-          @click="openCreateDialog"
-        />
+    <div class="q-gutter-y-md">
+      <!-- HEADER -->
+      <div class="row items-center justify-between">
+        <h4 class="text-h4 q-my-none">Gestión de Cupos</h4>
+        <q-chip outline color="primary" text-color="primary" icon="calendar_today">
+          Periodo Actual: {{ periodoActual }}
+        </q-chip>
       </div>
-    </div>
 
-    <!-- Table Configuración Cupos Base -->
-    <q-table
-      :rows="rowsBase"
-      :columns="columnsBase"
-      row-key="id_cupo_base"
-      :loading="loadingBase"
-      v-model:pagination="paginationBase"
-      v-model:filter="filterBase"
-      @request="onRequestBase"
-      binary-state-sort
-      title="Configuración de Cupos Mensuales"
-    >
-      <template v-slot:top-right>
-        <q-input
-          borderless
+      <!-- MAIN CARD -->
+      <q-card flat bordered>
+        <q-tabs
+          v-model="tab"
           dense
-          debounce="300"
-          v-model="filterBase"
-          placeholder="Buscar..."
+          class="text-grey"
+          active-color="primary"
+          indicator-color="primary"
+          align="justify"
+          narrow-indicator
         >
-          <template v-slot:append>
-            <q-icon name="search" />
-          </template>
-        </q-input>
-      </template>
+          <q-tab name="actual" label="Estado Actual (Saldos)" icon="account_balance_wallet" />
+          <q-tab name="base" label="Configuración Base (Mensual)" icon="settings" />
+        </q-tabs>
 
-      <template v-slot:body-cell-activo="props">
-        <q-td :props="props">
-          <q-chip
-            :color="props.row.activo ? 'positive' : 'negative'"
-            text-color="white"
-            dense
-          >
-            {{ props.row.activo ? "Activo" : "Inactivo" }}
-          </q-chip>
-        </q-td>
-      </template>
+        <q-separator />
 
-      <template v-slot:body-cell-actions="props">
-        <q-td :props="props" class="q-gutter-sm">
-          <q-btn
-            dense
-            round
-            flat
-            color="primary"
-            icon="edit"
-            @click="openEditDialog(props.row)"
-          >
-            <q-tooltip>Editar</q-tooltip>
-          </q-btn>
-        </q-td>
-      </template>
-    </q-table>
-
-    <!-- Dialog Estado Actual -->
-    <q-dialog v-model="showStatusDialog" maximized transition-show="slide-up" transition-hide="slide-down">
-      <q-card>
-        <q-bar class="bg-primary text-white">
-          <q-icon name="analytics" />
-          <div>Estado Actual de Cupos (Mes en Curso)</div>
-          <q-space />
-          <q-btn dense flat icon="close" v-close-popup>
-            <q-tooltip>Cerrar</q-tooltip>
-          </q-btn>
-        </q-bar>
-
-        <q-card-section>
-          <q-table
-            :rows="rowsActual"
-            :columns="columnsActual"
-            row-key="id_cupo_actual"
-            :loading="loadingActual"
-            v-model:pagination="paginationActual"
-            v-model:filter="filterActual"
-            @request="onRequestActual"
-            binary-state-sort
-            flat
-            bordered
-          >
-              <template v-slot:top-right>
+        <q-tab-panels v-model="tab" animated>
+          <!-- PANEL: ESTADO ACTUAL -->
+          <q-tab-panel name="actual" class="q-pa-none">
+            <q-table
+              flat
+              :rows="cuposActuales"
+              :columns="columnsActual"
+              row-key="id_cupo_actual"
+              :loading="loading"
+              v-model:pagination="paginationActual"
+              v-model:filter="filterActual"
+              @request="onRequestActual"
+              binary-state-sort
+            >
+              <template v-slot:top>
                 <q-input
                   borderless
                   dense
-                  debounce="300"
+                  outlined
+                  debounce="500"
                   v-model="filterActual"
-                  placeholder="Buscar..."
+                  placeholder="Buscar dependencia..."
+                  style="width: 300px"
                 >
-                  <template v-slot:append>
-                    <q-icon name="search" />
-                  </template>
+                  <template v-slot:append><q-icon name="search" /></template>
                 </q-input>
+                <q-space />
+                <q-btn
+                  v-if="isAdmin"
+                  outline
+                  color="negative"
+                  icon="autorenew"
+                  label="Reiniciar Mes"
+                  @click="confirmarReinicio"
+                  class="q-mr-sm"
+                />
+                <q-btn
+                  color="primary"
+                  icon="refresh"
+                  flat
+                  round
+                  @click="cupoStore.fetchCuposActuales()"
+                />
               </template>
 
-              <template v-slot:body-cell-progreso="props">
-                  <q-td :props="props">
-                      <q-linear-progress 
-                          size="25px" 
-                          :value="props.row.cantidad_consumida / (parseFloat(props.row.cantidad_asignada) + parseFloat(props.row.cantidad_recargada))" 
-                          color="primary"
-                          track-color="grey-3"
-                          class="q-mt-sm"
-                      >
-                          <div class="absolute-full flex flex-center">
-                              <q-badge color="transparent" text-color="white" :label="`${((props.row.cantidad_consumida / (parseFloat(props.row.cantidad_asignada) + parseFloat(props.row.cantidad_recargada))) * 100).toFixed(1)}%`" />
-                          </div>
-                      </q-linear-progress>
-                  </q-td>
+              <template v-slot:body-cell-disponibilidad="props">
+                <q-td :props="props">
+                  <div class="column q-gutter-xs" style="min-width: 150px">
+                    <div class="row items-center justify-between no-wrap">
+                      <span class="text-weight-bold">{{ props.row.cantidad_disponible }} / {{ props.row.cantidad_asignada }} L</span>
+                      <span class="text-caption text-grey-8">{{ Math.round((props.row.cantidad_disponible / props.row.cantidad_asignada) * 100) }}%</span>
+                    </div>
+                    <q-linear-progress 
+                      rounded
+                      size="10px"
+                      :value="props.row.cantidad_disponible / props.row.cantidad_asignada" 
+                      :color="getProgressColor(props.row.cantidad_disponible / props.row.cantidad_asignada)"
+                    />
+                  </div>
+                </q-td>
               </template>
 
               <template v-slot:body-cell-estado="props">
-                  <q-td :props="props">
-                      <q-chip
-                          :color="props.row.estado === 'ACTIVO' ? 'positive' : props.row.estado === 'AGOTADO' ? 'negative' : 'grey'"
-                          text-color="white"
-                          dense
-                      >
-                          {{ props.row.estado }}
-                      </q-chip>
-                  </q-td>
+                <q-td :props="props">
+                  <q-chip :color="getEstadoColor(props.row.estado)" text-color="white" dense size="sm" class="text-weight-bold">
+                    {{ props.row.estado }}
+                  </q-chip>
+                </q-td>
+              </template>
+
+              <template v-slot:body-cell-actions="props">
+                <q-td :props="props" class="q-gutter-xs">
+                  <q-btn
+                    dense
+                    round
+                    flat
+                    color="secondary"
+                    icon="add_card"
+                    @click="openRecargaDialog(props.row)"
+                  >
+                    <q-tooltip>Recargar Cupo Extra</q-tooltip>
+                  </q-btn>
+                </q-td>
+              </template>
+            </q-table>
+          </q-tab-panel>
+
+          <!-- PANEL: CONFIGURACIÓN BASE -->
+          <q-tab-panel name="base" class="q-pa-none">
+            <q-table
+              flat
+              :rows="cuposBase"
+              :columns="columnsBase"
+              row-key="id_cupo_base"
+              :loading="loading"
+              v-model:pagination="paginationBase"
+              v-model:filter="filterBase"
+              @request="onRequestBase"
+              binary-state-sort
+            >
+              <template v-slot:top>
+                <q-input
+                  borderless
+                  dense
+                  outlined
+                  debounce="500"
+                  v-model="filterBase"
+                  placeholder="Buscar configuración..."
+                  style="width: 300px"
+                >
+                  <template v-slot:append><q-icon name="search" /></template>
+                </q-input>
+                <q-space />
+                <q-btn
+                  color="primary"
+                  icon="add"
+                  label="Nueva Configuración"
+                  @click="openAddDialog"
+                />
+              </template>
+
+              <template v-slot:body-cell-activo="props">
+                <q-td :props="props">
+                  <q-icon 
+                    :name="props.row.activo ? 'check_circle' : 'cancel'" 
+                    :color="props.row.activo ? 'positive' : 'negative'" 
+                    size="sm"
+                  />
+                </q-td>
               </template>
 
               <template v-slot:body-cell-actions="props">
@@ -154,133 +164,189 @@
                     dense
                     round
                     flat
-                    color="accent"
-                    icon="bolt"
-                    @click="openRecargaDialog(props.row)"
-                  >
-                    <q-tooltip>Recargar Cupo</q-tooltip>
-                  </q-btn>
+                    icon="edit"
+                    @click="openEditDialog(props.row)"
+                  />
                 </q-td>
               </template>
-          </q-table>
-        </q-card-section>
+            </q-table>
+          </q-tab-panel>
+        </q-tab-panels>
       </q-card>
-    </q-dialog>
+    </div>
 
-    <!-- Dialog -->
+    <!-- DIÁLOGOS -->
     <CupoFormDialog
-      v-model="showDialog"
-      :initial-data="selectedItem"
+      :key="editingCupo?.id_cupo_base || 'new'"
+      v-model="isFormDialogVisible"
+      :initial-data="editingCupo"
+      :is-editing="!!editingCupo"
+      :loading="loading"
+      @save="onFormSave"
     />
 
     <RecargaCupoDialog
-      v-model="showRecargaDialog"
-      :cupo-info="selectedItem"
+      v-model="isRecargaDialogVisible"
+      :cupo="selectedCupoActual"
+      :loading="loading"
+      @save="onRecargaSave"
     />
   </q-page>
 </template>
 
 <script setup>
-import { ref, onMounted, onUnmounted, computed } from "vue";
-import { useQuasar } from "quasar";
+import { ref, onMounted, computed } from "vue";
+import { storeToRefs } from "pinia";
 import { useCupoStore } from "../../stores/cupoStore";
+import { useUserStore } from "../../stores/userStore";
+import { useQuasar, date } from "quasar";
+
 import CupoFormDialog from "../../components/cupos/CupoFormDialog.vue";
 import RecargaCupoDialog from "../../components/cupos/RecargaCupoDialog.vue";
 
 const $q = useQuasar();
-const store = useCupoStore();
+const cupoStore = useCupoStore();
+const userStore = useUserStore();
 
-// --- STATE BASE ---
-const rowsBase = computed(() => store.rowsBase);
-const loadingBase = computed(() => store.loadingBase);
-const filterBase = computed({
-  get: () => store.filterBase,
-  set: (val) => (store.filterBase = val),
-});
-const paginationBase = computed({
-  get: () => store.paginationBase,
-  set: (val) => (store.paginationBase = val),
-});
+const { 
+  loading, 
+  cuposActuales, paginationActual, filterActual,
+  cuposBase, paginationBase, filterBase 
+} = storeToRefs(cupoStore);
 
-// --- STATE ACTUAL ---
-const rowsActual = computed(() => store.rowsActual);
-const loadingActual = computed(() => store.loadingActual);
-const filterActual = computed({
-  get: () => store.filterActual,
-  set: (val) => (store.filterActual = val),
-});
-const paginationActual = computed({
-  get: () => store.paginationActual,
-  set: (val) => (store.paginationActual = val),
-});
+const tab = ref("actual");
+const isFormDialogVisible = ref(false);
+const isRecargaDialogVisible = ref(false);
+const editingCupo = ref(null);
+const selectedCupoActual = ref(null);
 
-const showDialog = ref(false);
-const showStatusDialog = ref(false);
-const showRecargaDialog = ref(false);
-const selectedItem = ref(null);
+const periodoActual = computed(() => date.formatDate(Date.now(), "MMMM YYYY").toUpperCase());
+const isAdmin = computed(() => userStore.user?.tipo_usuario === "ADMIN");
 
-// --- COLUMNS ---
-const columnsBase = [
-  { name: "categoria", label: "Categoría", field: row => row.Categoria?.nombre, align: "left", sortable: true },
-  { name: "dependencia", label: "Dependencia", field: row => row.Dependencia?.nombre_dependencia, align: "left", sortable: true },
-  { name: "subdependencia", label: "Subdependencia", field: row => row.Subdependencia?.nombre || "N/A", align: "left", sortable: true },
-  { name: "cantidad_mensual", label: "Cupo Mensual (L)", field: "cantidad_mensual", align: "center", sortable: true },
-  { name: "activo", label: "Estado", field: "activo", align: "center", sortable: true },
-  { name: "actions", label: "Acciones", align: "center" },
-];
-
+// COLUMNAS TABLA ACTUAL
 const columnsActual = [
-  { name: "categoria", label: "Categoría", field: row => row.CupoBase?.Categoria?.nombre, align: "left", sortable: true },
-  { name: "dependencia", label: "Dependencia", field: row => row.CupoBase?.Dependencia?.nombre_dependencia, align: "left", sortable: true },
-  { name: "subdependencia", label: "Subdependencia", field: row => row.CupoBase?.Subdependencia?.nombre || "N/A", align: "left", sortable: true },
-  { name: "disponible", label: "Disponible (L)", field: "cantidad_disponible", align: "center", sortable: true },
-  { name: "consumida", label: "Consumido (L)", field: "cantidad_consumida", align: "center", sortable: true },
-  { name: "progreso", label: "Progreso", align: "center" },
-  { name: "estado", label: "Estado", field: "estado", align: "center", sortable: true },
-  { name: "actions", label: "Acciones", align: "center" },
+  { 
+    name: "dependencia", 
+    label: "Dependencia", 
+    field: row => row.CupoBase?.Dependencia?.nombre_dependencia || 'N/A', 
+    align: "left", 
+    sortable: true 
+  },
+  { 
+    name: "categoria", 
+    label: "Categoría", 
+    field: row => row.CupoBase?.Categoria?.nombre || 'N/A', 
+    align: "left" 
+  },
+  {
+    name: "combustible",
+    label: "Tipo Combustible",
+    field: row => row.CupoBase?.TipoCombustible?.nombre || 'N/A',
+    align: "center"
+  },
+  { 
+    name: "disponibilidad", 
+    label: "Disponibilidad Actual", 
+    align: "center"
+  },
+  { name: "consumido", label: "Consumido", field: row => `${row.cantidad_consumida} L`, align: "center" },
+  { name: "recargado", label: "Recargado Extra", field: row => `${row.cantidad_recargada} L`, align: "center" },
+  { name: "estado", label: "Estado", field: "estado", align: "center" },
+  { name: "actions", label: "Acciones", align: "right" }
 ];
 
-// --- HANDLERS ---
+// COLUMNAS TABLA BASE
+const columnsBase = [
+  { 
+    name: "dependencia", 
+    label: "Dependencia", 
+    field: row => row.Dependencia?.nombre_dependencia || 'N/A', 
+    align: "left", 
+    sortable: true 
+  },
+  { 
+    name: "combustible", 
+    label: "Tipo Combustible", 
+    field: row => row.TipoCombustible?.nombre || 'N/A', 
+    align: "center" 
+  },
+  { name: "mensual", label: "Asignación Mensual", field: row => `${row.cantidad_mensual} L`, align: "center" },
+  { name: "activo", label: "Activo", field: "activo", align: "center" },
+  { name: "actions", label: "Acciones", align: "right" }
+];
 
-const onRequestBase = (props) => {
-  store.paginationBase = props.pagination;
-  store.filterBase = props.filter;
-  store.fetchCuposBase();
-};
+// HANDLERS
+function onRequestActual(props) {
+  paginationActual.value = props.pagination;
+  filterActual.value = props.filter;
+  cupoStore.fetchCuposActuales();
+}
 
-const onRequestActual = (props) => {
-  store.paginationActual = props.pagination;
-  store.filterActual = props.filter;
-  store.fetchCuposActuales();
-};
+function onRequestBase(props) {
+  paginationBase.value = props.pagination;
+  filterBase.value = props.filter;
+  cupoStore.fetchCuposBase();
+}
 
-const openCreateDialog = () => {
-  selectedItem.value = null;
-  showDialog.value = true;
-};
+function openAddDialog() {
+  editingCupo.value = null;
+  isFormDialogVisible.value = true;
+}
 
-const openEditDialog = (row) => {
-  selectedItem.value = row;
-  showDialog.value = true;
-};
+function openEditDialog(row) {
+  editingCupo.value = { ...row };
+  isFormDialogVisible.value = true;
+}
 
-const openRecargaDialog = (row) => {
-  selectedItem.value = row;
-  showRecargaDialog.value = true;
-};
+function openRecargaDialog(row) {
+  selectedCupoActual.value = row;
+  isRecargaDialogVisible.value = true;
+}
 
-const openStatusDialog = () => {
-  store.fetchCuposActuales(); // Recargar datos al abrir
-  showStatusDialog.value = true;
-};
+async function onFormSave(formData) {
+  let success;
+  if (editingCupo.value) {
+    success = await cupoStore.updateCupoBase(editingCupo.value.id_cupo_base, formData);
+  } else {
+    success = await cupoStore.createCupoBase(formData);
+  }
+  if (success) isFormDialogVisible.value = false;
+}
+
+async function onRecargaSave(payload) {
+  const success = await cupoStore.recargarCupo(payload);
+  if (success) isRecargaDialogVisible.value = false;
+}
+
+function confirmarReinicio() {
+  $q.dialog({
+    title: 'Confirmar Reinicio Mensual',
+    message: 'Esto cerrará los cupos del mes anterior y creará los nuevos basados en la configuración base. ¿Deseas continuar?',
+    cancel: true,
+    persistent: true
+  }).onOk(async () => {
+    await cupoStore.reiniciarMes();
+  });
+}
+
+// HELPERS VISUALES
+function getProgressColor(percent) {
+  if (percent > 0.5) return "positive";
+  if (percent > 0.2) return "warning";
+  return "negative";
+}
+
+function getEstadoColor(estado) {
+  switch (estado) {
+    case 'ACTIVO': return 'positive';
+    case 'AGOTADO': return 'negative';
+    case 'CERRADO': return 'grey-7';
+    default: return 'primary';
+  }
+}
 
 onMounted(() => {
-  store.fetchCuposBase();
-  store.fetchCuposActuales();
-  store.initSocket();
-});
-
-onUnmounted(() => {
-  store.cleanupSocket();
+  cupoStore.fetchCuposActuales();
+  cupoStore.fetchCuposBase();
 });
 </script>

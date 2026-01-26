@@ -1,301 +1,171 @@
+<!-- src/components/cupos/CupoFormDialog.vue -->
 <template>
-  <q-dialog v-model="visible" persistent>
-    <q-card style="min-width: 500px">
-      <q-card-section class="row items-center">
+  <q-dialog
+    :model-value="modelValue"
+    @update:model-value="(val) => emit('update:modelValue', val)"
+    persistent
+  >
+    <q-card style="min-width: 450px">
+      <q-card-section>
         <div class="text-h6">
-          {{
-            isEdit ? "Editar Configuración de Cupo" : "Nueva Asignación de Cupo"
-          }}
+          {{ isEditing ? "Editar Configuración de Cupo" : "Nueva Configuración de Cupo" }}
         </div>
-        <q-space />
-        <q-btn icon="close" flat round dense v-close-popup />
       </q-card-section>
 
-      <q-card-section>
-        <q-form @submit="onSubmit" class="q-gutter-md">
-          <!-- Select Categoría -->
-          <q-select
-            v-model="form.id_categoria"
-            :options="categoriaOptions"
-            label="Categoría *"
-            outlined
-            dense
-            option-label="nombre"
-            option-value="id_categoria"
-            emit-value
-            map-options
-            :disable="isEdit"
-            :rules="[(val) => !!val || 'Requerido']"
-            use-input
-            @filter="filterCategoria"
+      <q-form @submit.prevent="onSave">
+        <q-card-section class="q-gutter-md">
+          <!-- Jerarquía Organizacional -->
+          <OrganizationalHierarchy
+            v-if="!isInitializing"
+            v-model:categoryId="formData.id_categoria"
+            v-model:dependencyId="formData.id_dependencia"
+            v-model:subdependencyId="formData.id_subdependencia"
+            :initial-category="mappedCategory"
+            :initial-dependency="mappedDependency"
+            :initial-subdependency="mappedSubdependency"
           />
 
-          <!-- Select Dependencia -->
+          <!-- Tipo de Combustible -->
           <q-select
-            v-model="form.id_dependencia"
-            :options="dependenciaOptions"
-            label="Dependencia *"
-            outlined
             dense
-            option-label="nombre_dependencia"
-            option-value="id_dependencia"
-            emit-value
-            map-options
-            :disable="!form.id_categoria || isEdit"
-            :rules="[(val) => !!val || 'Requerido']"
-            use-input
-            @filter="filterDependencia"
-          />
-
-          <!-- Select Subdependencia -->
-          <q-select
-            v-model="form.id_subdependencia"
-            :options="subdependenciaOptions"
-            label="Subdependencia (Opcional)"
-            outlined
-            dense
-            option-label="nombre"
-            option-value="id_subdependencia"
-            emit-value
-            map-options
-            :disable="!form.id_dependencia || isEdit"
-            use-input
-            @filter="filterSubdependencia"
-          />
-
-          <!-- Select Tipo Combustible -->
-          <q-select
-            v-model="form.id_tipo_combustible"
-            :options="combustibleOptions"
-            label="Tipo de Combustible *"
-            outlined
-            dense
+            v-model="formData.id_tipo_combustible"
+            :options="tipoCombustibleOptions"
+            label="Tipo de Combustible"
             option-label="nombre"
             option-value="id_tipo_combustible"
             emit-value
             map-options
-            :disable="isEdit"
-            :rules="[(val) => !!val || 'Requerido']"
+            :loading="loadingTipos"
+            :rules="[(val) => !!val || 'Campo requerido']"
           />
 
           <!-- Cantidad Mensual -->
           <q-input
-            v-model.number="form.cantidad_mensual"
-            label="Cupo Mensual (Litros) *"
-            outlined
             dense
+            v-model.number="formData.cantidad_mensual"
             type="number"
-            min="0"
-            :rules="[(val) => val > 0 || 'Debe ser mayor a 0']"
+            label="Asignación Mensual (Litros)"
+            suffix="L"
+            :rules="[
+              (val) => !!val || 'Campo requerido',
+              (val) => val > 0 || 'La cantidad debe ser mayor a 0'
+            ]"
           />
 
-          <!-- Activo -->
           <q-toggle
-            v-if="isEdit"
-            v-model="form.activo"
+            v-if="isEditing"
+            v-model="formData.activo"
             label="Cupo Activo"
-            dense
           />
+        </q-card-section>
 
-          <div class="row justify-end q-mt-md">
-            <q-btn
-              label="Cancelar"
-              color="negative"
-              flat
-              v-close-popup
-              class="q-mr-sm"
-            />
-            <q-btn
-              :label="isEdit ? 'Actualizar' : 'Asignar'"
-              type="submit"
-              color="primary"
-              :loading="loading"
-            />
-          </div>
-        </q-form>
-      </q-card-section>
+        <q-card-actions align="right">
+          <q-btn flat label="Cancelar" v-close-popup />
+          <q-btn flat label="Guardar" type="submit" color="primary" :loading="loading" />
+        </q-card-actions>
+      </q-form>
     </q-card>
   </q-dialog>
 </template>
 
 <script setup>
-import { ref, computed, watch, onMounted } from "vue";
-import { useCupoStore } from "../../stores/cupoStore";
-import api from "../../api";
+import { ref, onMounted, computed, watch, nextTick } from "vue";
+import { useTipoCombustibleStore } from "../../stores/tipoCombustibleStore";
+import OrganizationalHierarchy from "../OrganizationalHierarchy.vue";
 
 const props = defineProps({
   modelValue: Boolean,
   initialData: Object,
+  isEditing: Boolean,
+  loading: Boolean
 });
 
-const emit = defineEmits(["update:modelValue"]);
+const emit = defineEmits(["update:modelValue", "save"]);
 
-const store = useCupoStore();
-const loading = computed(() => store.loadingBase);
+const tipoCombustibleStore = useTipoCombustibleStore();
+const formData = ref({});
+const isInitializing = ref(false);
 
-const visible = computed({
-  get: () => props.modelValue,
-  set: (val) => emit("update:modelValue", val),
+const tipoCombustibleOptions = computed(() => tipoCombustibleStore.rows);
+const loadingTipos = computed(() => tipoCombustibleStore.loading);
+
+// Mapeo manual de objetos iniciales para que tengan ID + Nombre
+const mappedCategory = computed(() => {
+  if (!props.initialData?.Categoria) return null;
+  return {
+    id_categoria: props.initialData.id_categoria,
+    nombre: props.initialData.Categoria.nombre
+  };
 });
 
-const isEdit = computed(() => !!props.initialData);
-
-const form = ref({
-  id_categoria: null,
-  id_dependencia: null,
-  id_tipo_combustible: null,
-  cantidad_mensual: 0,
-  activo: true,
+const mappedDependency = computed(() => {
+  if (!props.initialData?.Dependencia) return null;
+  return {
+    id_dependencia: props.initialData.id_dependencia,
+    nombre_dependencia: props.initialData.Dependencia.nombre_dependencia
+  };
 });
 
-const categoriaOptions = ref([]);
-const dependenciaOptions = ref([]);
-const subdependenciaOptions = ref([]);
-const combustibleOptions = ref([]);
+const mappedSubdependency = computed(() => {
+  if (!props.initialData?.Subdependencia) return null;
+  return {
+    id_subdependencia: props.initialData.id_subdependencia,
+    nombre: props.initialData.Subdependencia.nombre
+  };
+});
 
-// --- CARGA DE DATOS ---
-
-const loadCombustibles = async () => {
-  try {
-    const { data } = await api.get("/tipos-combustible/lista");
-    combustibleOptions.value = data;
-  } catch (e) {
-    console.error(e);
+const initializeForm = async () => {
+  isInitializing.value = true;
+  
+  if (props.initialData) {
+    formData.value = {
+      ...props.initialData,
+      id_categoria: props.initialData.id_categoria,
+      id_dependencia: props.initialData.id_dependencia,
+      id_subdependencia: props.initialData.id_subdependencia,
+      id_tipo_combustible: props.initialData.id_tipo_combustible,
+      cantidad_mensual: props.initialData.cantidad_mensual,
+      activo: props.initialData.activo ?? true,
+    };
+  } else {
+    formData.value = {
+      id_categoria: null,
+      id_dependencia: null,
+      id_subdependencia: null,
+      id_tipo_combustible: null,
+      cantidad_mensual: 0,
+      activo: true,
+    };
   }
+  
+  await nextTick();
+  isInitializing.value = false;
 };
-
-const filterCategoria = async (val, update) => {
-  update(async () => {
-    try {
-      const { data } = await api.get("/categorias/jerarquia", {
-        params: { search: val },
-      });
-      categoriaOptions.value = data.data;
-    } catch (e) {
-      console.error(e);
-    }
-  });
-};
-
-const filterDependencia = async (val, update) => {
-  if (!form.value.id_categoria) {
-    update(() => {
-      dependenciaOptions.value = [];
-    });
-    return;
-  }
-  update(async () => {
-    try {
-      const { data } = await api.get("/categorias/jerarquia", {
-        params: {
-          type: "categoria",
-          parentId: form.value.id_categoria,
-          search: val,
-        },
-      });
-      dependenciaOptions.value = data.data;
-    } catch (e) {
-      console.error(e);
-    }
-  });
-};
-
-const filterSubdependencia = async (val, update) => {
-  if (!form.value.id_dependencia) {
-    update(() => {
-      subdependenciaOptions.value = [];
-    });
-    return;
-  }
-  update(async () => {
-    try {
-      const { data } = await api.get("/categorias/jerarquia", {
-        params: {
-          type: "dependencia",
-          parentId: form.value.id_dependencia,
-          search: val,
-        },
-      });
-      subdependenciaOptions.value = data.data;
-    } catch (e) {
-      console.error(e);
-    }
-  });
-};
-
-// --- WATCHERS ---
 
 watch(
-  () => props.initialData,
+  () => props.modelValue,
   async (val) => {
     if (val) {
-      // Cargar opciones para mostrar labels correctos en edición
-      await filterCategoria("", (fn) => fn());
-      form.value = { ...val };
-      // Cargar dependencias de esa categoría
-      await filterDependencia("", (fn) => fn());
-      // Cargar subdependencias si existe dependencia
-      if (val.id_dependencia) {
-        await filterSubdependencia("", (fn) => fn());
-      }
-    } else {
-      form.value = {
-        id_categoria: null,
-        id_dependencia: null,
-        id_tipo_combustible: null,
-        cantidad_mensual: 0,
-        activo: true,
-      };
+      await initializeForm();
     }
   },
-  { immediate: true },
+  { immediate: true }
 );
 
-watch(
-  () => form.value.id_categoria,
-  () => {
-    if (!isEdit.value) {
-      // Solo limpiar si es nuevo
-      form.value.id_dependencia = null;
-      form.value.id_subdependencia = null;
-      dependenciaOptions.value = [];
-      subdependenciaOptions.value = [];
-    }
-  },
-);
-
-watch(
-  () => form.value.id_dependencia,
-  () => {
-    if (!isEdit.value) {
-      form.value.id_subdependencia = null;
-      subdependenciaOptions.value = [];
-    }
-  },
-);
-
-// --- SUBMIT ---
-
-const onSubmit = async () => {
-  let success;
-  if (isEdit.value) {
-    success = await store.updateCupoBase(props.initialData.id_cupo_base, {
-      cantidad_mensual: form.value.cantidad_mensual,
-      activo: form.value.activo,
-    });
-  } else {
-    success = await store.createCupoBase({
-      ...form.value,
-      id_subdependencia: form.value.id_subdependencia || null,
-    });
+onMounted(async () => {
+  if (tipoCombustibleStore.rows.length === 0) {
+    await tipoCombustibleStore.fetchTiposCombustible();
   }
-
-  if (success) {
-    visible.value = false;
-  }
-};
-
-onMounted(() => {
-  loadCombustibles();
 });
+
+function onSave() {
+  const payload = { ...formData.value };
+  // Limpiar relaciones circulares u objetos anidados antes de enviar
+  delete payload.Categoria;
+  delete payload.Dependencia;
+  delete payload.Subdependencia;
+  delete payload.TipoCombustible;
+  
+  emit("save", payload);
+}
 </script>

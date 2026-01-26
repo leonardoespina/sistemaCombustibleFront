@@ -1,114 +1,81 @@
+<!-- src/components/cupos/RecargaCupoDialog.vue -->
 <template>
-  <q-dialog v-model="visible" persistent>
+  <q-dialog
+    :model-value="modelValue"
+    @update:model-value="(val) => emit('update:modelValue', val)"
+    persistent
+  >
     <q-card style="min-width: 400px">
-      <q-card-section class="row items-center">
-        <div class="text-h6">Recargar Cupo</div>
+      <q-card-section class="row items-center q-pb-none">
+        <div class="text-h6">Recarga Extra de Cupo</div>
         <q-space />
         <q-btn icon="close" flat round dense v-close-popup />
       </q-card-section>
 
-      <q-card-section v-if="cupoInfo">
-        <q-item>
-          <q-item-section>
-            <q-item-label caption>Dependencia</q-item-label>
-            <q-item-label>{{ cupoInfo.CupoBase?.Dependencia?.nombre_dependencia || 'N/A' }}</q-item-label>
-          </q-item-section>
-        </q-item>
-        <q-item>
-          <q-item-section>
-            <q-item-label caption>Saldo Actual</q-item-label>
-            <q-item-label class="text-weight-bold">{{ cupoInfo.cantidad_disponible }} L</q-item-label>
-          </q-item-section>
-        </q-item>
+      <q-card-section class="q-pt-sm">
+        <div class="text-subtitle2 text-primary" v-if="cupo">
+          {{ cupo.CupoBase?.Categoria?.nombre }} - {{ cupo.CupoBase?.Dependencia?.nombre_dependencia }}
+        </div>
+        <div class="text-caption text-grey" v-if="cupo">
+          Saldo Actual: <strong>{{ cupo.cantidad_disponible }} L</strong>
+        </div>
       </q-card-section>
 
-      <q-card-section>
-        <q-form @submit="onSubmit" class="q-gutter-md">
+      <q-form @submit.prevent="onSave">
+        <q-card-section class="q-gutter-md">
           <q-input
-            v-model.number="form.cantidad"
-            label="Cantidad a Recargar (Litros) *"
-            outlined
             dense
+            v-model.number="formData.cantidad"
             type="number"
-            min="1"
-            :rules="[(val) => val > 0 || 'Debe ser mayor a 0']"
+            label="Cantidad a Recargar (Litros)"
+            suffix="L"
+            autofocus
+            :rules="[
+              (val) => !!val || 'Campo requerido',
+              (val) => val > 0 || 'La cantidad debe ser mayor a 0'
+            ]"
           />
 
           <q-input
-            v-model="form.motivo"
-            label="Motivo de la Recarga"
-            outlined
             dense
+            v-model="formData.motivo"
             type="textarea"
+            label="Motivo de la Recarga"
+            rows="3"
+            :rules="[(val) => !!val || 'Campo requerido']"
           />
+        </q-card-section>
 
-          <div class="row justify-end q-mt-md">
-            <q-btn
-              label="Cancelar"
-              color="negative"
-              flat
-              v-close-popup
-              class="q-mr-sm"
-            />
-            <q-btn
-              label="Confirmar Recarga"
-              type="submit"
-              color="primary"
-              :loading="loading"
-            />
-          </div>
-        </q-form>
-      </q-card-section>
+        <q-card-actions align="right">
+          <q-btn flat label="Cancelar" v-close-popup />
+          <q-btn flat label="Confirmar Recarga" type="submit" color="primary" :loading="loading" />
+        </q-card-actions>
+      </q-form>
     </q-card>
   </q-dialog>
 </template>
 
 <script setup>
-import { ref, computed, watch } from "vue";
-import { useCupoStore } from "../../stores/cupoStore";
+import { ref } from "vue";
 
 const props = defineProps({
   modelValue: Boolean,
-  cupoInfo: Object,
+  cupo: Object, // El registro de CupoActual
+  loading: Boolean
 });
 
-const emit = defineEmits(["update:modelValue"]);
+const emit = defineEmits(["update:modelValue", "save"]);
 
-const store = useCupoStore();
-const loading = ref(false);
-
-const visible = computed({
-  get: () => props.modelValue,
-  set: (val) => emit("update:modelValue", val),
+const formData = ref({
+  cantidad: 0,
+  motivo: ""
 });
 
-const form = ref({
-  id_cupo_base: null,
-  cantidad: null,
-  motivo: "",
-});
-
-watch(
-  () => props.cupoInfo,
-  (val) => {
-    if (val) {
-      form.value = {
-        id_cupo_base: val.id_cupo_base,
-        cantidad: null,
-        motivo: "",
-      };
-    }
-  },
-  { immediate: true }
-);
-
-const onSubmit = async () => {
-  loading.value = true;
-  const success = await store.recargarCupo(form.value);
-  loading.value = false;
-
-  if (success) {
-    visible.value = false;
-  }
-};
+function onSave() {
+  emit("save", {
+    id_cupo_base: props.cupo.id_cupo_base,
+    cantidad: formData.value.cantidad,
+    motivo: formData.value.motivo
+  });
+}
 </script>

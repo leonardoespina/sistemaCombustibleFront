@@ -11,7 +11,7 @@
               <b>
                 Gerencia de Tecnologia y de Información TI
                 <b>Sistema de Registro y Control de Combustible</b></b
-              ><TR> </TR>
+              >
             </div>
 
             <q-img
