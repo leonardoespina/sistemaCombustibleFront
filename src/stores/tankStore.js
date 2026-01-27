@@ -3,6 +3,7 @@ import { defineStore } from "pinia";
 import { ref } from "vue";
 import { useQuasar } from "quasar";
 import api from "../api/index.js";
+import socket from "../services/socket";
 
 export const useTankStore = defineStore("tanks", () => {
   const $q = useQuasar();
@@ -14,10 +15,14 @@ export const useTankStore = defineStore("tanks", () => {
   const pagination = ref({
     page: 1,
     rowsPerPage: 10,
-    sortBy: "codigo", // Ordenar por código por defecto
-    descending: false,
+    sortBy: "id_tanque",
+    descending: true,
     rowsNumber: 0,
   });
+
+  // Listas auxiliares para el formulario
+  const llenaderos = ref([]);
+  const tiposCombustible = ref([]);
 
   // --- ACTIONS ---
 
@@ -34,16 +39,12 @@ export const useTankStore = defineStore("tanks", () => {
       const response = await api.get("/tanques", { params });
       rows.value = response.data.data;
       pagination.value.rowsNumber = response.data.pagination.totalItems;
+    } catch (error) {
+      console.error("Error al obtener tanques:", error);
     } finally {
       loading.value = false;
     }
   }
-
-  // ... (imports y state iguales) ...
-
-  // --- ACTIONS ---
-
-  // ... fetchTanks igual ...
 
   async function createTank(tankData) {
     loading.value = true;
@@ -53,7 +54,6 @@ export const useTankStore = defineStore("tanks", () => {
       await fetchTanks();
       return true;
     } catch (error) {
-      // El interceptor muestra el error, pero retornamos false para que el diálogo no se cierre
       return false;
     } finally {
       loading.value = false;
@@ -80,9 +80,43 @@ export const useTankStore = defineStore("tanks", () => {
       const response = await api.delete(`/tanques/${tankId}`);
       $q.notify({ type: "positive", message: response.data.msg });
       await fetchTanks();
+    } catch (error) {
+       console.error(error);
     } finally {
       loading.value = false;
     }
+  }
+
+  // --- AUXILIARY LISTS ---
+
+  async function fetchLlenaderosList() {
+    try {
+      const response = await api.get("/llenaderos/lista");
+      llenaderos.value = response.data;
+    } catch (error) {
+      console.error("Error llenaderos:", error);
+    }
+  }
+
+  async function fetchFuelTypesList() {
+    try {
+      const response = await api.get("/tipos-combustible/lista");
+      tiposCombustible.value = response.data;
+    } catch (error) {
+      console.error("Error combustibles:", error);
+    }
+  }
+
+  // --- SOCKET IO ---
+  
+  function initSocket() {
+    socket.on("tanque:creado", () => fetchTanks());
+    socket.on("tanque:actualizado", () => fetchTanks());
+  }
+
+  function cleanupSocket() {
+    socket.off("tanque:creado");
+    socket.off("tanque:actualizado");
   }
 
   return {
@@ -90,9 +124,15 @@ export const useTankStore = defineStore("tanks", () => {
     loading,
     filter,
     pagination,
+    llenaderos,
+    tiposCombustible,
     fetchTanks,
     createTank,
     updateTank,
     deleteTank,
+    fetchLlenaderosList,
+    fetchFuelTypesList,
+    initSocket,
+    cleanupSocket
   };
 });

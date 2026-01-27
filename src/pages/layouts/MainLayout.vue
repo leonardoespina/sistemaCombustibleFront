@@ -201,9 +201,15 @@
               <q-item-section>Huella</q-item-section>
             </q-item>
 
-            <!-- Vehículos -->
-
-            <!-- Tanques -->
+            <q-item
+              clickable
+              v-ripple
+              to="/tanques"
+              @click="leftDrawerOpen = false"
+            >
+              <q-item-section avatar><q-icon name="oil_barrel" /></q-item-section>
+              <q-item-section>Gestión de Tanques</q-item-section>
+            </q-item>
           </q-list>
         </q-expansion-item>
 
