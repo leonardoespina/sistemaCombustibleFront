@@ -31,6 +31,7 @@
             </div>
           </div>
 
+<<<<<<< HEAD
           <!-- === SIN PLACA (CHECKBOX) === -->
           <div class="row q-mb-md bg-grey-1 q-pa-sm rounded-borders">
             <div class="col-12 flex items-center">
@@ -44,6 +45,8 @@
             </div>
           </div>
 
+=======
+>>>>>>> 02b334619dae414adb78ae740ff2a77f2151687d
           <div class="row q-col-gutter-md">
             <!-- Sección: Identificación -->
             <div class="col-12 text-subtitle2 text-primary">Identificación</div>
@@ -153,7 +156,10 @@
 import { ref, watch, onMounted, toRefs, nextTick, computed } from "vue";
 import { useTipoCombustibleStore } from "../../stores/tipoCombustibleStore";
 import OrganizationalHierarchy from "../OrganizationalHierarchy.vue";
+<<<<<<< HEAD
 import api from "../../api/index.js";
+=======
+>>>>>>> 02b334619dae414adb78ae740ff2a77f2151687d
 
 const props = defineProps({
   modelValue: Boolean,
@@ -169,7 +175,10 @@ const emit = defineEmits(["update:modelValue", "save", "brand-changed"]);
 const formData = ref({});
 const { brands, models } = toRefs(props);
 const filteredBrandOptions = ref([]);
+<<<<<<< HEAD
 const loadingCorrelativo = ref(false);
+=======
+>>>>>>> 02b334619dae414adb78ae740ff2a77f2151687d
 
 const tipoCombustibleStore = useTipoCombustibleStore();
 
@@ -281,6 +290,7 @@ function filterBrandFn(val, update) {
   });
 }
 
+<<<<<<< HEAD
 // --- OBTENER ÚLTIMO CORRELATIVO ---
 async function obtenerUltimoCorrelativo() {
   try {
@@ -311,6 +321,8 @@ async function onSinPlacaChange() {
   }
 }
 
+=======
+>>>>>>> 02b334619dae414adb78ae740ff2a77f2151687d
 async function onSave() {
   await nextTick();
   const payload = {

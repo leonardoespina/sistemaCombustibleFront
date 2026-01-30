@@ -4,7 +4,11 @@
     @update:model-value="(val) => emit('update:modelValue', val)"
     persistent
   >
+<<<<<<< HEAD
     <q-card style="width: 600px; max-width: 80vw">
+=======
+    <q-card style="width: 500px; max-width: 80vw">
+>>>>>>> 02b334619dae414adb78ae740ff2a77f2151687d
       <q-card-section>
         <div class="text-h6">
           {{ isEditing ? "Editar Subdependencia" : "Nueva Subdependencia" }}
@@ -23,7 +27,10 @@
             emit-value
             map-options
             :rules="[(val) => !!val || 'Requerido']"
+<<<<<<< HEAD
             @update:model-value="onDependenciaChange"
+=======
+>>>>>>> 02b334619dae414adb78ae740ff2a77f2151687d
           />
           <q-input
             dense
@@ -31,6 +38,7 @@
             label="Nombre"
             :rules="[(val) => !!val || 'Requerido']"
           />
+<<<<<<< HEAD
           
           <!-- Campos condicionales según tipo de venta -->
           <div v-if="dependenciaSeleccionada" class="q-mt-md">
@@ -137,6 +145,8 @@
             </div>
           </div>
 
+=======
+>>>>>>> 02b334619dae414adb78ae740ff2a77f2151687d
           <q-select
             v-if="isEditing"
             dense
@@ -156,7 +166,11 @@
 </template>
 
 <script setup>
+<<<<<<< HEAD
 import { ref, watch, onMounted, onUnmounted, computed } from "vue";
+=======
+import { ref, watch, onMounted, onUnmounted } from "vue";
+>>>>>>> 02b334619dae414adb78ae740ff2a77f2151687d
 import { useDependenciaStore } from "../../stores/dependenciaStore.js";
 import { storeToRefs } from "pinia";
 
@@ -172,7 +186,10 @@ const dependenciaStore = useDependenciaStore();
 const { rows: dependenciaOptions } = storeToRefs(dependenciaStore);
 
 const formData = ref({});
+<<<<<<< HEAD
 const dependenciaSeleccionada = ref(null);
+=======
+>>>>>>> 02b334619dae414adb78ae740ff2a77f2151687d
 
 onMounted(() => {
     dependenciaStore.fetchDependencias();
@@ -183,6 +200,7 @@ onUnmounted(() => {
     dependenciaStore.cleanupSocket();
 });
 
+<<<<<<< HEAD
 // Obtener la dependencia seleccionada para mostrar el tipo de venta
 const onDependenciaChange = (dependenciaId) => {
   if (dependenciaId) {
@@ -193,6 +211,8 @@ const onDependenciaChange = (dependenciaId) => {
 };
 
 // Watch para cargar datos iniciales y dependencia seleccionada
+=======
+>>>>>>> 02b334619dae414adb78ae740ff2a77f2151687d
 watch(
   () => props.modelValue,
   (isNowOpen) => {
@@ -200,6 +220,7 @@ watch(
       formData.value = {
         id_dependencia: props.initialData?.id_dependencia || null,
         nombre: props.initialData?.nombre || "",
+<<<<<<< HEAD
         ubicacion: props.initialData?.ubicacion || "",
         responsable: props.initialData?.responsable || "",
         cedula_rif: props.initialData?.cedula_rif || "",
@@ -213,10 +234,15 @@ watch(
       } else {
         dependenciaSeleccionada.value = null;
       }
+=======
+        estatus: props.initialData?.estatus || "ACTIVO",
+      };
+>>>>>>> 02b334619dae414adb78ae740ff2a77f2151687d
     }
   }
 );
 
+<<<<<<< HEAD
 // Watch para actualizar dependencia seleccionada cuando cambien las opciones
 watch(
   () => dependenciaOptions.value,
@@ -228,6 +254,8 @@ watch(
   { immediate: true }
 );
 
+=======
+>>>>>>> 02b334619dae414adb78ae740ff2a77f2151687d
 function onSave() {
   emit("save", formData.value);
 }

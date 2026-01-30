@@ -39,12 +39,29 @@
               <q-input dense v-model="formData.codigo" label="Código" />
             </div>
             <div class="col-12 col-md-6">
+<<<<<<< HEAD
               <q-select
                 dense
                 v-model="formData.tipo_venta"
                 :options="['INSTITUCIONAL', 'VENTA', 'AMBOS']"
                 label="Tipo de Solicitud"
                 :rules="[(val) => !!val || 'Requerido']"
+=======
+              <q-input dense v-model="formData.ubicacion" label="Ubicación" />
+            </div>
+            <div class="col-12 col-md-6">
+              <q-input
+                dense
+                v-model="formData.nombre_apellido"
+                label="Responsable (Nombre/Apellido)"
+              />
+            </div>
+            <div class="col-12 col-md-6">
+              <q-input
+                dense
+                v-model="formData.cedula"
+                label="Cédula Responsable"
+>>>>>>> 02b334619dae414adb78ae740ff2a77f2151687d
               />
             </div>
             <div class="col-12 col-md-6" v-if="isEditing">
@@ -102,8 +119,15 @@ watch(
       formData.value = {
         id_categoria: props.initialData?.id_categoria || null,
         nombre_dependencia: props.initialData?.nombre_dependencia || "",
+<<<<<<< HEAD
         codigo: props.initialData?.codigo || "",
         tipo_venta: props.initialData?.tipo_venta || "INSTITUCIONAL",
+=======
+        nombre_apellido: props.initialData?.nombre_apellido || "",
+        cedula: props.initialData?.cedula || "",
+        ubicacion: props.initialData?.ubicacion || "",
+        codigo: props.initialData?.codigo || "",
+>>>>>>> 02b334619dae414adb78ae740ff2a77f2151687d
         estatus: props.initialData?.estatus || "ACTIVO",
       };
     }

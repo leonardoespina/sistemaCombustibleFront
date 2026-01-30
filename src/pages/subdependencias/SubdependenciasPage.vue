@@ -35,7 +35,11 @@
 
         <template v-slot:body-cell-dependencia="props">
           <q-td :props="props">
+<<<<<<< HEAD
             {{ props.row.Dependencia?.nombre_dependencia || "N/A" }}
+=======
+            {{ props.row.Dependencia?.nombre_dependencia || 'N/A' }}
+>>>>>>> 02b334619dae414adb78ae740ff2a77f2151687d
           </q-td>
         </template>
 
@@ -107,6 +111,7 @@ const isDeleteDialogVisible = ref(false);
 const editingItem = ref(null);
 
 const columns = ref([
+<<<<<<< HEAD
   {
     name: "dependencia",
     label: "Dependencia",
@@ -129,6 +134,11 @@ const columns = ref([
     sortable: true,
     align: "center",
   },
+=======
+  { name: "dependencia", label: "Dependencia", field: row => row.Dependencia?.nombre_dependencia, align: "left" },
+  { name: "nombre", label: "Nombre", field: "nombre", sortable: true, align: "left" },
+  { name: "estatus", label: "Estatus", field: "estatus", sortable: true, align: "center" },
+>>>>>>> 02b334619dae414adb78ae740ff2a77f2151687d
   { name: "actions", label: "Acciones", align: "right" },
 ]);
 
@@ -158,7 +168,11 @@ async function onFormSave(formData) {
   if (editingItem.value) {
     success = await subdependenciaStore.updateSubdependencia(
       editingItem.value.id_subdependencia,
+<<<<<<< HEAD
       formData,
+=======
+      formData
+>>>>>>> 02b334619dae414adb78ae740ff2a77f2151687d
     );
   } else {
     success = await subdependenciaStore.createSubdependencia(formData);
@@ -169,9 +183,13 @@ async function onFormSave(formData) {
 }
 
 async function confirmDelete() {
+<<<<<<< HEAD
   await subdependenciaStore.deleteSubdependencia(
     editingItem.value.id_subdependencia,
   );
+=======
+  await subdependenciaStore.deleteSubdependencia(editingItem.value.id_subdependencia);
+>>>>>>> 02b334619dae414adb78ae740ff2a77f2151687d
   isDeleteDialogVisible.value = false;
 }
 

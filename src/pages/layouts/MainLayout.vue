@@ -50,7 +50,10 @@
         <!-- ================================== -->
         <!--          CONFIGURACIÓN             -->
         <!-- ================================== -->
+<<<<<<< HEAD
 
+=======
+>>>>>>> 02b334619dae414adb78ae740ff2a77f2151687d
         <q-expansion-item
           expand-separator
           icon="settings"
@@ -161,6 +164,7 @@
             <q-item
               clickable
               v-ripple
+<<<<<<< HEAD
               to="/solicitudes"
               @click="leftDrawerOpen = false"
             >
@@ -173,6 +177,8 @@
             <q-item
               clickable
               v-ripple
+=======
+>>>>>>> 02b334619dae414adb78ae740ff2a77f2151687d
               to="/cupos"
               @click="leftDrawerOpen = false"
             >
@@ -198,9 +204,13 @@
               to="/llenaderos"
               @click="leftDrawerOpen = false"
             >
+<<<<<<< HEAD
               <q-item-section avatar
                 ><q-icon name="ev_station"
               /></q-item-section>
+=======
+              <q-item-section avatar><q-icon name="ev_station" /></q-item-section>
+>>>>>>> 02b334619dae414adb78ae740ff2a77f2151687d
               <q-item-section>Llenaderos</q-item-section>
             </q-item>
             <!-- Huella -->
@@ -222,13 +232,18 @@
               to="/tanques"
               @click="leftDrawerOpen = false"
             >
+<<<<<<< HEAD
               <q-item-section avatar
                 ><q-icon name="oil_barrel"
               /></q-item-section>
+=======
+              <q-item-section avatar><q-icon name="oil_barrel" /></q-item-section>
+>>>>>>> 02b334619dae414adb78ae740ff2a77f2151687d
               <q-item-section>Gestión de Tanques</q-item-section>
             </q-item>
           </q-list>
         </q-expansion-item>
+<<<<<<< HEAD
         <q-item
           clickable
           v-ripple
@@ -238,6 +253,9 @@
           <q-item-section avatar><q-icon name="ev_station" /></q-item-section>
           <q-item-section>Dispensadores</q-item-section>
         </q-item>
+=======
+
+>>>>>>> 02b334619dae414adb78ae740ff2a77f2151687d
         <!-- ================================== -->
         <!--          GESTIÓN DE CUPOS          -->
         <!-- ================================== -->
