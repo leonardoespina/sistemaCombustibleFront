@@ -1,0 +1,45 @@
+Existen Dos tipos de solicitudes (Institucional, Venta).
+
+El usuario logeado tiene asociado una Dependencia,Categoria y Subdependencia.
+El usuario selecciona el tipo de combustible a solicitar, la cual este realiza una consulta 
+asociando los llenaderos asociados al tipo de combustible.
+El usuario selecciona el llenadero consultado.
+el usuario podra ver las lista de todas las subdepencia y al seleccionar la misma debera desplegar 
+los vehiculos asociadas a la misma
+cargar la cantidad de litros de combustibles
+nombre del solicitande: nombre del usuario
+fecha hora 
+tipo de suministros(Bidon o Regular)
+El sistema mostrara la cuota de la subdependencia asociada 
+cuota mensual,disponibilidad,periodo,litros consumido, % de litros consumido.
+
+Validaciones
+La solicitud tiene un periodo de 24 horas, si pasa este periodo se vence y devuelve la cantida del cupo.
+Se debera capturar el litraje y restarla a cupo, no restar del llenadero.
+
+El usuario con Rol (Jefe de Division o Gerente) asocidas a sus subdependencias.
+Pueden aprobar las solicitud y rechazar si rechaza igual se devuelve el cupo.
+Al aprobar la solicitud pasa a un Estado Aprobado.
+Una vez que aprobada la solicitud. 
+El usuario de Alamcen conjuntamente, pasan su huella y el usuario que va a retirar el combustible. 
+la solicitud cambia a aprobado-impreso, se imprime el ticket con un codigo QR, 
+Numero de Tickect
+Fecha hora
+Subdependencia
+Placa del Vehiculo
+Litros 
+solicitante
+llenadero
+modelo
+marca
+Placa
+Autorizado(usuario aprobador)
+recibido(usuario que pasa la huella al retirar combustible)
+Tipo Combustible
+despacho:regular o bidon
+Almacenista
+conformidad PCP:
+
+Si el tickect no despacha estando impreso-aprobado, es decir si no se pasa por QR para terminar el proceso los cupos de igual forma se devuelven si de lo contrario se hace el descuento al llenadero. 
+
+Cuando la solicitud es de Tipo de Venta 
