@@ -15,7 +15,6 @@
       >
         <template v-slot:top>
           <q-input
-            borderless
             dense
             debounce="500"
             v-model="filter"
@@ -35,11 +34,7 @@
 
         <template v-slot:body-cell-categoria="props">
           <q-td :props="props">
-<<<<<<< HEAD
             {{ props.row.Categoria?.nombre || "N/A" }}
-=======
-            {{ props.row.Categoria?.nombre || 'N/A' }}
->>>>>>> 02b334619dae414adb78ae740ff2a77f2151687d
           </q-td>
         </template>
 
@@ -115,11 +110,7 @@ const columns = ref([
   {
     name: "categoria",
     label: "Categoría",
-<<<<<<< HEAD
     field: (row) => row.Categoria?.nombre,
-=======
-    field: row => row.Categoria?.nombre,
->>>>>>> 02b334619dae414adb78ae740ff2a77f2151687d
     align: "left",
   },
   {
@@ -136,18 +127,11 @@ const columns = ref([
     align: "left",
   },
   {
-<<<<<<< HEAD
     name: "tipo_venta",
     label: "Tipo Solicitud",
     field: "tipo_venta",
     sortable: true,
     align: "center",
-=======
-    name: "nombre_apellido",
-    label: "Responsable",
-    field: "nombre_apellido",
-    align: "left",
->>>>>>> 02b334619dae414adb78ae740ff2a77f2151687d
   },
   {
     name: "estatus",
@@ -185,11 +169,7 @@ async function onFormSave(formData) {
   if (editingItem.value) {
     success = await dependenciaStore.updateDependencia(
       editingItem.value.id_dependencia,
-<<<<<<< HEAD
       formData,
-=======
-      formData
->>>>>>> 02b334619dae414adb78ae740ff2a77f2151687d
     );
   } else {
     success = await dependenciaStore.createDependencia(formData);

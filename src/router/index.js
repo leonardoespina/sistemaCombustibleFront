@@ -82,14 +82,11 @@ const routes = [
         component: () => import("../pages/tanks/TankPage.vue"),
       },
       {
-<<<<<<< HEAD
         path: "dispensadores",
         name: "dispenser-list",
         component: () => import("../pages/dispensers/DispenserPage.vue"),
       },
       {
-=======
->>>>>>> 02b334619dae414adb78ae740ff2a77f2151687d
         path: "almacenistas",
         name: "warehouseman-list",
         component: () => import("../pages/warehouse/WarehousemanPage.vue"),
@@ -115,14 +112,6 @@ const routes = [
         component: () => import("../pages/measurements/MeasurementPage.vue"),
       },
       {
-<<<<<<< HEAD
-=======
-        path: "dispensadores",
-        name: "dispenser-list",
-        component: () => import("../pages/dispensers/DispenserPage.vue"),
-      },
-      {
->>>>>>> 02b334619dae414adb78ae740ff2a77f2151687d
         path: "cargas",
         name: "cistern-load-list",
         component: () => import("../pages/loads/CisternLoadPage.vue"),
@@ -180,14 +169,11 @@ const routes = [
         name: "llenadero-list",
         component: () => import("../pages/llenaderos/LlenaderoPage.vue"),
       },
-<<<<<<< HEAD
       {
         path: "solicitudes",
         name: "request-list",
         component: () => import("../pages/dispatches/RequestListPage.vue"),
       },
-=======
->>>>>>> 02b334619dae414adb78ae740ff2a77f2151687d
 
       // Aquí puedes seguir añadiendo más rutas protegidas, como /vehiculos, etc.
     ],

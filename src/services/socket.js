@@ -1,11 +1,7 @@
 import { io } from "socket.io-client";
 
 // URL del backend (debe coincidir con donde corre tu servidor Express)
-<<<<<<< HEAD
-const URL = "http://10.60.4.195:3000"; 
-=======
-const URL = "http://10.60.5.129:3000"; 
->>>>>>> 02b334619dae414adb78ae740ff2a77f2151687d
+const URL = "http://10.60.6.124:3000"; 
 
 const socket = io(URL, {
   autoConnect: true,

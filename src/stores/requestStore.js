@@ -56,6 +56,9 @@ export const useRequestStore = defineStore("requests", () => {
       await fetchRequests();
       return true;
     } catch (error) {
+      const errorMsg = error.response?.data?.msg || "Error al crear solicitud";
+      $q.notify({ type: "negative", message: errorMsg });
+      console.error("Error completo:", error.response?.data);
       return false;
     } finally {
       loading.value = false;
@@ -73,6 +76,8 @@ export const useRequestStore = defineStore("requests", () => {
       await fetchRequests();
       return true;
     } catch (error) {
+      const errorMsg = error.response?.data?.msg || "Error al aprobar solicitud";
+      $q.notify({ type: "negative", message: errorMsg });
       return false;
     } finally {
       loading.value = false;
@@ -90,6 +95,8 @@ export const useRequestStore = defineStore("requests", () => {
       await fetchRequests();
       return response.data; // Retorna datos del ticket para imprimir
     } catch (error) {
+      const errorMsg = error.response?.data?.msg || "Error al imprimir ticket";
+      $q.notify({ type: "negative", message: errorMsg });
       return null;
     } finally {
       loading.value = false;
@@ -106,6 +113,8 @@ export const useRequestStore = defineStore("requests", () => {
       $q.notify({ type: "positive", message: response.data.msg });
       return response.data;
     } catch (error) {
+      const errorMsg = error.response?.data?.msg || "Error al reimprimir ticket";
+      $q.notify({ type: "negative", message: errorMsg });
       return null;
     } finally {
       loading.value = false;
@@ -125,6 +134,8 @@ export const useRequestStore = defineStore("requests", () => {
       await fetchRequests();
       return true;
     } catch (error) {
+      const errorMsg = error.response?.data?.msg || "Error al despachar solicitud";
+      $q.notify({ type: "negative", message: errorMsg });
       return false;
     } finally {
       loading.value = false;
@@ -153,6 +164,8 @@ export const useRequestStore = defineStore("requests", () => {
     fetchRequests,
     createRequest,
     approveRequest,
+    printTicket,
+    reprintTicket,
     dispatchRequest,
     initSocket,
     cleanupSocket,

@@ -121,7 +121,6 @@ const columns = [
     align: "left",
   },
   {
-<<<<<<< HEAD
     name: "capacidad",
     label: "Capacidad (litros)",
     field: "capacidad",
@@ -145,8 +144,6 @@ const columns = [
     align: "left",
   },
   {
-=======
->>>>>>> 02b334619dae414adb78ae740ff2a77f2151687d
     name: "estado",
     label: "Estado",
     field: "estado",

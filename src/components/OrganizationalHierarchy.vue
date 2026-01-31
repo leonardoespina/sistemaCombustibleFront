@@ -20,9 +20,7 @@
     >
       <template v-slot:no-option>
         <q-item>
-          <q-item-section class="text-grey">
-            No hay resultados
-          </q-item-section>
+          <q-item-section class="text-grey"> No hay resultados </q-item-section>
         </q-item>
       </template>
     </q-select>
@@ -46,9 +44,7 @@
     >
       <template v-slot:no-option>
         <q-item>
-          <q-item-section class="text-grey">
-            No hay resultados
-          </q-item-section>
+          <q-item-section class="text-grey"> No hay resultados </q-item-section>
         </q-item>
       </template>
     </q-select>
@@ -72,9 +68,7 @@
     >
       <template v-slot:no-option>
         <q-item>
-          <q-item-section class="text-grey">
-            No hay resultados
-          </q-item-section>
+          <q-item-section class="text-grey"> No hay resultados </q-item-section>
         </q-item>
       </template>
     </q-select>
@@ -228,7 +222,10 @@ const resetPagination = (type) => {
 
 // Filter Functions (Lazy Loading / Server Side)
 const filterCategoria = async (val, update) => {
-  if (val === pagination.value.categoria.search && categoriaOptions.value.length > 0) {
+  if (
+    val === pagination.value.categoria.search &&
+    categoriaOptions.value.length > 0
+  ) {
     update();
     return;
   }
@@ -278,7 +275,10 @@ const filterDependencia = async (val, update) => {
     return;
   }
 
-  if (val === pagination.value.dependencia.search && dependenciaOptions.value.length > 0) {
+  if (
+    val === pagination.value.dependencia.search &&
+    dependenciaOptions.value.length > 0
+  ) {
     update();
     return;
   }
@@ -334,7 +334,10 @@ const filterSubdependencia = async (val, update) => {
     return;
   }
 
-  if (val === pagination.value.subdependencia.search && subdependenciaOptions.value.length > 0) {
+  if (
+    val === pagination.value.subdependencia.search &&
+    subdependenciaOptions.value.length > 0
+  ) {
     update();
     return;
   }

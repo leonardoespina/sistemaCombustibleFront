@@ -46,9 +46,9 @@
         <!-- Celda Litros -->
         <template v-slot:body-cell-litros="props">
           <q-td :props="props">
-            <div class="text-weight-bold">{{ props.row.litros_solicitado }} L</div>
-            <div v-if="props.row.litros_despachados > 0" class="text-caption text-grey">
-              Surtido: {{ props.row.litros_despachados }} L
+            <div class="text-weight-bold">{{ props.row.cantidad_litros }} L</div>
+            <div v-if="props.row.cantidad_despachada > 0" class="text-caption text-grey">
+              Surtido: {{ props.row.cantidad_despachada }} L
             </div>
           </q-td>
         </template>
@@ -56,9 +56,9 @@
         <!-- Acciones -->
         <template v-slot:body-cell-actions="props">
           <q-td :props="props" class="q-gutter-x-sm">
-            <!-- Aprobar (Solo si está por aprobar) -->
+            <!-- Aprobar (Solo si está PENDIENTE) -->
             <q-btn
-              v-if="props.row.estatus === 'POR_APROBAR'"
+              v-if="props.row.estado === 'PENDIENTE'"
               dense
               round
               flat
@@ -69,9 +69,9 @@
               <q-tooltip>Aprobar Solicitud</q-tooltip>
             </q-btn>
 
-            <!-- Imprimir (Solo si está aprobado) -->
+            <!-- Imprimir (Solo si está APROBADA) -->
             <q-btn
-              v-if="props.row.estatus === 'APROBADO' || props.row.estatus === 'IMPRESO_APROBADO'"
+              v-if="props.row.estado === 'APROBADA'"
               dense
               round
               flat
@@ -84,7 +84,7 @@
 
             <!-- Rechazar (Solo si no está despachado/vencido) -->
             <q-btn
-              v-if="['POR_APROBAR', 'APROBADO'].includes(props.row.estatus)"
+              v-if="['PENDIENTE', 'APROBADA'].includes(props.row.estado)"
               dense
               round
               flat
@@ -108,7 +108,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted, onUnmounted } from "vue";
+import { ref, onMounted, onUnmounted, defineAsyncComponent } from "vue";
 import { storeToRefs } from "pinia";
 import { useRequestStore } from "../../stores/requestStore.js";
 import RequestFormDialog from "../../components/dispatches/RequestFormDialog.vue";
@@ -119,15 +119,17 @@ const requestStore = useRequestStore();
 const { rows, loading, filter, pagination } = storeToRefs(requestStore);
 
 const isFormDialogVisible = ref(false);
+const biometricDialogRef = ref(null);
+const biometricDialogVisible = ref(false);
 
 const columns = [
   { name: "id_solicitud", label: "ID", field: "id_solicitud", sortable: true, align: "left" },
-  { name: "ticket", label: "Ticket", field: "numero_ticket", sortable: true, align: "left" },
-  { name: "fecha", label: "Fecha/Hora", field: row => `${row.fecha} ${row.hora}`, align: "left" },
+  { name: "ticket", label: "Ticket", field: "codigo_ticket", sortable: true, align: "left" },
+  { name: "fecha", label: "Fecha/Hora", field: row => row.fecha_solicitud ? new Date(row.fecha_solicitud).toLocaleString() : 'N/A', align: "left" },
   { name: "placa", label: "Vehículo", field: "placa", sortable: true, align: "left" },
-  { name: "solicitante", label: "Solicitante", field: "solicitante_nombre", align: "left" },
-  { name: "litros", label: "Cantidad", align: "right" },
-  { name: "estatus", label: "Estatus", field: "estatus", align: "center" },
+  { name: "solicitante", label: "Solicitante", field: row => row.Solicitante ? `${row.Solicitante.nombre} ${row.Solicitante.apellido}` : 'N/A', align: "left" },
+  { name: "litros", label: "Cantidad", field: "cantidad_litros", align: "right" },
+  { name: "estatus", label: "Estatus", field: "estado", align: "center" },
   { name: "actions", label: "Acciones", align: "right" },
 ];
 
@@ -149,7 +151,7 @@ async function onFormSave(formData) {
 function onApprove(row) {
   $q.dialog({
     title: 'Confirmar Aprobación',
-    message: `¿Desea aprobar la solicitud del vehículo ${row.placa} por ${row.litros_solicitado}L?`,
+    message: `¿Desea aprobar la solicitud del vehículo ${row.placa} por ${row.cantidad_litros}L?`,
     cancel: true,
     persistent: true
   }).onOk(async () => {
@@ -158,8 +160,24 @@ function onApprove(row) {
 }
 
 function onPrint(row) {
-  // Aquí irá la lógica para abrir la ventana de impresión con el QR
-  $q.notify({ type: 'info', message: 'Generando ticket de impresión...' });
+  console.log('onPrint llamado con row:', row);
+  biometricDialogVisible.value = true;
+  // Abrir diálogo de verificación biométrica
+  $q.dialog({
+    component: defineAsyncComponent(() => import('../../components/dispatches/BiometricVerificationDialog.vue')),
+    componentProps: {
+      modelValue: true,
+      requestData: row
+    }
+  }).onOk((ticketData) => {
+    $q.notify({ type: 'success', message: 'Ticket generado exitosamente' });
+    console.log('Ticket generado:', ticketData);
+    // Aquí podrías abrir un diálogo de vista previa del ticket
+  }).onCancel(() => {
+    console.log('Diálogo cancelado');
+  }).onDismiss(() => {
+    console.log('Diálogo cerrado');
+  });
 }
 
 function onReject(row) {
@@ -173,20 +191,19 @@ function onReject(row) {
     cancel: true,
     persistent: true
   }).onOk(async (data) => {
-     // Lógica para rechazar (Pendiente implementar action en store si se requiere motivo)
      $q.notify({ type: 'warning', message: 'Funcionalidad de rechazo en desarrollo' });
   });
 }
 
 function getStatusColor(status) {
   switch (status) {
-    case 'POR_APROBAR': return 'orange';
-    case 'APROBADO': return 'blue';
-    case 'IMPRESO_APROBADO': return 'indigo';
-    case 'DESPACHADO': return 'green';
-    case 'RECHAZADO': return 'red';
-    case 'VENCIDO': return 'grey-8';
-    case 'CANCELADO': return 'grey-6';
+    case 'PENDIENTE': return 'orange';
+    case 'APROBADA': return 'blue';
+    case 'IMPRESA': return 'indigo';
+    case 'DESPACHADA': return 'green';
+    case 'RECHAZADA': return 'red';
+    case 'VENCIDA': return 'grey-8';
+    case 'CANCELADA': return 'grey-6';
     default: return 'black';
   }
 }

@@ -74,6 +74,16 @@ export const useSubdependenciaStore = defineStore("subdependencias", () => {
     }
   }
 
+  async function fetchSubdependenciasByDependencia(id_dependencia) {
+    try {
+      const response = await api.get("/subdependencias", { params: { id_dependencia } });
+      return response.data.data || response.data;
+    } catch (error) {
+      console.error(error);
+      return [];
+    }
+  }
+
   function initSocket() {
     socket.on("subdependencia:creado", fetchSubdependencias);
     socket.on("subdependencia:actualizado", fetchSubdependencias);
@@ -93,6 +103,7 @@ export const useSubdependenciaStore = defineStore("subdependencias", () => {
     createSubdependencia,
     updateSubdependencia,
     deleteSubdependencia,
+    fetchSubdependenciasByDependencia,
     initSocket,
     cleanupSocket,
   };

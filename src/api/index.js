@@ -5,11 +5,7 @@ import { Notify } from "quasar";
 
 // Creamos una instancia de Axios con configuración base
 const api = axios.create({
-<<<<<<< HEAD
-  baseURL: "http://10.60.4.195:3000/api", //"http://10.60.6.57:3000/api", // O http://localhost:3000/api
-=======
-  baseURL: "http://10.60.5.129:3000/api", //"http://10.60.6.57:3000/api", // O http://localhost:3000/api
->>>>>>> 02b334619dae414adb78ae740ff2a77f2151687d
+  baseURL: "http://10.60.6.124:3000/api", //"http://10.60.6.57:3000/api", // O http://localhost:3000/api
 });
 
 // --- ¡NUEVO! INTERCEPTOR DE PETICIONES ---

@@ -233,15 +233,12 @@ const columnsActual = [
     sortable: true 
   },
   { 
-<<<<<<< HEAD
     name: "subdependencia", 
     label: "Subdependencia", 
     field: row => row.CupoBase?.Subdependencia?.nombre || '-', 
     align: "left" 
   },
   { 
-=======
->>>>>>> 02b334619dae414adb78ae740ff2a77f2151687d
     name: "categoria", 
     label: "Categoría", 
     field: row => row.CupoBase?.Categoria?.nombre || 'N/A', 
@@ -274,15 +271,12 @@ const columnsBase = [
     sortable: true 
   },
   { 
-<<<<<<< HEAD
     name: "subdependencia", 
     label: "Subdependencia", 
     field: row => row.Subdependencia?.nombre || '-', 
     align: "left" 
   },
   { 
-=======
->>>>>>> 02b334619dae414adb78ae740ff2a77f2151687d
     name: "combustible", 
     label: "Tipo Combustible", 
     field: row => row.TipoCombustible?.nombre || 'N/A', 
