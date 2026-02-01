@@ -69,7 +69,7 @@ const routes = [
       {
         path: "categorias",
         name: "categoria-list",
-        component: () => import("../pages/categoria/CategoriaPage.vue"), 
+        component: () => import("../pages/categoria/CategoriaPage.vue"),
       },
       {
         path: "dependencias",
@@ -173,6 +173,11 @@ const routes = [
         path: "solicitudes",
         name: "request-list",
         component: () => import("../pages/dispatches/RequestListPage.vue"),
+      },
+      {
+        path: "despacho",
+        name: "despacho-print",
+        component: () => import("../pages/dispatches/PrintRequestsPage.vue"),
       },
 
       // Aquí puedes seguir añadiendo más rutas protegidas, como /vehiculos, etc.

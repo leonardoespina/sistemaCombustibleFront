@@ -54,12 +54,12 @@ export const useRequestStore = defineStore("requests", () => {
       const response = await api.post("/solicitudes", requestData);
       $q.notify({ type: "positive", message: response.data.msg });
       await fetchRequests();
-      return true;
+      return response.data;
     } catch (error) {
       const errorMsg = error.response?.data?.msg || "Error al crear solicitud";
       $q.notify({ type: "negative", message: errorMsg });
       console.error("Error completo:", error.response?.data);
-      return false;
+      return null;
     } finally {
       loading.value = false;
     }
@@ -90,7 +90,7 @@ export const useRequestStore = defineStore("requests", () => {
   async function printTicket(requestId, huellas) {
     loading.value = true;
     try {
-      const response = await api.post(`/solicitudes/${requestId}/imprimir`, huellas);
+      const response = await api.post(`/despacho/imprimir/${requestId}`, huellas);
       $q.notify({ type: "positive", message: response.data.msg });
       await fetchRequests();
       return response.data; // Retorna datos del ticket para imprimir
@@ -109,7 +109,7 @@ export const useRequestStore = defineStore("requests", () => {
   async function reprintTicket(requestId) {
     loading.value = true;
     try {
-      const response = await api.post(`/solicitudes/${requestId}/reimprimir`);
+      const response = await api.post(`/despacho/reimprimir/${requestId}`);
       $q.notify({ type: "positive", message: response.data.msg });
       return response.data;
     } catch (error) {
@@ -123,13 +123,11 @@ export const useRequestStore = defineStore("requests", () => {
 
   /**
    * Cerrar despacho (Conciliación de litros y reintegro)
-   * dispatchData debe contener { codigo_ticket, cantidad_despachada_real }
    */
   async function dispatchRequest(dispatchData) {
     loading.value = true;
     try {
-      // POST /despachar (El ID viene en el QR/codigo_ticket)
-      const response = await api.post(`/solicitudes/despachar`, dispatchData);
+      const response = await api.post(`/despacho/despachar`, dispatchData);
       $q.notify({ type: "positive", message: response.data.msg });
       await fetchRequests();
       return true;
@@ -143,7 +141,7 @@ export const useRequestStore = defineStore("requests", () => {
   }
 
   // --- SOCKET IO ---
-  
+
   function initSocket() {
     socket.on("solicitud:creada", () => fetchRequests());
     socket.on("solicitud:actualizada", () => fetchRequests());

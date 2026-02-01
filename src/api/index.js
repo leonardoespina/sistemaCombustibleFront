@@ -45,11 +45,13 @@ api.interceptors.response.use(
     });
 
     // Si el error es 401 (Token no válido/expirado), podríamos redirigir al login
-    // EXCEPCIÓN: Si el error viene de /biometria/verificar con status 401, NO redirigir 
+    // EXCEPCIÓN: Si el error viene de /biometria/verificar o /despacho/validar-firma con status 401, NO redirigir 
     // ya que el backend usa 401 para "huella no coincide" en modo 1:1.
     if (error.response && error.response.status === 401) {
-      const isBiometricVerify = error.config.url.includes('/biometria/verificar');
-      
+      const isBiometricVerify = error.config.url.includes('/biometria/verificar') ||
+        error.config.url.includes('/despacho/validar-firma') ||
+        error.config.url.includes('/despacho/imprimir');
+
       if (!isBiometricVerify) {
         localStorage.removeItem("token");
         localStorage.removeItem("user");

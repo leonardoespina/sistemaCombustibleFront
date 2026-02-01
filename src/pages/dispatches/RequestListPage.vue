@@ -69,17 +69,19 @@
               <q-tooltip>Aprobar Solicitud</q-tooltip>
             </q-btn>
 
-            <!-- Imprimir (Solo si está APROBADA) -->
+
+
+            <!-- Reimprimir/Ver Ticket (Si ya está impreso) -->
             <q-btn
-              v-if="props.row.estado === 'APROBADA'"
+              v-if="['IMPRESA', 'DESPACHADA'].includes(props.row.estado)"
               dense
               round
               flat
-              color="primary"
+              color="indigo"
               icon="print"
-              @click="onPrint(props.row)"
+              @click="onViewTicket(props.row)"
             >
-              <q-tooltip>Imprimir Ticket / QR</q-tooltip>
+              <q-tooltip>Ver Ticket Digital</q-tooltip>
             </q-btn>
 
             <!-- Rechazar (Solo si no está despachado/vencido) -->
@@ -104,6 +106,12 @@
       v-model="isFormDialogVisible"
       @save="onFormSave"
     />
+
+    <!-- ¡NUEVO! Diálogo de Vista Previa de Ticket -->
+    <TicketPreviewDialog
+      v-model="isTicketVisible"
+      :ticket="selectedTicket"
+    />
   </q-page>
 </template>
 
@@ -112,6 +120,7 @@ import { ref, onMounted, onUnmounted, defineAsyncComponent } from "vue";
 import { storeToRefs } from "pinia";
 import { useRequestStore } from "../../stores/requestStore.js";
 import RequestFormDialog from "../../components/dispatches/RequestFormDialog.vue";
+import TicketPreviewDialog from "../../components/dispatches/TicketPreviewDialog.vue";
 import { useQuasar } from "quasar";
 
 const $q = useQuasar();
@@ -119,8 +128,9 @@ const requestStore = useRequestStore();
 const { rows, loading, filter, pagination } = storeToRefs(requestStore);
 
 const isFormDialogVisible = ref(false);
-const biometricDialogRef = ref(null);
-const biometricDialogVisible = ref(false);
+const isTicketVisible = ref(false);
+const selectedTicket = ref(null);
+
 
 const columns = [
   { name: "id_solicitud", label: "ID", field: "id_solicitud", sortable: true, align: "left" },
@@ -128,6 +138,7 @@ const columns = [
   { name: "fecha", label: "Fecha/Hora", field: row => row.fecha_solicitud ? new Date(row.fecha_solicitud).toLocaleString() : 'N/A', align: "left" },
   { name: "placa", label: "Vehículo", field: "placa", sortable: true, align: "left" },
   { name: "solicitante", label: "Solicitante", field: row => row.Solicitante ? `${row.Solicitante.nombre} ${row.Solicitante.apellido}` : 'N/A', align: "left" },
+  { name: "subdependencia", label: "Subdependencia", field: row => row.Subdependencia ? row.Subdependencia.nombre : 'N/A', align: "left" },
   { name: "litros", label: "Cantidad", field: "cantidad_litros", align: "right" },
   { name: "estatus", label: "Estatus", field: "estado", align: "center" },
   { name: "actions", label: "Acciones", align: "right" },
@@ -144,8 +155,66 @@ function openAddDialog() {
 }
 
 async function onFormSave(formData) {
-  const success = await requestStore.createRequest(formData);
-  if (success) isFormDialogVisible.value = false;
+  const response = await requestStore.createRequest(formData);
+  
+  if (response && response.data) {
+    // Cerrar el formulario inmediatamente
+    isFormDialogVisible.value = false;
+    
+    // Extraer datos para el resumen
+    const ticket = response.ticket || response.data.codigo_ticket || 'PENDIENTE';
+    const status = response.data.estado || 'PENDIENTE';
+    const placa = response.data.placa || formData.placa || 'N/A';
+    const litros = response.data.cantidad_litros || formData.cantidad_litros || '0';
+    const solicitante = response.data.solicitante || formData.solicitante || 'Usuario';
+    
+    // Mostrar diálogo con resumen detallado
+    $q.dialog({
+      title: '✅ ¡Solicitud Creada con Éxito!',
+      message: `
+        <div class="q-pa-sm">
+          <div class="text-subtitle1 text-center q-mb-md">La solicitud ha sido registrada en el sistema.</div>
+          
+          <div class="row q-col-gutter-sm bg-grey-2 q-pa-md rounded-borders">
+            <div class="col-12 text-center q-mb-sm">
+              <div class="text-caption text-uppercase text-grey-8">Número de Ticket</div>
+              <div class="text-h4 text-weight-bolder text-primary">${ticket}</div>
+            </div>
+            
+            <div class="col-6">
+              <div class="text-caption text-grey-8">Estatus</div>
+              <div class="text-weight-bold text-orange-9">${status}</div>
+            </div>
+            <div class="col-6 text-right">
+              <div class="text-caption text-grey-8">Vehículo</div>
+              <div class="text-weight-bold">${placa}</div>
+            </div>
+            
+            <div class="col-6">
+              <div class="text-caption text-grey-8">Solicitante</div>
+              <div class="text-weight-bold text-truncate" style="max-width: 150px">${solicitante}</div>
+            </div>
+             <div class="col-6 text-right">
+              <div class="text-caption text-grey-8">Cantidad</div>
+              <div class="text-weight-bold">${litros} Litros</div>
+            </div>
+          </div>
+
+          <div class="text-caption text-center text-grey-6 q-mt-md">
+            Por favor, indique al conductor que se dirija al área de despacho.
+          </div>
+        </div>
+      `,
+      html: true,
+      ok: {
+        label: 'Aceptar y Cerrar',
+        color: 'primary',
+        push: true,
+        size: 'md'
+      },
+      persistent: true
+    });
+  }
 }
 
 function onApprove(row) {
@@ -159,26 +228,20 @@ function onApprove(row) {
   });
 }
 
-function onPrint(row) {
-  console.log('onPrint llamado con row:', row);
-  biometricDialogVisible.value = true;
-  // Abrir diálogo de verificación biométrica
-  $q.dialog({
-    component: defineAsyncComponent(() => import('../../components/dispatches/BiometricVerificationDialog.vue')),
-    componentProps: {
-      modelValue: true,
-      requestData: row
+async function onViewTicket(row) {
+  try {
+    $q.loading.show({ message: 'Obteniendo datos del ticket...' });
+    const response = await requestStore.reprintTicket(row.id_solicitud);
+    if (response && response.ticket) {
+       selectedTicket.value = response.ticket;
+       isTicketVisible.value = true;
     }
-  }).onOk((ticketData) => {
-    $q.notify({ type: 'success', message: 'Ticket generado exitosamente' });
-    console.log('Ticket generado:', ticketData);
-    // Aquí podrías abrir un diálogo de vista previa del ticket
-  }).onCancel(() => {
-    console.log('Diálogo cancelado');
-  }).onDismiss(() => {
-    console.log('Diálogo cerrado');
-  });
+  } finally {
+    $q.loading.hide();
+  }
 }
+
+
 
 function onReject(row) {
   $q.dialog({

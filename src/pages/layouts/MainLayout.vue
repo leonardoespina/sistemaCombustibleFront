@@ -160,18 +160,6 @@
             <q-item
               clickable
               v-ripple
-              to="/solicitudes"
-              @click="leftDrawerOpen = false"
-            >
-              <q-item-section avatar
-                ><q-icon name="local_gas_station"
-              /></q-item-section>
-              <q-item-section>Solicitudes</q-item-section>
-            </q-item>
-
-            <q-item
-              clickable
-              v-ripple
               to="/cupos"
               @click="leftDrawerOpen = false"
             >
@@ -241,6 +229,29 @@
         <!--          GESTIÓN DE CUPOS          -->
         <!-- ================================== -->
       </q-list>
+      <q-item
+        clickable
+        v-ripple
+        to="/solicitudes"
+        @click="leftDrawerOpen = false"
+      >
+        <q-item-section avatar
+          ><q-icon name="local_gas_station"
+        /></q-item-section>
+        <q-item-section>Solicitudes</q-item-section>
+      </q-item>
+
+      <q-item
+        clickable
+        v-ripple
+        to="/despacho"
+        @click="leftDrawerOpen = false"
+      >
+        <q-item-section avatar
+          ><q-icon name="print"
+        /></q-item-section>
+        <q-item-section>Despacho</q-item-section>
+      </q-item>
     </q-drawer>
 
     <!-- ================================== -->
