@@ -10,18 +10,85 @@
               <div class="text-subtitle1 text-grey-8">Gestión de Tickets Listos para Despacho</div>
             </div>
           </div>
-          <!-- Filtros Legacy -->
-          <div class="row items-center q-col-gutter-x-md">
-            <div class="col-auto text-weight-medium">Buscar Por</div>
-            
-            <!-- Radio Buttons -->
-            <div class="col-auto">
-              <q-radio v-model="searchType" val="fecha" label="Fecha" dense size="sm" />
-              <q-radio v-model="searchType" val="solicitud" label="No Solicitud" dense size="sm" />
+          <!-- Filtros Modernos Toggle -->
+          <div class="row items-center q-col-gutter-sm scroll-x">
+            <!-- Selector de Estado (Visualización) -->
+            <div class="col-12 col-md-auto">
+              <q-select
+                v-if="$q.screen.lt.md"
+                v-model="statusFilter"
+                :options="[
+                  { label: 'Pendientes', value: 'APROBADA', icon: 'schedule' },
+                  { label: 'Impresas', value: 'IMPRESA', icon: 'print' },
+                  { label: 'Finalizadas', value: 'FINALIZADA', icon: 'check_circle' },
+                  { label: 'Vencidas', value: 'VENCIDA', icon: 'warning' },
+                  { label: 'Todas', value: 'TODAS', icon: 'list' }
+                ]"
+                label="Filtrar por Estado"
+                dense
+                outlined
+                bg-color="white"
+                emit-value
+                map-options
+                @update:model-value="triggerSearch"
+                class="full-width"
+              >
+                <template v-slot:option="scope">
+                  <q-item v-bind="scope.itemProps">
+                    <q-item-section avatar>
+                      <q-icon :name="scope.opt.icon" color="primary" />
+                    </q-item-section>
+                    <q-item-section>
+                      <q-item-label>{{ scope.opt.label }}</q-item-label>
+                    </q-item-section>
+                  </q-item>
+                </template>
+                <template v-slot:selected-item="scope">
+                  <div class="row items-center">
+                    <q-icon :name="scope.opt.icon" color="primary" class="q-mr-xs" />
+                    <span>{{ scope.opt.label }}</span>
+                  </div>
+                </template>
+              </q-select>
+
+              <q-btn-toggle
+                v-else
+                v-model="statusFilter"
+                toggle-color="primary"
+                flat
+                unelevated
+                dense
+                rounded
+                :options="[
+                  { label: 'Pendientes', value: 'APROBADA', icon: 'schedule' },
+                  { label: 'Impresas', value: 'IMPRESA', icon: 'print' },
+                  { label: 'Finalizadas', value: 'FINALIZADA', icon: 'check_circle' },
+                  { label: 'Vencidas', value: 'VENCIDA', icon: 'warning' },
+                  { label: 'Todas', value: 'TODAS', icon: 'list' }
+                ]"
+                @update:model-value="triggerSearch"
+              />
             </div>
 
-            <!-- Inputs -->
-            <div class="col-auto" style="min-width: 200px;">
+            <q-separator vertical inset class="gt-sm q-mx-md" />
+
+            <!-- Selector de Tipo de Búsqueda -->
+            <div class="col-12 col-sm-auto">
+              <q-btn-toggle
+                v-model="searchType"
+                toggle-color="primary"
+                flat
+                dense
+                rounded
+                :options="[
+                  { label: 'Por Fecha', value: 'fecha', icon: 'event' },
+                  { label: 'Por Solicitud', value: 'solicitud', icon: 'tag' }
+                ]"
+              />
+            </div>
+
+            <!-- Input Dinámico de Búsqueda -->
+            <div class="col-12 col-sm-auto" style="min-width: 200px;">
               <q-input 
                 v-if="searchType === 'fecha'"
                 v-model="filterDate" 
@@ -29,6 +96,7 @@
                 outlined 
                 type="date" 
                 bg-color="white"
+                @update:model-value="triggerSearch"
               />
               <q-input 
                 v-else
@@ -37,18 +105,23 @@
                 outlined 
                 placeholder="Número de solicitud..." 
                 bg-color="white"
+                @keyup.enter="triggerSearch"
               />
             </div>
 
             <div class="col-auto">
-              <q-btn icon="search" color="primary" round dense size="sm" @click="loadRequests" />
+              <q-btn icon="search" color="primary" round dense size="sm" @click="triggerSearch" />
             </div>
 
-            <div class="col text-right">
-              <div class="row justify-end items-center">
-                  <span class="text-caption q-mr-sm">Código:</span>
-                  <q-input v-model="filterCode" dense outlined style="width: 200px" bg-color="white" />
-              </div>
+            <q-space />
+
+            <!-- Búsqueda Global (Placa/Ticket) -->
+            <div class="col-12 col-md-auto">
+              <q-input v-model="filterCode" dense outlined style="width: 100%; min-width: 250px" bg-color="white" placeholder="Placa o Ticket (Global)...">
+                <template v-slot:append>
+                  <q-icon name="search" />
+                </template>
+              </q-input>
             </div>
           </div>
         </div>
@@ -82,12 +155,9 @@
           </q-tr>
         </template>
 
-        <!-- Body Customization -->
         <template v-slot:body="props">
           <q-tr 
             :props="props" 
-            @click="openBiometricDialog(props.row)"
-            class="cursor-pointer"
             :class="getRowClass(props.row)"
           >
             <q-td key="index" :props="props">
@@ -103,7 +173,7 @@
               {{ props.row.TipoCombustible?.nombre }}
             </q-td>
             <q-td key="dependencia" :props="props" class="text-caption">
-              {{ props.row.Subdependencium?.nombre }}
+              {{ props.row.Subdependencia?.nombre }}
             </q-td>
             <q-td key="solicitante" :props="props" class="text-weight-bold text-caption">
               {{ props.row.Solicitante?.nombre }} {{ props.row.Solicitante?.apellido }}
@@ -116,6 +186,45 @@
             </q-td>
             <q-td key="placa" :props="props" class="text-caption">
               {{ props.row.placa }}
+            </q-td>
+            <q-td key="acciones" :props="props" class="text-right">
+              <!-- Botón Dinámico: Huella (si está por imprimir) o Impresora (si ya está impresa) -->
+              <q-btn
+                v-if="props.row.estado === 'APROBADA'"
+                dense
+                round
+                flat
+                color="positive"
+                icon="fingerprint"
+                class="q-mr-xs"
+                @click="openBiometricDialog(props.row)"
+              >
+                <q-tooltip>Captar Huella y Generar Ticket</q-tooltip>
+              </q-btn>
+
+              <q-btn
+                v-if="['IMPRESA', 'FINALIZADA', 'DESPACHADA'].includes(props.row.estado)"
+                dense
+                round
+                flat
+                color="indigo"
+                icon="print"
+                class="q-mr-xs"
+                @click="onViewTicket(props.row)"
+              >
+                <q-tooltip>Ver/Imprimir Ticket Original</q-tooltip>
+              </q-btn>
+
+              <q-btn
+                dense
+                round
+                flat
+                color="primary"
+                icon="info"
+                @click="onShowDetails(props.row)"
+              >
+                <q-tooltip>Ver Detalles</q-tooltip>
+              </q-btn>
             </q-td>
           </q-tr>
         </template>
@@ -133,6 +242,13 @@
       v-model="isTicketVisible"
       :ticket="selectedTicket"
     />
+
+    <!-- Diálogo de Detalles -->
+    <RequestDetailsDialog
+      v-model="isDetailsVisible"
+      :request-data="selectedRequest"
+      @print="openBiometricDialog"
+    />
   </q-page>
 </template>
 
@@ -149,6 +265,9 @@ const SmartBiometricDialog = defineAsyncComponent(() =>
 const TicketPreviewDialog = defineAsyncComponent(() => 
   import('../../components/dispatches/TicketPreviewDialog.vue')
 );
+const RequestDetailsDialog = defineAsyncComponent(() => 
+  import('../../components/dispatches/RequestDetailsDialog.vue')
+);
 
 const $q = useQuasar();
 const requestStore = useRequestStore();
@@ -156,6 +275,7 @@ const loading = ref(false);
 
 const isBiometricDialogVisible = ref(false);
 const isTicketVisible = ref(false);
+const isDetailsVisible = ref(false);
 const selectedRequest = ref({});
 const selectedTicket = ref(null);
 
@@ -164,6 +284,7 @@ const searchType = ref('fecha');
 const filterDate = ref(new Date().toISOString().split('T')[0]);
 const filterText = ref('');
 const filterCode = ref('');
+const statusFilter = ref('APROBADA');
 
 // --- PAGINACIÓN (Server-Side) ---
 const rows = ref([]);
@@ -180,11 +301,13 @@ const columns = [
   { name: 'codigo_ticket', label: 'No. Solicitud', align: 'left', field: 'codigo_ticket', sortable: true },
   { name: 'flota', label: 'Flota', align: 'left', field: 'modelo' },
   { name: 'tipo', label: 'Tipo', align: 'left', field: row => row.TipoCombustible?.nombre },
-  { name: 'dependencia', label: 'Dependencia II', align: 'left', field: row => row.Subdependencium?.nombre },
-  { name: 'solicitante', label: 'Solicitante', align: 'left', field: row => row.Solicitante?.nombre },
-  { name: 'litros', label: 'Litros', align: 'right', field: 'cantidad_litros' },
+  { name: 'dependencia', label: 'Dependencia II', align: 'left', field: row => row.Subdependencia?.nombre },
+  { name: 'solicitante', label: 'Solicitante', align: 'left', field: row => row.Solicitante ? `${row.Solicitante.nombre} ${row.Solicitante.apellido}` : 'N/A' },
+  { name: 'litros', label: 'Litros (Solic.)', align: 'right', field: 'cantidad_litros' },
+  { name: 'litros_desp', label: 'Litros (Real)', align: 'right', field: row => row.cantidad_despachada || '-' },
   { name: 'estado', label: 'Estatus', align: 'center', field: 'estado' },
-  { name: 'placa', label: 'placa', align: 'left', field: 'placa', sortable: true },
+  { name: 'placa', label: 'Placa', align: 'left', field: 'placa', sortable: true },
+  { name: 'acciones', label: '', align: 'right' },
 ];
 
 /**
@@ -204,14 +327,14 @@ const loadRequests = async (props = { pagination: pagination.value }) => {
   };
 
   // Mapeo Inteligente de Filtros
-  // Prioridad 1: Código (Placa/Ticket) - Si escribe aquí, buscamos global
+  params.estado = statusFilter.value;
+
   if (filterCode.value) {
       params.search = filterCode.value;
   } 
-  // Prioridad 2: Filtros de Radio (Fecha vs Solicitud)
   else if (searchType.value === 'solicitud' && filterText.value) {
        params.search = filterText.value;
-  } 
+  }
   else if (searchType.value === 'fecha' && filterDate.value) {
        // El backend espera fecha_inicio y fecha_fin para rango
        // Si es un solo día, mandamos el mismo día 00:00 a 23:59 (backend suele manejarlo o enviamos fechas)
@@ -272,28 +395,30 @@ const handleSocketUpdate = (data) => {
     
     // Como es "Despacho", la velocidad importa.
     // Si llega una nueva aprobada, la ponemos arriba si estamos en pag 1.
-    if (data.estado === 'APROBADA') {
+    if (data.estado === 'APROBADA' && statusFilter.value !== 'IMPRESA') {
         if (pagination.value.page === 1) {
-            // Verificar si ya existe para no duplicar
              const idx = rows.value.findIndex(r => r.id_solicitud === data.id_solicitud);
              if (idx >= 0) {
-                 Object.assign(rows.value[idx], data); // Update in place
+                 Object.assign(rows.value[idx], data);
              } else {
-                 rows.value.unshift(data); // Add to top
-                 // Si nos pasamos del rowsPerPage, quitamos el último (opcional visual)
-                 if (rows.value.length > pagination.value.rowsPerPage) {
-                     rows.value.pop();
-                 }
-                 pagination.value.rowsNumber++; // Aumentar contador total
+                 rows.value.unshift(data);
+                 if (rows.value.length > pagination.value.rowsPerPage) rows.value.pop();
+                 pagination.value.rowsNumber++;
              }
-        } else {
-             // Si estamos en otra página, solo notificamos o actualizamos contador (opcional)
-             // O forzamos recarga
-             // loadRequests(); 
-             $q.notify({message: 'Nueva solicitud aprobada', icon: 'print', color: 'info'});
+        }
+    } else if (data.estado === 'IMPRESA') {
+        // Actualizar si está en la lista (independientemente del filtro activo, si existe se actualiza)
+        const idx = rows.value.findIndex(r => r.id_solicitud === data.id_solicitud);
+        if (idx >= 0) {
+            if (statusFilter.value === 'APROBADA') {
+                rows.value.splice(idx, 1);
+                pagination.value.rowsNumber--;
+            } else {
+                Object.assign(rows.value[idx], data);
+            }
         }
     } else {
-        // Si cambió de estado (ej. IMPRESA), quitarla de la lista si está visible
+        // DESPACHADA, ANULADA, etc -> Quitar siempre
         const idx = rows.value.findIndex(r => r.id_solicitud === data.id_solicitud);
         if (idx >= 0) {
             rows.value.splice(idx, 1);
@@ -314,9 +439,26 @@ onBeforeUnmount(() => {
 });
 
 const openBiometricDialog = (request) => {
+    if (request.estado === 'IMPRESA') {
+        onViewTicket(request);
+        return;
+    }
     selectedRequest.value = request;
     isBiometricDialogVisible.value = true;
 };
+
+const onViewTicket = async (request) => {
+  try {
+    $q.loading.show({ message: 'Obteniendo datos del ticket...' });
+    const response = await requestStore.reprintTicket(request.id_solicitud);
+    if (response && response.ticket) {
+       selectedTicket.value = response.ticket;
+       isTicketVisible.value = true;
+    }
+  } finally {
+    $q.loading.hide();
+  }
+}
 
 const handleTicketGenerated = (ticket) => {
     // 1. Quitar de la lista (ya no está APROBADA)
@@ -328,7 +470,16 @@ const handleTicketGenerated = (ticket) => {
     isTicketVisible.value = true;
 };
 
-const getRowClass = (row) => 'bg-green-1';
+const onShowDetails = (request) => {
+    selectedRequest.value = request;
+    isDetailsVisible.value = true;
+};
+
+const getRowClass = (row) => {
+    if (row.estado === 'IMPRESA') return 'bg-indigo-1';
+    if (row.estado === 'FINALIZADA') return 'bg-grey-3';
+    return 'bg-green-1';
+};
 </script>
 
  

@@ -195,7 +195,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted, computed } from "vue";
+import { ref, onMounted, computed, onBeforeUnmount } from "vue";
 import { storeToRefs } from "pinia";
 import { useCupoStore } from "../../stores/cupoStore";
 import { useUserStore } from "../../stores/userStore";
@@ -360,5 +360,10 @@ function getEstadoColor(estado) {
 onMounted(() => {
   cupoStore.fetchCuposActuales();
   cupoStore.fetchCuposBase();
+  cupoStore.initSocket();
+});
+
+onBeforeUnmount(() => {
+  cupoStore.cleanupSocket();
 });
 </script>

@@ -61,11 +61,12 @@
 
           <div class="text-center q-mt-sm">
             <div>{{ normalized.es_copia ? 'Copia (Re-Impresion)' : 'Original (Impresion)' }}</div>
-            <div class="text-caption" style="font-size: 8px;">
-               
-              <br> 
+            <div class="text-center q-my-xs">
+              <img v-if="qrCodeDataUrl" :src="qrCodeDataUrl" style="width: 80px; height: 80px;" />
             </div>
-            <div class="divider">***********************************************</div>
+            <div class="text-caption" style="font-size: 8px;">
+              <div class="divider">***********************************************</div>
+            </div>
           </div>
         </div>
       </q-card-section>
@@ -144,6 +145,26 @@ const simulateDownload = () => {
   // Aquí se podría integrar html2canvas para descargar la imagen en el futuro
   alert("Esta funcionalidad requiere una librería de exportación (ej. html2pdf). Por ahora solo visualización.");
 };
+
+// Generación de QR
+import QRCode from "qrcode";
+import { ref, watch, nextTick } from "vue";
+
+const qrCodeDataUrl = ref("");
+
+const generateQR = async () => {
+    if (!normalized.value.codigo) return;
+    try {
+        qrCodeDataUrl.value = await QRCode.toDataURL(normalized.value.codigo, { width: 100, margin: 1 });
+    } catch (err) {
+        console.error("Error generando QR", err);
+    }
+};
+
+watch(() => props.ticket, () => {
+   nextTick(generateQR);
+}, { immediate: true, deep: true });
+
 </script>
 
 <style scoped>

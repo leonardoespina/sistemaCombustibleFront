@@ -24,10 +24,6 @@ export const useVehicleStore = defineStore("vehicles", () => {
   const modelsForSelectedBrand = ref([]);
   const loadingModels = ref(false);
 
-  // Lista filtrada para formulario de solicitudes
-  const vehiclesByFilters = ref([]);
-  const loadingFiltered = ref(false);
-
   // --- ACTIONS (CRUD) ---
 
   async function fetchVehicles() {
@@ -117,33 +113,29 @@ export const useVehicleStore = defineStore("vehicles", () => {
   }
 
   /**
-   * Obtener vehículos filtrados por subdependencia y tipo de combustible
-   * Usado en formulario de solicitudes
+   * Obtiene vehículos filtrados por subdependencia y tipo de combustible
+   * Usado principalmente en formularios de solicitud.
    */
-  async function fetchVehiclesByFilters(params) {
-    if (!params.id_subdependencia || !params.id_tipo_combustible) {
-      vehiclesByFilters.value = [];
+  async function fetchVehiclesBySubAndFuel(id_subdependencia, id_tipo_combustible) {
+    if (!id_subdependencia || !id_tipo_combustible) {
       return [];
     }
-
-    loadingFiltered.value = true;
     try {
+      loading.value = true;
       const response = await api.get("/vehiculos", {
         params: {
-          id_subdependencia: params.id_subdependencia,
-          id_tipo_combustible: params.id_tipo_combustible,
-          limit: params.limit || 1000,
+          id_subdependencia,
+          id_tipo_combustible,
+          limit: 1000,
         },
       });
       const data = response.data.data || response.data;
-      vehiclesByFilters.value = Array.isArray(data) ? data : [];
-      return vehiclesByFilters.value;
+      return Array.isArray(data) ? data : [];
     } catch (error) {
-      console.error("Error al obtener vehículos filtrados:", error);
-      vehiclesByFilters.value = [];
+      console.error("Error fetching filtered vehicles:", error);
       return [];
     } finally {
-      loadingFiltered.value = false;
+      loading.value = false;
     }
   }
   
@@ -172,8 +164,6 @@ export const useVehicleStore = defineStore("vehicles", () => {
     allBrands,
     modelsForSelectedBrand,
     loadingModels,
-    vehiclesByFilters,
-    loadingFiltered,
     // Actions
     fetchVehicles,
     createVehicle,
@@ -181,7 +171,6 @@ export const useVehicleStore = defineStore("vehicles", () => {
     deleteVehicle,
     fetchAllBrands,
     fetchModelsByBrand,
-    fetchVehiclesByFilters,
     initSocket,
     cleanupSocket
   };

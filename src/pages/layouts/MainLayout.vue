@@ -51,6 +51,7 @@
         <!--          CONFIGURACIÓN             -->
         <!-- ================================== -->
         <q-expansion-item
+          v-if="isAdmin"
           expand-separator
           icon="settings"
           label="Configuración"
@@ -190,6 +191,7 @@
               /></q-item-section>
               <q-item-section>Llenaderos</q-item-section>
             </q-item>
+
             <!-- Huella -->
             <q-item
               clickable
@@ -216,15 +218,7 @@
             </q-item>
           </q-list>
         </q-expansion-item>
-        <q-item
-          clickable
-          v-ripple
-          to="/dispensadores"
-          @click="leftDrawerOpen = false"
-        >
-          <q-item-section avatar><q-icon name="ev_station" /></q-item-section>
-          <q-item-section>Dispensadores</q-item-section>
-        </q-item>
+
         <!-- ================================== -->
         <!--          GESTIÓN DE CUPOS          -->
         <!-- ================================== -->
@@ -241,16 +235,28 @@
         <q-item-section>Solicitudes</q-item-section>
       </q-item>
 
+      <q-item clickable v-ripple to="/despacho" @click="leftDrawerOpen = false">
+        <q-item-section avatar><q-icon name="print" /></q-item-section>
+        <q-item-section>Despacho</q-item-section>
+      </q-item>
       <q-item
         clickable
         v-ripple
-        to="/despacho"
+        to="/movimientos-llenadero"
         @click="leftDrawerOpen = false"
       >
-        <q-item-section avatar
-          ><q-icon name="print"
-        /></q-item-section>
-        <q-item-section>Despacho</q-item-section>
+        <q-item-section avatar><q-icon name="compare_arrows" /></q-item-section>
+        <q-item-section>Movimientos Inventario</q-item-section>
+      </q-item>
+
+      <q-item
+        clickable
+        v-ripple
+        to="/validacion"
+        @click="leftDrawerOpen = false"
+      >
+        <q-item-section avatar><q-icon name="fact_check" /></q-item-section>
+        <q-item-section>Validación (Cierre)</q-item-section>
       </q-item>
     </q-drawer>
 
@@ -265,7 +271,7 @@
 </template>
 
 <script setup>
-import { ref } from "vue";
+import { ref, computed, onMounted } from "vue";
 import { useQuasar } from "quasar";
 import { useRouter } from "vue-router";
 
@@ -274,6 +280,18 @@ const router = useRouter();
 
 // El único estado que necesitamos para el drawer
 const leftDrawerOpen = ref(false);
+const userData = ref(null);
+
+onMounted(() => {
+  const storedUser = localStorage.getItem("user");
+  if (storedUser) {
+    userData.value = JSON.parse(storedUser);
+  }
+});
+
+const isAdmin = computed(() => {
+  return userData.value?.tipo_usuario === "ADMIN";
+});
 
 // La única función que necesitamos para controlar el drawer
 const toggleLeftDrawer = () => {

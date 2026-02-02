@@ -7,8 +7,6 @@
       v-model="internalCategoryId"
       :options="categoriaOptions"
       label="Categoría"
-      use-input
-      input-debounce="300"
       @filter="filterCategoria"
       @virtual-scroll="onScrollCategoria"
       option-label="nombre"
@@ -31,8 +29,6 @@
       :options="dependenciaOptions"
       label="Dependencia"
       :disable="!internalCategoryId"
-      use-input
-      input-debounce="300"
       @filter="filterDependencia"
       @virtual-scroll="onScrollDependencia"
       option-label="nombre_dependencia"
@@ -55,8 +51,6 @@
       :options="subdependenciaOptions"
       label="Subdependencia"
       :disable="!internalDependencyId"
-      use-input
-      input-debounce="300"
       @filter="filterSubdependencia"
       @virtual-scroll="onScrollSubdependencia"
       option-label="nombre"

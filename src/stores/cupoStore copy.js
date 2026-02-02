@@ -165,7 +165,7 @@ export const useCupoStore = defineStore("cupos", () => {
           disponible: parseFloat(cupo.cantidad_disponible),
           asignado: asignado,
           consumido: consumido,
-          porcentaje: asignado > 0 ? ((consumido / asignado) * 100).toFixed(1) : 0,
+          porcentaje: asignado > 0 ? ((consumido / asignado) * 100).toFixed(1) : 0
         };
       }
       return { disponible: 0, asignado: 0, consumido: 0, porcentaje: 0 };
@@ -198,19 +198,6 @@ export const useCupoStore = defineStore("cupos", () => {
     socket.on("cupo:reinicio-mensual", () => {
       fetchCuposActuales();
     });
-
-    // Escuchar cambios en solicitudes que afectan los cupos
-    socket.on("solicitud:creada", () => {
-      fetchCuposActuales();
-    });
-
-    socket.on("solicitud:actualizada", () => {
-      fetchCuposActuales();
-    });
-
-    socket.on("solicitud:finalizada", () => {
-      fetchCuposActuales();
-    });
   }
 
   function cleanupSocket() {
@@ -219,9 +206,6 @@ export const useCupoStore = defineStore("cupos", () => {
     socket.off("cupo:consumo");
     socket.off("cupo:recarga");
     socket.off("cupo:reinicio-mensual");
-    socket.off("solicitud:creada");
-    socket.off("solicitud:actualizada");
-    socket.off("solicitud:finalizada");
   }
 
   return {
@@ -238,8 +222,7 @@ export const useCupoStore = defineStore("cupos", () => {
     updateCupoBase,
     recargarCupo,
     reiniciarMes,
-    fetchCupoEspecifico,
     initSocket,
-    cleanupSocket,
+    cleanupSocket
   };
 });

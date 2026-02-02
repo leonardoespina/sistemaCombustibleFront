@@ -10,18 +10,6 @@ const routes = [
     path: "/",
     component: () => import("../pages/layouts/MainLayout.vue"),
 
-    ///layouts/MainLayout.vue
-    // Guardia de navegación: se ejecuta antes de entrar a esta ruta o a sus hijas.
-    beforeEnter: (to, from, next) => {
-      const token = localStorage.getItem("token");
-      if (token) {
-        // Si hay un token, el usuario está logueado, permite el acceso.
-        next();
-      } else {
-        // Si no hay token, redirige al usuario a la página de login.
-        next("/login");
-      }
-    },
     // Rutas anidadas que se renderizarán dentro del <router-view> de MainLayout.vue
     children: [
       {
@@ -32,53 +20,63 @@ const routes = [
       {
         path: "huella",
         name: "fingerprint",
+        meta: { requiresAdmin: true },
         component: () =>
           import("../pages/fingerprint/FingerprintManagementPage.vue"),
       },
       {
         path: "huella/verificar",
         name: "fingerprint-verify",
+        meta: { requiresAdmin: true },
         component: () =>
           import("../pages/fingerprint/FingerprintVerifyPage.vue"),
       },
       {
         path: "subdependencias",
         name: "subdependencias",
+        meta: { requiresAdmin: true },
         component: () => import("../pages/subdependencias/SubdependenciasPage.vue"),
       },
       {
         path: "usuarios", // Coincide con la ruta '/usuarios'
         name: "users",
+        meta: { requiresAdmin: true },
         component: () => import("../pages/UsersPage.vue"),
       },
       {
         path: "/vehiculos/marcas", // -> /vehiculos/marcas
         name: "brand-management",
+        meta: { requiresAdmin: true },
         component: () => import("../pages/vehicles/BrandPage.vue"), // Placeholder
       },
       {
         path: "/vehiculos/modelos",
         name: "model-management",
+        meta: { requiresAdmin: true },
         component: () => import("../pages/vehicles/ModelPage.vue"), // Placeholder
       },
       {
         path: "/vehiculos/lista",
         name: "vehiculo",
+        meta: { requiresAdmin: true },
         component: () => import("../pages/vehicles/VehicleListPage.vue"), // Placeholder
       },
       {
         path: "categorias",
         name: "categoria-list",
+        meta: { requiresAdmin: true },
         component: () => import("../pages/categoria/CategoriaPage.vue"),
       },
       {
         path: "dependencias",
         name: "dependency-list",
+        meta: { requiresAdmin: true },
         component: () => import("../pages/dependencias/DependenciasPage.vue"),
       },
       {
         path: "tanques",
         name: "tank-list",
+        meta: { requiresAdmin: true },
         component: () => import("../pages/tanks/TankPage.vue"),
       },
       {
@@ -86,88 +84,36 @@ const routes = [
         name: "dispenser-list",
         component: () => import("../pages/dispensers/DispenserPage.vue"),
       },
-      {
-        path: "almacenistas",
-        name: "warehouseman-list",
-        component: () => import("../pages/warehouse/WarehousemanPage.vue"),
-      },
-      {
-        path: "despachos",
-        name: "dispatch-list",
-        component: () => import("../pages/dispatches/DispatchPage.vue"),
-      },
-      {
-        path: "choferes",
-        name: "driver-list",
-        component: () => import("../pages/drivers/DriverPage.vue"),
-      },
-      {
-        path: "cierres",
-        name: "inventory-closing-list",
-        component: () => import("../pages/closings/ClosingPage.vue"),
-      },
-      {
-        path: "mediciones",
-        name: "tank-measurement-list",
-        component: () => import("../pages/measurements/MeasurementPage.vue"),
-      },
-      {
-        path: "cargas",
-        name: "cistern-load-list",
-        component: () => import("../pages/loads/CisternLoadPage.vue"),
-      },
-      {
-        path: "transferencias-internas",
-        name: "internal-transfer-list",
-        component: () =>
-          import("../pages/internal-transfers/InternalTransferPage.vue"),
-      },
-      {
-        path: "reportes/pendientes",
-        name: "report-pending-act",
-        component: () => import("../pages/reports/PendingActPage.vue"),
-      },
-      {
-        path: "reportes/consumo-categoria",
-        name: "report-categoria-consumption",
-        component: () =>
-          import("../pages/reports/CategoriaConsumptionPage.vue"),
-      },
-      {
-        path: "reportes/consumo-detallado-categoria",
-        name: "report-categoria-detailed-consumption",
-        component: () =>
-          import("../pages/reports/CategoriaDetailedConsumptionPage.vue"),
-      },
-      {
-        path: "reportes/consumo-vehiculo",
-        name: "report-vehicle-consumption",
-        component: () => import("../pages/reports/VehicleConsumptionPage.vue"),
-      },
-      {
-        path: "reportes/historial-cierres",
-        name: "report-closing-history",
-        component: () => import("../pages/reports/ReporteCierrePage.vue"),
-      },
+      
       {
         path: "tipos-combustible",
         name: "tipo-combustible-list",
+        meta: { requiresAdmin: true },
         component: () => import("../pages/combustibles/TipoCombustiblePage.vue"),
       },
       {
         path: "cupos",
         name: "cupo-list",
+        meta: { requiresAdmin: true },
         component: () => import("../pages/cupos/CupoPage.vue"),
       },
       {
         path: "precios",
         name: "precio-management",
+        meta: { requiresAdmin: true },
         component: () => import("../pages/precios/PrecioPage.vue"),
       },
       {
         path: "llenaderos",
         name: "llenadero-list",
+        meta: { requiresAdmin: true },
         component: () => import("../pages/llenaderos/LlenaderoPage.vue"),
+      },
+      {
+        path: "movimientos-llenadero",
+        name: "movimiento-llenadero-list",
+        meta: { requiresAdmin: true },
+        component: () => import("../pages/llenaderos/MovimientosLlenaderoPage.vue"),
       },
       {
         path: "solicitudes",
@@ -179,6 +125,11 @@ const routes = [
         name: "despacho-print",
         component: () => import("../pages/dispatches/PrintRequestsPage.vue"),
       },
+      {
+        path: "validacion",
+        name: "validation-page",
+        component: () => import("../pages/dispatches/ValidationPage.vue"),
+      },
 
       // Aquí puedes seguir añadiendo más rutas protegidas, como /vehiculos, etc.
     ],
@@ -189,17 +140,6 @@ const routes = [
     path: "/login",
     name: "login",
     component: () => import("../pages/LoginPage.vue"),
-    // Guardia de navegación: evita que un usuario ya logueado vea la página de login.
-    beforeEnter: (to, from, next) => {
-      const token = localStorage.getItem("token");
-      if (token) {
-        // Si el usuario ya tiene un token, lo redirigimos a la página principal.
-        next({ name: "home" }); // Redirige a la ruta con nombre 'home' (es decir, '/')
-      } else {
-        // Si no hay token, permite el acceso a la página de login.
-        next();
-      }
-    },
   },
 
   // --- RUTA DE FALLBACK (ERROR 404) ---
@@ -215,6 +155,36 @@ const routes = [
 const router = createRouter({
   history: createWebHistory(),
   routes,
+});
+
+/**
+ * Guardia de Navegación Global
+ * Centraliza la protección de rutas por Token y por Rol.
+ */
+router.beforeEach((to, from, next) => {
+  const token = localStorage.getItem("token");
+  const user = JSON.parse(localStorage.getItem("user") || "{}");
+
+  // 1. Permitir acceso libre a login si no hay token
+  if (to.path === "/login") {
+    if (token) {
+      return next({ name: "home" }); // Si ya tiene token, no dejar entrar a login
+    }
+    return next();
+  }
+
+  // 2. Si no hay token y no es login, forzar login
+  if (!token) {
+    return next("/login");
+  }
+
+  // 3. Protección por Rol (ADMIN)
+  if (to.meta.requiresAdmin && user.tipo_usuario !== "ADMIN") {
+    // Si la ruta requiere admin y el usuario no lo es, redirigir a dashboard
+    return next({ name: "home" });
+  }
+
+  next();
 });
 
 // Exportación del router para ser usado en main.js

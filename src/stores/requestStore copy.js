@@ -56,10 +56,6 @@ export const useRequestStore = defineStore("requests", () => {
   async function createRequest(requestData) {
     loading.value = true;
     try {
-      console.log("=== DEBUG requestStore.createRequest ===");
-      console.log("requestData recibido:", requestData);
-      console.log("requestData.placa:", requestData.placa);
-      
       const response = await api.post("/solicitudes", requestData);
       $q.notify({ type: "positive", message: response.data.msg });
       await fetchRequests();

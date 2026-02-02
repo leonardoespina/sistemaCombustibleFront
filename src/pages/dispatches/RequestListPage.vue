@@ -56,6 +56,18 @@
         <!-- Acciones -->
         <template v-slot:body-cell-actions="props">
           <q-td :props="props" class="q-gutter-x-sm">
+            <!-- Ver Detalles -->
+            <q-btn
+              dense
+              round
+              flat
+              color="grey-7"
+              icon="visibility"
+              @click="onShowDetails(props.row)"
+            >
+              <q-tooltip>Ver Detalles</q-tooltip>
+            </q-btn>
+
             <!-- Aprobar (Solo si está PENDIENTE) -->
             <q-btn
               v-if="props.row.estado === 'PENDIENTE'"
@@ -71,18 +83,6 @@
 
 
 
-            <!-- Reimprimir/Ver Ticket (Si ya está impreso) -->
-            <q-btn
-              v-if="['IMPRESA', 'DESPACHADA'].includes(props.row.estado)"
-              dense
-              round
-              flat
-              color="indigo"
-              icon="print"
-              @click="onViewTicket(props.row)"
-            >
-              <q-tooltip>Ver Ticket Digital</q-tooltip>
-            </q-btn>
 
             <!-- Rechazar (Solo si no está despachado/vencido) -->
             <q-btn
@@ -107,10 +107,10 @@
       @save="onFormSave"
     />
 
-    <!-- ¡NUEVO! Diálogo de Vista Previa de Ticket -->
-    <TicketPreviewDialog
-      v-model="isTicketVisible"
-      :ticket="selectedTicket"
+    <!-- ¡NUEVO! Diálogo de Detalles de Solicitud -->
+    <RequestDetailsDialog
+      v-model="isDetailsVisible"
+      :request-data="selectedRequest"
     />
   </q-page>
 </template>
@@ -120,7 +120,8 @@ import { ref, onMounted, onUnmounted, defineAsyncComponent } from "vue";
 import { storeToRefs } from "pinia";
 import { useRequestStore } from "../../stores/requestStore.js";
 import RequestFormDialog from "../../components/dispatches/RequestFormDialog.vue";
-import TicketPreviewDialog from "../../components/dispatches/TicketPreviewDialog.vue";
+//import TicketPreviewDialog from "../../components/dispatches/TicketPreviewDialog.vue";
+import RequestDetailsDialog from "../../components/dispatches/RequestDetailsDialog.vue";
 import { useQuasar } from "quasar";
 
 const $q = useQuasar();
@@ -128,8 +129,10 @@ const requestStore = useRequestStore();
 const { rows, loading, filter, pagination } = storeToRefs(requestStore);
 
 const isFormDialogVisible = ref(false);
-const isTicketVisible = ref(false);
-const selectedTicket = ref(null);
+//const isTicketVisible = ref(false);
+const isDetailsVisible = ref(false);
+//const selectedTicket = ref(null);
+const selectedRequest = ref(null);
 
 
 const columns = [
@@ -154,9 +157,8 @@ function openAddDialog() {
   isFormDialogVisible.value = true;
 }
 
-async function onFormSave(formData) {
-  const response = await requestStore.createRequest(formData);
-  
+function onFormSave(response) {
+  // El formulario ya creó la solicitud, solo recibimos la respuesta
   if (response && response.data) {
     // Cerrar el formulario inmediatamente
     isFormDialogVisible.value = false;
@@ -164,9 +166,9 @@ async function onFormSave(formData) {
     // Extraer datos para el resumen
     const ticket = response.ticket || response.data.codigo_ticket || 'PENDIENTE';
     const status = response.data.estado || 'PENDIENTE';
-    const placa = response.data.placa || formData.placa || 'N/A';
-    const litros = response.data.cantidad_litros || formData.cantidad_litros || '0';
-    const solicitante = response.data.solicitante || formData.solicitante || 'Usuario';
+    const placa = response.data.placa || 'N/A';
+    const litros = response.data.cantidad_litros || '0';
+    const solicitante = response.data.solicitante || 'Usuario';
     
     // Mostrar diálogo con resumen detallado
     $q.dialog({
@@ -228,17 +230,10 @@ function onApprove(row) {
   });
 }
 
-async function onViewTicket(row) {
-  try {
-    $q.loading.show({ message: 'Obteniendo datos del ticket...' });
-    const response = await requestStore.reprintTicket(row.id_solicitud);
-    if (response && response.ticket) {
-       selectedTicket.value = response.ticket;
-       isTicketVisible.value = true;
-    }
-  } finally {
-    $q.loading.hide();
-  }
+
+function onShowDetails(row) {
+  selectedRequest.value = row;
+  isDetailsVisible.value = true;
 }
 
 
@@ -246,15 +241,16 @@ async function onViewTicket(row) {
 function onReject(row) {
   $q.dialog({
     title: 'Rechazar Solicitud',
-    message: 'Ingrese el motivo del rechazo:',
+    message: `¿Desea rechazar la solicitud del vehículo ${row.placa}? Ingrese el motivo:`,
     prompt: {
       model: '',
-      type: 'text'
+      type: 'text',
+      isValid: val => val.length > 3
     },
     cancel: true,
     persistent: true
-  }).onOk(async (data) => {
-     $q.notify({ type: 'warning', message: 'Funcionalidad de rechazo en desarrollo' });
+  }).onOk(async (motivo) => {
+     await requestStore.rejectRequest(row.id_solicitud, motivo);
   });
 }
 
@@ -272,6 +268,7 @@ function getStatusColor(status) {
 }
 
 onMounted(() => {
+  // Inicializar sockets
   requestStore.initSocket();
   requestStore.fetchRequests();
 });
