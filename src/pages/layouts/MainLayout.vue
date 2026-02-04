@@ -239,15 +239,45 @@
         <q-item-section avatar><q-icon name="print" /></q-item-section>
         <q-item-section>Despacho</q-item-section>
       </q-item>
-      <q-item
-        clickable
-        v-ripple
-        to="/movimientos-llenadero"
-        @click="leftDrawerOpen = false"
+      <!-- ================================== -->
+      <!--          INVENTARIO                -->
+      <!-- ================================== -->
+      <q-expansion-item
+        expand-separator
+        icon="inventory"
+        label="Inventario"
+        class="text-grey-8"
       >
-        <q-item-section avatar><q-icon name="compare_arrows" /></q-item-section>
-        <q-item-section>Movimientos Inventario</q-item-section>
-      </q-item>
+        <q-list class="q-pl-md">
+          <q-item
+            clickable
+            v-ripple
+            to="/movimientos-llenadero"
+            @click="leftDrawerOpen = false"
+          >
+            <q-item-section avatar>
+              <q-icon name="compare_arrows" size="xs" />
+            </q-item-section>
+            <q-item-section>
+              <q-item-label>Movimiento de Inventario</q-item-label>
+            </q-item-section>
+          </q-item>
+
+          <q-item
+            clickable
+            v-ripple
+            to="/evaporaciones"
+            @click="leftDrawerOpen = false"
+          >
+            <q-item-section avatar>
+              <q-icon name="opacity" size="xs" />
+            </q-item-section>
+            <q-item-section>
+              <q-item-label>Gestión de Evaporización</q-item-label>
+            </q-item-section>
+          </q-item>
+        </q-list>
+      </q-expansion-item>
 
       <q-item
         clickable

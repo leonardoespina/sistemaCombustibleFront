@@ -1,14 +1,13 @@
-// src/stores/movimientoLlenaderoStore.js
 import { defineStore } from "pinia";
 import { ref } from "vue";
 import { useQuasar } from "quasar";
 import api from "../api/index.js";
 import socket from "../services/socket";
 
-export const useMovimientoLlenaderoStore = defineStore("movimientoLlenadero", () => {
+export const useEvaporacionStore = defineStore("evaporaciones", () => {
   const $q = useQuasar();
 
-  // --- STATE ---
+  // STATE
   const rows = ref([]);
   const llenaderoOptions = ref([]);
   const loading = ref(false);
@@ -21,9 +20,8 @@ export const useMovimientoLlenaderoStore = defineStore("movimientoLlenadero", ()
     rowsNumber: 0,
   });
 
-  // --- ACTIONS ---
-
-  async function fetchMovimientos() {
+  // ACTIONS
+  async function fetchEvaporaciones() {
     loading.value = true;
     try {
       const params = {
@@ -31,50 +29,40 @@ export const useMovimientoLlenaderoStore = defineStore("movimientoLlenadero", ()
         limit: pagination.value.rowsPerPage,
         sortBy: pagination.value.sortBy,
         descending: pagination.value.descending,
-        tipo_movimiento: 'CARGA', // Filtrar solo cargas
         search: filter.value 
       };
-      const response = await api.get("/movimientos-llenadero", { params });
+      const response = await api.get("/evaporaciones", { params });
       rows.value = response.data.data;
       pagination.value.rowsNumber = response.data.pagination.totalItems;
     } catch (error) {
       console.error(error);
-      $q.notify({ type: "negative", message: "Error cargando movimientos" });
+      $q.notify({ type: "negative", message: "Error cargando evaporaciones" });
     } finally {
       loading.value = false;
     }
   }
 
-  /**
-   * Obtiene la lista simple de llenaderos activos para llenar selectores
-   */
   async function fetchLlenaderosList() {
     try {
-      // Usamos el endpoint '/lista' que suele devolver array simple { id, nombre }
-      // Si no existe, usamos el paginado con limit alto.
-      // Basado en análisis previo, existe /api/llenaderos/lista
       const response = await api.get("/llenaderos/lista");
       llenaderoOptions.value = response.data; 
     } catch (error) {
       console.error("Error cargando lista de llenaderos:", error);
-      $q.notify({ type: "negative", message: "Error cargando llenaderos" });
     }
   }
 
-  /**
-   * Crea un nuevo movimiento de inventario (Carga o Evaporación)
-   */
-  async function createMovimiento(data) {
+  async function registrarEvaporacion(data) {
     loading.value = true;
     try {
-      const response = await api.post("/movimientos-llenadero", data);
+      const response = await api.post("/evaporaciones", data);
       $q.notify({ type: "positive", message: response.data.msg });
+      await fetchEvaporaciones();
       return true;
     } catch (error) {
       console.error(error);
       $q.notify({ 
         type: "negative", 
-        message: error.response?.data?.msg || "Error registrando movimiento" 
+        message: error.response?.data?.msg || "Error registrando evaporación" 
       });
       return false;
     } finally {
@@ -83,7 +71,7 @@ export const useMovimientoLlenaderoStore = defineStore("movimientoLlenadero", ()
   }
 
   function initSocket() {
-    socket.on("llenadero:actualizado", () => fetchMovimientos());
+    socket.on("llenadero:actualizado", () => fetchEvaporaciones());
   }
 
   function cleanupSocket() {
@@ -92,13 +80,13 @@ export const useMovimientoLlenaderoStore = defineStore("movimientoLlenadero", ()
 
   return {
     rows,
-    pagination,
-    filter,
     llenaderoOptions,
     loading,
-    fetchMovimientos,
+    filter,
+    pagination,
+    fetchEvaporaciones,
     fetchLlenaderosList,
-    createMovimiento,
+    registrarEvaporacion,
     initSocket,
     cleanupSocket
   };

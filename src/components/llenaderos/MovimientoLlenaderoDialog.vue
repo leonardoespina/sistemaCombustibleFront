@@ -3,256 +3,164 @@
     :model-value="modelValue"
     @update:model-value="(val) => emit('update:modelValue', val)"
     persistent
-    transition-show="slide-up"
-    transition-hide="slide-down"
-    full-width
-    full-height
+    transition-show="scale"
+    transition-hide="scale"
   >
-    <q-card class="bg-grey-2 column no-wrap">
-      <!-- Cabecera -->
-      <q-bar class="bg-primary text-white q-py-md">
-        <q-icon name="compare_arrows" />
+    <q-card style="width: 600px; max-width: 95vw">
+      <q-bar class="bg-primary text-white">
+        <q-icon name="local_shipping" />
         <div class="text-weight-bold text-subtitle1">
-          Gestión de Movimientos de Inventario
+          Gestión Combustible - Recepción
         </div>
         <q-space />
+        <div class="text-weight-bold q-mr-md" v-if="selectedLlenaderoObj">
+          Capacidad: {{ capacity }} Lts
+        </div>
         <q-btn dense flat icon="close" v-close-popup>
           <q-tooltip>Cerrar Ventana</q-tooltip>
         </q-btn>
       </q-bar>
 
-      <q-card-section class="col q-pa-md scroll">
+      <q-card-section>
         <q-form @submit.prevent="submit">
-          <div class="row q-col-gutter-lg items-start">
-            
-            <!-- SECCIÓN IZQUIERDA: Formulario -->
-            <div class="col-12 col-md-7 column q-gutter-y-md">
-              <q-card class="q-pa-md shadow-2">
-                <div class="text-h6 q-mb-md text-primary">Detalles de Operación</div>
-                
-                <!-- Selector de Tipo -->
-                <div class="q-mb-md">
-                  <div class="text-caption text-grey-8 q-mb-sm">Tipo de Movimiento</div>
-                  <q-btn-toggle
-                    v-model="formData.tipo_movimiento"
-                    spread
-                    no-caps
-                    rounded
-                    unelevated
-                    toggle-color="primary"
-                    color="white"
-                    text-color="primary"
-                    :options="[
-                      { label: 'Recepción de Cisterna (Carga)', value: 'CARGA', icon: 'local_shipping' },
-                      { label: 'Registro de Evaporación', value: 'EVAPORACION', icon: 'opacity' }
-                    ]"
-                    @update:model-value="formData.id_llenadero = null" 
-                  />
-                  <!-- Nota: Reseteamos llenadero al cambiar tipo para forzar validación fresca -->
-                </div>
+          <!-- Fecha y Hora (Colocada por el usuario) -->
+          <div class="row q-col-gutter-md q-mb-md">
+            <div class="col-12">
+              <q-input 
+                outlined 
+                dense 
+                v-model="formData.fecha_movimiento" 
+                label="Fecha y Hora del Movimiento"
+                hint="Formato: AAAA/MM/DD HH:mm"
+              >
+                <template v-slot:prepend>
+                  <q-icon name="event" class="cursor-pointer">
+                    <q-popup-proxy cover transition-show="scale" transition-hide="scale">
+                      <q-date v-model="formData.fecha_movimiento" mask="YYYY/MM/DD HH:mm">
+                        <div class="row items-center justify-end">
+                          <q-btn v-close-popup label="Cerrar" color="primary" flat />
+                        </div>
+                      </q-date>
+                    </q-popup-proxy>
+                  </q-icon>
+                </template>
 
-                <!-- Selector de Llenadero -->
-                <q-select
-                  v-model="formData.id_llenadero"
-                  :options="store.llenaderoOptions"
-                  option-value="id_llenadero"
-                  option-label="nombre_llenadero"
-                  emit-value
-                  map-options
-                  label="Seleccione Llenadero"
-                  outlined
-                  dense
-                  :rules="[val => !!val || 'Requerido']"
-                >
-                  <template v-slot:option="scope">
-                    <q-item v-bind="scope.itemProps">
-                      <q-item-section>
-                        <q-item-label>{{ scope.opt.nombre_llenadero }}</q-item-label>
-                        <q-item-label caption>
-                          {{ scope.opt.TipoCombustible?.nombre || 'Combustible Desconocido' }}
-                        </q-item-label>
-                      </q-item-section>
-                    </q-item>
-                  </template>
-                </q-select>
+                <template v-slot:append>
+                  <q-icon name="access_time" class="cursor-pointer">
+                    <q-popup-proxy cover transition-show="scale" transition-hide="scale">
+                      <q-time v-model="formData.fecha_movimiento" mask="YYYY/MM/DD HH:mm" format24h>
+                        <div class="row items-center justify-end">
+                          <q-btn v-close-popup label="Cerrar" color="primary" flat />
+                        </div>
+                      </q-time>
+                    </q-popup-proxy>
+                  </q-icon>
+                </template>
+              </q-input>
+            </div>
+          </div>
+          
+          <!-- Llenadero + Cantidad -->
+          <div class="row q-col-gutter-md q-mb-sm">
+            <div class="col-12 col-sm-7 column q-gutter-y-sm">
+              <q-select
+                v-model="formData.id_llenadero"
+                :options="store.llenaderoOptions"
+                option-value="id_llenadero"
+                option-label="nombre_llenadero"
+                emit-value
+                map-options
+                label="Llenadero"
+                outlined
+                dense
+                :rules="[val => !!val || 'Requerido']"
+              />
 
-                <!-- Cantidad Principal -->
-                <q-input
-                  v-model="formData.cantidad"
-                  type="number"
-                  label="Cantidad (Litros)"
-                  outlined
-                  dense
-                  :rules="[
-                    val => !!val || 'Requerido',
-                    val => parseFloat(val) > 0 || 'Debe ser mayor a 0'
-                  ]"
-                  class="q-mb-sm"
-                >
-                  <template v-slot:prepend>
-                    <q-icon name="water_drop" />
-                  </template>
-                </q-input>
-
-                <!-- Campos Específicos para CARGA -->
-                <div v-if="formData.tipo_movimiento === 'CARGA'" class="q-gutter-y-sm animate-fade">
-                  <q-separator class="q-my-sm" />
-                  <div class="text-subtitle2 text-grey-8">Datos Administrativos de Carga</div>
-                  
-                  <div class="row q-col-gutter-sm">
-                    <div class="col-12 col-sm-6">
-                      <q-input
-                        v-model="formData.numero_factura"
-                        label="Número de Factura"
-                        outlined
-                        dense
-                        :rules="[val => !!val || 'Requerido para Carga']"
-                      />
-                    </div>
-                    <div class="col-12 col-sm-6">
-                      <q-input
-                        v-model="formData.datos_gandola"
-                        label="Placa Gandola / Transporte"
-                        outlined
-                        dense
-                        :rules="[val => !!val || 'Requerido para Carga']"
-                      />
-                    </div>
-                  </div>
-
-                  <div class="row q-col-gutter-sm">
-                    <div class="col-12 col-sm-6">
-                      <q-input
-                        v-model="formData.nombre_conductor"
-                        label="Nombre Conductor"
-                        outlined
-                        dense
-                        :rules="[val => !!val || 'Requerido para Carga']"
-                      />
-                    </div>
-                    <div class="col-12 col-sm-6">
-                      <q-input
-                        v-model="formData.cedula_conductor"
-                        label="Cédula Conductor"
-                        outlined
-                        dense
-                        :rules="[val => !!val || 'Requerido para Carga']"
-                      />
-                    </div>
-                  </div>
-                </div>
-
-                <!-- Observación (Común) -->
-                <q-input
-                  v-model="formData.observacion"
-                  type="textarea"
-                  label="Observación / Justificación"
-                  outlined
-                  dense
-                  class="q-mt-md"
-                  rows="3"
-                  :rules="[val => !!val || 'Requerido']"
-                />
-
-              </q-card>
+              <q-input
+                v-model="formData.cantidad"
+                type="number"
+                label="Volumen Real Litros (Lts)"
+                outlined
+                dense
+                bg-color="red-1"
+                class="text-weight-bold"
+                :rules="[
+                  val => !!val || 'Requerido',
+                  val => parseFloat(val) > 0 || 'Debe ser mayor a 0'
+                ]"
+              >
+                <template v-slot:prepend><q-icon name="water_drop" color="negative" /></template>
+              </q-input>
             </div>
 
-            <!-- SECCIÓN DERECHA: Estadísticas y Proyección -->
-            <div class="col-12 col-md-5 column q-gutter-y-md">
-              
-              <!-- Tarjeta de Estado ACTUAL -->
-              <q-card class="bg-white text-dark q-pa-md shadow-2">
-                <div class="text-subtitle2 text-grey-7">ESTADO ACTUAL</div>
-                <div class="text-h4 text-weight-bold text-primary">
-                  {{ selectedLlenaderoObj ? selectedLlenaderoObj.disponibilidadActual : 0 }} <span class="text-h6">Lts</span>
-                </div>
-                <div class="text-caption">
-                  Capacidad Total: {{ capacity }} Lts
-                </div>
-                <q-linear-progress 
-                  :value="selectedLlenaderoObj ? (selectedLlenaderoObj.disponibilidadActual / capacity) : 0" 
-                  color="primary" 
-                  class="q-mt-sm" 
-                  size="10px"
-                  rounded
-                />
-              </q-card>
+            <!-- Detalles ACTUAL y FINAL -->
+            <div class="col-12 col-sm-5 column q-gutter-y-sm">
+               <q-card flat bordered class="bg-grey-1">
+                 <div class="text-caption q-px-sm bg-grey-3">Detalles ACTUAL</div>
+                 <q-card-section class="q-pa-xs">
+                   <q-input :model-value="currentStock" label="Disponibilidad: Litros (LTS)" outlined dense readonly bg-color="white" />
+                   <q-input :model-value="currentPercentage.toFixed(2) + ' %'" label="% Disponibilidad" outlined dense readonly bg-color="white" class="q-mt-xs" />
+                 </q-card-section>
+               </q-card>
 
-              <!-- Tarjeta de Proyección (PREVIEW) -->
-              <q-card 
-                class="q-pa-md shadow-2 text-white"
-                :class="{
-                  'bg-positive': isValid && formData.tipo_movimiento === 'CARGA',
-                  'bg-warning text-dark': isValid && formData.tipo_movimiento === 'EVAPORACION',
-                  'bg-grey-6': !isValid || !formData.id_llenadero,
-                  'bg-negative': !isValid && formData.id_llenadero && (newStock < 0 || newStock > capacity)
-                }"
-              >
-                <div class="text-subtitle2">ESTADO FINAL (PROYECCIÓN)</div>
-                <div class="text-h3 text-weight-bolder q-my-sm">
-                  {{ newStock }} <span class="text-h6">Lts</span>
-                </div>
-                
-                <div v-if="formData.id_llenadero">
-                  <div v-if="newStock > capacity" class="row items-center q-gutter-x-sm">
-                    <q-icon name="warning" size="sm" />
-                    <span>Excede la capacidad del tanque!</span>
-                  </div>
-                  <div v-else-if="newStock < 0" class="row items-center q-gutter-x-sm">
-                    <q-icon name="error" size="sm" />
-                    <span>Inventario negativo no permitido!</span>
-                  </div>
-                  <div v-else class="row items-center q-gutter-x-sm">
-                    <q-icon name="check_circle" size="sm" />
-                    <span>Operación válida</span>
-                  </div>
-                </div>
-                <div v-else>
-                  Seleccione un llenadero
-                </div>
-              </q-card>
-
-              <!-- Resumen de Reglas -->
-              <q-card class="bg-blue-1 text-blue-9 q-pa-md" flat bordered>
-                <div class="row items-center q-mb-sm">
-                  <q-icon name="info" size="sm" class="q-mr-sm" />
-                  <div class="text-weight-bold">Reglas de Negocio</div>
-                </div>
-                <ul class="q-pl-md q-my-none text-body2">
-                  <li v-if="formData.tipo_movimiento === 'CARGA'">
-                    La recepción aumenta el inventario disponible.
-                  </li>
-                  <li v-if="formData.tipo_movimiento === 'CARGA'">
-                    Se requiere factura y datos de conductor obligatorios.
-                  </li>
-                  <li v-if="formData.tipo_movimiento === 'EVAPORACION'">
-                    La evaporación reduce el inventario (Pérdida).
-                  </li>
-                  <li v-if="formData.tipo_movimiento === 'EVAPORACION'">
-                    <strong>Solo permitido para Gasolina.</strong>
-                  </li>
-                </ul>
-              </q-card>
-
+               <q-card flat bordered class="bg-grey-1">
+                 <div class="text-caption q-px-sm bg-grey-3">Detalles FINAL</div>
+                 <q-card-section class="q-pa-xs">
+                   <q-input :model-value="newStock" label="Disponibilidad: Litros (LTS)" outlined dense readonly bg-color="white" />
+                   <q-input :model-value="percentage.toFixed(2) + ' %'" label="% Disponibilidad" outlined dense readonly bg-color="white" class="q-mt-xs" />
+                 </q-card-section>
+               </q-card>
             </div>
           </div>
 
-          <!-- Acciones Footer -->
-          <div class="row justify-end q-mt-lg q-gutter-x-md">
+          <q-separator class="q-mb-md" />
+          <div class="text-subtitle2 text-grey-8 q-mb-sm">Datos Administrativos</div>
+
+          <!-- Datos Carga -->
+          <div class="row q-col-gutter-sm">
+            <div class="col-6">
+              <q-input v-model="formData.numero_factura" label="N° Factura" outlined dense :rules="[val => !!val || 'Requerido']" />
+            </div>
+            <div class="col-6">
+              <q-input v-model="formData.datos_gandola" label="Placa Transporte" outlined dense :rules="[val => !!val || 'Requerido']" />
+            </div>
+            <div class="col-6">
+              <q-input v-model="formData.nombre_conductor" label="Conductor" outlined dense :rules="[val => !!val || 'Requerido']" />
+            </div>
+            <div class="col-6">
+              <q-input v-model="formData.cedula_conductor" label="Cédula" outlined dense :rules="[val => !!val || 'Requerido']" />
+            </div>
+          </div>
+
+          <!-- Observación y Volumen Final -->
+          <div class="row q-col-gutter-md q-mt-xs">
+            <div class="col-12 col-sm-7">
+              <q-input
+                v-model="formData.observacion"
+                label="Observación"
+                outlined
+                dense
+                type="textarea"
+                rows="2"
+                :rules="[val => !!val || 'Requerido']"
+              />
+            </div>
+            <div class="col-12 col-sm-5 flex flex-center column">
+               <div class="text-subtitle2 text-blue-9 text-weight-bolder">VOLUMEN FINAL</div>
+               <q-input :model-value="newStock" outlined dense readonly bg-color="white" input-class="text-h6 text-center text-weight-bolder text-blue-9" />
+            </div>
+          </div>
+
+          <!-- Footer -->
+          <div class="row justify-end q-mt-md q-gutter-x-sm">
+            <q-btn label="Cancelar" flat v-close-popup color="grey-8" />
             <q-btn 
-              label="Cancelar" 
-              flat 
-              color="grey-8" 
-              v-close-popup 
-            />
-            <q-btn 
-              :label="formData.tipo_movimiento === 'CARGA' ? 'Registrar Recepción' : 'Registrar Evaporación'"
-              type="submit"
-              color="primary"
+              label="Registrar Recepción" 
+              type="submit" 
+              color="primary" 
               icon="save"
-              size="lg"
-              :disable="!isValid || store.loading"
               :loading="store.loading"
+              :disable="!isValid"
             />
           </div>
 
@@ -282,6 +190,7 @@ const {
   formData,
   selectedLlenaderoObj,
   currentStock,
+  currentPercentage,
   capacity,
   newStock,
   percentage,
@@ -290,11 +199,17 @@ const {
   submit
 } = useMovimientoForm(emit);
 
+// Asegurar que el tipo sea siempre CARGA
+watch(() => formData.value.tipo_movimiento, (val) => {
+  if (val !== 'CARGA') formData.value.tipo_movimiento = 'CARGA';
+}, { immediate: true });
+
 // Cargar lista al montar o abrir
 watch(() => props.modelValue, (val) => {
   if (val) {
     store.fetchLlenaderosList();
     resetForm();
+    formData.value.tipo_movimiento = 'CARGA'; // Force
   }
 });
 
@@ -304,14 +219,3 @@ onMounted(() => {
   }
 });
 </script>
-
-<style>
-/* Animación simple para campos condicionales */
-.animate-fade {
-  animation: fadeIn 0.3s ease-in-out;
-}
-@keyframes fadeIn {
-  from { opacity: 0; transform: translateY(-10px); }
-  to { opacity: 1; transform: translateY(0); }
-}
-</style>

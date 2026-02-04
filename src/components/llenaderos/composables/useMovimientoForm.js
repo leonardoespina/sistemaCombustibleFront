@@ -1,5 +1,5 @@
 import { ref, computed, watch } from "vue";
-import { useQuasar } from "quasar";
+import { useQuasar, date } from "quasar";
 import { useMovimientoLlenaderoStore } from "../../../stores/movimientoLlenaderoStore";
 
 export function useMovimientoForm(emit) {
@@ -11,6 +11,7 @@ export function useMovimientoForm(emit) {
     id_llenadero: null,
     cantidad: "",
     observacion: "",
+    fecha_movimiento: date.formatDate(new Date(), "YYYY/MM/DD HH:mm"),
     // Campos condicionales (Carga)
     numero_factura: "",
     datos_gandola: "",
@@ -46,6 +47,11 @@ export function useMovimientoForm(emit) {
     }
   });
 
+  const currentPercentage = computed(() => {
+    if (capacity.value === 0) return 0;
+    return (currentStock.value / capacity.value) * 100;
+  });
+
   const percentage = computed(() => {
     if (capacity.value === 0) return 0;
     return (newStock.value / capacity.value) * 100;
@@ -77,6 +83,7 @@ export function useMovimientoForm(emit) {
       id_llenadero: null,
       cantidad: "",
       observacion: "",
+      fecha_movimiento: date.formatDate(new Date(), "YYYY/MM/DD HH:mm"),
       numero_factura: "",
       datos_gandola: "",
       nombre_conductor: "",
@@ -90,7 +97,12 @@ export function useMovimientoForm(emit) {
     // Confirmación visual
     $q.dialog({
       title: "Confirmar Movimiento",
-      message: `¿Está seguro de registrar este movimiento? \n Nuevo Stock: ${newStock.value} Lts`,
+      message: `<div class="text-center">
+                  ¿Está seguro de registrar este movimiento?<br/>
+                  <b>Nuevo Stock: ${newStock.value} Lts</b><br/><br/>
+                  <span class="text-negative text-weight-bold">ADVERTENCIA: Una vez almacenado, el registro no podrá ser modificado.</span>
+                </div>`,
+      html: true,
       cancel: true,
       persistent: true
     }).onOk(async () => {
@@ -106,6 +118,7 @@ export function useMovimientoForm(emit) {
     formData,
     selectedLlenaderoObj,
     currentStock,
+    currentPercentage,
     capacity,
     newStock,
     percentage,

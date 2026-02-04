@@ -2,7 +2,7 @@
   <q-page class="q-pa-md">
     <q-card>
       <q-card-section class="row items-center q-pb-none">
-        <div class="text-h6">Recepción de Cisternas (Cargas)</div>
+        <div class="text-h6">Gestión de Evaporaciones</div>
         <q-space />
         <q-input
           v-model="store.filter"
@@ -18,8 +18,8 @@
         </q-input>
         <q-btn
           color="primary"
-          icon="add"
-          label="Nueva Recepción"
+          icon="opacity"
+          label="Registrar Evaporación"
           @click="showDialog = true"
         />
       </q-card-section>
@@ -35,8 +35,8 @@
           binary-state-sort
         >
           <template v-slot:body-cell-cantidad="props">
-             <q-td :props="props" class="text-right">
-                <span class="text-weight-bold text-positive">+ {{ props.row.cantidad }} Lts</span>
+             <q-td :props="props" class="text-right text-negative text-weight-bold">
+                - {{ props.row.cantidad }} Lts
              </q-td>
           </template>
 
@@ -84,10 +84,10 @@
       </q-card-section>
     </q-card>
 
-    <!-- Diálogo de Registro (Solo Carga) -->
-    <MovimientoLlenaderoDialog
+    <!-- Diálogo de Registro -->
+    <EvaporacionFormDialog
       v-model="showDialog"
-      @save="store.fetchMovimientos"
+      @save="store.fetchEvaporaciones"
     />
 
     <!-- Diálogo de Detalle -->
@@ -100,12 +100,12 @@
 
 <script setup>
 import { ref, onMounted, onUnmounted } from "vue";
-import { useMovimientoLlenaderoStore } from "../../stores/movimientoLlenaderoStore";
-import MovimientoLlenaderoDialog from "../../components/llenaderos/MovimientoLlenaderoDialog.vue";
+import { useEvaporacionStore } from "../../stores/evaporacionStore";
+import EvaporacionFormDialog from "../../components/llenaderos/EvaporacionFormDialog.vue";
 import MovimientoDetailDialog from "../../components/llenaderos/MovimientoDetailDialog.vue";
 import { date } from "quasar";
 
-const store = useMovimientoLlenaderoStore();
+const store = useEvaporacionStore();
 const showDialog = ref(false);
 const showDetailDialog = ref(false);
 const selectedMovement = ref(null);
@@ -124,11 +124,10 @@ const columns = [
     label: "Llenadero",
     field: (row) => row.Llenadero?.nombre_llenadero || "N/A",
     align: "left",
-    sortable: false, 
   },
   {
     name: "cantidad",
-    label: "Recibido",
+    label: "Evaporado",
     field: "cantidad",
     align: "right",
     sortable: true,
@@ -175,7 +174,7 @@ const columns = [
 ];
 
 onMounted(() => {
-  store.fetchMovimientos();
+  store.fetchEvaporaciones();
   store.initSocket();
 });
 
@@ -185,7 +184,7 @@ onUnmounted(() => {
 
 function onRequest(props) {
   store.pagination = props.pagination;
-  store.fetchMovimientos();
+  store.fetchEvaporaciones();
 }
 
 function openDetail(row) {

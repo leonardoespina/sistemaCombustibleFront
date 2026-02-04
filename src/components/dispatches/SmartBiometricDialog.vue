@@ -101,11 +101,6 @@
           <q-card flat bordered class="bg-white full-width q-pa-md text-center">
             <div class="text-subtitle2 q-mb-sm text-left">Almacenista:</div>
             
-             <!-- Asumimos que el Almacenista se identifica con HUELA + CEDULA tambien o solo Huella si ya esta logueado? 
-                  El requerimiento dice: "Acción: Se solicita la huella del Almacenista."
-                  Vamos a pedir Cédula también para validar contra alguien específico o usar el usuario logueado en sesión.
-                  Usaremos el usuario logueado (current user) como Almacenista por defecto si existe, o pedir cédula.
-              -->
              <div class="q-mb-md">
                <q-input 
                  v-model="cedulaAlmacenistaInput" 
@@ -153,7 +148,7 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, onBeforeUnmount } from "vue";
+import { ref, computed, onMounted, onBeforeUnmount, watch } from "vue";
 import { useQuasar } from "quasar";
 import api from "../../api";
 import websdkUrl from "../fingerprint/websdk.client.ui.js?url";
@@ -184,25 +179,48 @@ const usuarioIdentificado = ref(null);
 const biometriaSolicitante = ref(null); // ID Biometria o Data
 const biometriaAlmacenista = ref(null);
 
+const rawFingerprintSolicitante = ref(null);
+const rawFingerprintAlmacenista = ref(null);
+
 const currentUser = ref(null); // Usuario logueado (Almacenista potencial)
 
 // SDK
 let fingerprintApi = null;
 let Fingerprint = null;
 
+const resetState = () => {
+  step.value = 1;
+  progress.value = 0;
+  capturing.value = false;
+  generatingTicket.value = false;
+  cedulaInput.value = "";
+  usuarioIdentificado.value = null;
+  biometriaSolicitante.value = null;
+  biometriaAlmacenista.value = null;
+  rawFingerprintSolicitante.value = null;
+  rawFingerprintAlmacenista.value = null;
+  
+  if (currentUser.value) {
+    cedulaAlmacenistaInput.value = currentUser.value.cedula;
+  } else {
+    cedulaAlmacenistaInput.value = "";
+  }
+};
+
+// Reiniciar cuando el diálogo se abre
+watch(() => props.modelValue, (newVal) => {
+  if (newVal) {
+    resetState();
+  }
+});
+
 // --- LIFECYCLE ---
 onMounted(async () => {
   const userStr = localStorage.getItem("user");
   if (userStr) {
     currentUser.value = JSON.parse(userStr);
-    // Si estamos en paso 3 y hay usuario logueado, pre-llenar cédula o usarla
     cedulaAlmacenistaInput.value = currentUser.value.cedula; 
   }
-  // Pre-llenar cédula del solicitante si tenemos data (opcional, mejor dejar que él escriba)
-  /* if (props.requestData?.Solicitante?.cedula) {
-      cedulaInput.value = props.requestData.Solicitante.cedula;
-  } */
-  
   await initFingerprintSDK();
 });
 
@@ -212,11 +230,7 @@ onBeforeUnmount(() => {
 
 // --- LOGIC ---
 
-// 1. Inicializar SDK (Reutilizado)
 const initFingerprintSDK = async () => {
-    // ... Implementación idéntica al componente anterior ...
-    // Para simplificar el código aquí, asumimos que carga bien.
-    // Necesitamos cargar los scripts dinámicamente.
     try {
         if (!window.WebSdk) await loadScript(websdkUrl);
         if (!window.Fingerprint) await loadScript(fingerprintSdkUrl);
@@ -244,9 +258,7 @@ const loadScript = (src) => {
   });
 };
 
-// 2. Captura
 const captureFingerprint = async (phase) => {
-    // Phase 1: Solicitante, Phase 2: Almacenista
     if (!fingerprintApi) return;
     
     if (phase === 1 && !cedulaInput.value) {
@@ -274,7 +286,6 @@ const handleSample = async (event) => {
             const rawData = typeof samples[0] === "string" ? samples[0] : samples[0].Data;
             await fingerprintApi.stopAcquisition();
             
-            // Procesar la muestra según el paso
             if (step.value === 1) {
                 await validarFase1(rawData);
             } else if (step.value === 3) {
@@ -286,7 +297,6 @@ const handleSample = async (event) => {
     }
 }
 
-// 3. Validación Backend
 const validarFase1 = async (huellaBase64) => {
     progress.value = 75;
     try {
@@ -299,19 +309,15 @@ const validarFase1 = async (huellaBase64) => {
 
         usuarioIdentificado.value = res.data.usuario;
         biometriaSolicitante.value = res.data.id_biometria;
-        rawFingerprintSolicitante.value = huellaBase64; // GUARDAR RAW
+        rawFingerprintSolicitante.value = huellaBase64;
 
         const rol = res.data.usuario.rol_biometrico;
         
-        // REQUERIMIENTO: Primero se debe captar la huella del Solicitante (RETIRO o AMBOS)
         if (rol === "AMBOS") {
-            // Si es AMBOS, preguntamos si desea impresión directa (Paso 2)
             step.value = 2;
         } else if (rol === "RETIRO") {
-            // Si es solo RETIRO, procedemos a pedir la firma del Almacenista (Paso 3)
             proceedAsSolicitante();
         } else {
-            // Si es solo ALMACEN, damos error porque primero va el solicitante
             $q.notify({
                 type: 'warning', 
                 message: 'La primera huella debe ser del Solicitante (Rol Retiro). Usted tiene Rol Almacén.'
@@ -342,7 +348,7 @@ const validarFase3 = async (huellaBase64) => {
         const rol = res.data.usuario.rol_biometrico;
         if (rol === "ALMACEN" || rol === "AMBOS") {
             biometriaAlmacenista.value = res.data.id_biometria;
-            rawFingerprintAlmacenista.value = huellaBase64; // GUARDAR RAW
+            rawFingerprintAlmacenista.value = huellaBase64;
             await finalizeTicketGeneration();
         } else {
             $q.notify({
@@ -360,76 +366,27 @@ const validarFase3 = async (huellaBase64) => {
     }
 };
 
-// 4. Transiciones
 const proceedAsSolicitante = () => {
     step.value = 3;
     progress.value = 0;
 };
 
 const proceedDualAuth = async () => {
-    // Auto-firmar ambas partes con la misma huella
     biometriaAlmacenista.value = biometriaSolicitante.value;
-    rawFingerprintAlmacenista.value = rawFingerprintSolicitante.value; // REUSAR RAW
+    rawFingerprintAlmacenista.value = rawFingerprintSolicitante.value;
     await finalizeTicketGeneration();
 };
 
 const finalizeTicketGeneration = async () => {
-    step.value = 4; // Spinner loading
+    step.value = 4;
     generatingTicket.value = true;
     
     try {
-        const payload = {
-            // Enviamos los IDs de biometría validados
-            // NOTA: El endpoint imprimirTicket actual espera { huella_almacenista, huella_receptor, cedula_receptor }
-            // Podríamos necesitar enviar también los IDs validados si modificamos el backend, o enviar strings dummy
-            // ya que YA VALIDAMOS aquí.
-            // Para mantener compatibilidad con el endpoint existente que valida de nuevo:
-            // Opción A: Modificar imprimirTicket para aceptar "skipValidation: true" si enviamos un token firmado (complejo).
-            // Opción B: Enviar los datos que espera y dejar que re-valide (seguro).
-            // Pero imprimirTicket espera la huella en Base64 para validarla de nuevo.
-            // Nosotros tenemos la huella? No la guardamos en variable global rawData.
-            // Deberíamos haberla guardado en validarFase1.
-            
-            // Solución Rapida: Modificar imprimirTicket para que acepte `id_almacenista_auth` y `id_receptor_auth` 
-            // evitando re-validar huellas pesadas, o confiar en que esta pantalla hace la validación.
-            
-            // Sin embargo, por seguridad, el backend debe confiar solo en sí mismo.
-            // Como este "check" es frontend, el backend debe recibir un token o volver a validar.
-            
-            // Dado que no puedo cambiar todo el backend profundamente ahora, 
-            // voy a llamar al endpoint /imprimir CON las huellas (simuladas o reales si las guardo).
-            // Pero `validar-firma` ya validó.
-            
-            // VOY A USAR EL PAYLOAD EXISTENTE del endpoint backend actual:
-            // req.body: { huella_almacenista, huella_receptor, cedula_receptor }
-            // Esto implica que necesito guardar las huellas RAW en el state.
-            
-            // Ajuste: Guardar rawFingerprint
-        };
-        
-        // NOTA: El controlador `imprimirTicket` actual VALIDA DE NUEVO.
-        // Si quiero aprovechar la validación avanzada de `validar-firma`,
-        // debería modificar `imprimirTicket` para que acepte flags de "Pre-validado" 
-        // o mejor, crear un endpoint `imprimirTicketSmart` que use los roles.
-        
-        // Pero el usuario pidió "Refactorizar RequestListPage", no reescribir todo el backend de impresión.
-        // Asumiremos que llamamos a `imprimir` pasando las huellas RAW que capturamos.
-        
-        // Necesito guardar las huellas.
-        // ...
-        
-        // SIMULACIÓN (Ya que validarFirma retorna OK, asumimos que podemos proceder)
-        // PERO el backend `imprimirTicket` va a fallar si le mando basura en `huella_almacenista`.
-        // ASI QUE modificaré `imprimirTicket` ligeramente en el backend para permitir un "bypass" si viene de este flujo? NO, inseguro.
-        
-        // MEJOR: Guardaré el `template` o `raw` en variables locales `fingerprint1` y `fingerprint2`
-        // y se las paso a `imprimirTicket`.
-        
         const response = await api.post(`/despacho/imprimir/${props.requestData.id_solicitud}`, {
            huella_almacenista: rawFingerprintAlmacenista.value, 
            huella_receptor: rawFingerprintSolicitante.value,
            cedula_receptor: usuarioIdentificado.value.cedula,
-           cedula_almacenista: cedulaAlmacenistaInput.value || usuarioIdentificado.value.cedula // Para dual auth usa la misma
+           cedula_almacenista: cedulaAlmacenistaInput.value || usuarioIdentificado.value.cedula
         });
         
         $q.notify({type:'positive', message: 'Ticket generado exitosamente'});
@@ -444,26 +401,9 @@ const finalizeTicketGeneration = async () => {
             message: `${errorMsg} ${details ? ': ' + details : ''}`,
             timeout: 5000
         });
-        step.value = (biometriaAlmacenista.value === biometriaSolicitante.value) ? 2 : 3; // Retroceder si falla
+        step.value = (biometriaAlmacenista.value === biometriaSolicitante.value) ? 2 : 3;
     } finally {
         generatingTicket.value = false;
     }
 };
-
-// Variables para guardar las huellas raw y pasarlas al endpoint de impresión
-const rawFingerprintSolicitante = ref(null);
-const rawFingerprintAlmacenista = ref(null);
-
-// Interceptar rawData en validaciones
-/* 
-    En validarFase1(rawData):
-        rawFingerprintSolicitante.value = rawData;
-        
-    En validarFase3(rawData):
-        rawFingerprintAlmacenista.value = rawData;
-        
-    En proceedDualAuth:
-        rawFingerprintAlmacenista.value = rawFingerprintSolicitante.value;
-*/
-
 </script>

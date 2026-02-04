@@ -112,8 +112,28 @@ const routes = [
       {
         path: "movimientos-llenadero",
         name: "movimiento-llenadero-list",
-        meta: { requiresAdmin: true },
+        meta: {
+          allowedRoles: [
+            "ADMIN",
+            "GERENTE",
+            "JEFE DIVISION",
+            "ALMACENISTA",
+          ],
+        },
         component: () => import("../pages/llenaderos/MovimientosLlenaderoPage.vue"),
+      },
+      {
+        path: "evaporaciones",
+        name: "evaporacion-list",
+        meta: {
+          allowedRoles: [
+            "ADMIN",
+            "GERENTE",
+            "JEFE DIVISION",
+            "ALMACENISTA",
+          ],
+        },
+        component: () => import("../pages/llenaderos/GestionEvaporacionPage.vue"),
       },
       {
         path: "solicitudes",
@@ -178,9 +198,17 @@ router.beforeEach((to, from, next) => {
     return next("/login");
   }
 
-  // 3. Protección por Rol (ADMIN)
+  // 3. Protección por Roles
+  // 3.1 Soporte para múltiples roles permitidos (allowedRoles)
+  if (to.meta.allowedRoles) {
+    if (!to.meta.allowedRoles.includes(user.tipo_usuario)) {
+      return next({ name: "home" });
+    }
+    return next();
+  }
+
+  // 3.2 Retrocompatibilidad con requiresAdmin
   if (to.meta.requiresAdmin && user.tipo_usuario !== "ADMIN") {
-    // Si la ruta requiere admin y el usuario no lo es, redirigir a dashboard
     return next({ name: "home" });
   }
 
