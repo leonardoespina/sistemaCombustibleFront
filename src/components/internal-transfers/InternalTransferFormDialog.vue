@@ -4,120 +4,150 @@
     @update:model-value="(val) => emit('update:modelValue', val)"
     persistent
   >
-    <q-card style="width: 800px; max-width: 95vw">
-      <q-card-section>
-        <div class="text-h6">Registrar Transferencia Interna leo</div>
+    <q-card style="width: 900px; max-width: 95vw">
+      <q-card-section class="bg-primary text-white row items-center">
+        <div class="text-h6">
+          {{
+            isReadOnly
+              ? "Detalle de Transferencia"
+              : isEditing
+              ? "Editar Transferencia"
+              : "Registrar Transferencia Interna"
+          }}
+        </div>
+        <q-space />
+        <q-btn icon="close" flat round dense v-close-popup />
       </q-card-section>
 
-      <q-form @submit.prevent="onSave">
-        <q-card-section class="q-pt-none scroll" style="max-height: 75vh">
+      <q-form @submit.prevent="handleSaveInternal">
+        <q-card-section class="q-pt-md scroll" style="max-height: 75vh">
           <div class="row q-col-gutter-md">
             <!-- 1. DATOS GENERALES -->
             <div class="col-12 col-md-4">
               <q-input
                 dense
+                outlined
                 v-model="formData.fecha"
                 type="date"
                 label="Fecha"
+                :readonly="isReadOnly"
                 :rules="[(val) => !!val || 'Requerido']"
               />
             </div>
             <div class="col-12 col-md-4">
               <q-input
                 dense
+                outlined
                 v-model="formData.hora"
                 type="time"
-                label="Hora Inicio"
+                label="Hora"
+                :readonly="isReadOnly"
                 :rules="[(val) => !!val || 'Requerido']"
               />
             </div>
             <div class="col-12 col-md-4">
-              <q-select
+              <q-input
                 dense
+                outlined
+                v-model="almacenistaNombre"
+                label="Registrado Por"
+                readonly
                 filled
-                use-input
-                v-model="formData.id_almacenista"
-                label="Almacenista"
-                :options="filteredWarehousemen"
-                @filter="filterWarehousemen"
-                option-value="id_almacenista"
-                :option-label="(opt) => `${opt.nombre} ${opt.apellido}`"
-                emit-value
-                map-options
-                :rules="[(val) => !!val || 'Requerido']"
               />
             </div>
 
             <q-separator class="col-12 q-my-sm" />
 
+            <!-- LLENADERO -->
+            <div class="col-12">
+              <q-select
+                dense
+                outlined
+                v-model="formData.id_llenadero"
+                :options="llenaderosList"
+                option-value="id_llenadero"
+                option-label="nombre_llenadero"
+                label="Seleccionar Llenadero *"
+                emit-value
+                map-options
+                :readonly="isReadOnly || isEditing"
+                :rules="[(val) => !!val || 'Requerido']"
+                @update:model-value="onLlenaderoSelect"
+              >
+                <template v-slot:selected-item="scope">
+                    <span v-if="scope.opt">{{ scope.opt.nombre_llenadero || (initialData?.TanqueOrigen?.Llenadero?.nombre_llenadero) }}</span>
+                </template>
+              </q-select>
+            </div>
+
             <!-- 2. TANQUES -->
             <div class="col-12 col-md-6">
               <q-select
                 dense
-                filled
+                outlined
                 v-model="formData.id_tanque_origen"
                 :options="tanksList"
                 option-value="id_tanque"
-                :option-label="
-                  (opt) =>
-                    `${opt.codigo} - ${opt.nombre} (${opt.tipo_combustible})`
-                "
+                :option-label="(opt) => opt ? `${opt.codigo} - ${opt.nombre} (${opt.TipoCombustible?.nombre || ''})` : ''"
                 label="Tanque Origen"
                 emit-value
                 map-options
+                :disable="!formData.id_llenadero"
+                :readonly="isReadOnly || isEditing"
                 :rules="[(val) => !!val || 'Requerido']"
                 @update:model-value="onSourceTankSelect"
-              />
-              <div
-                v-if="sourceTankDetail"
-                class="text-caption text-grey-8 q-ml-sm"
               >
-                Nivel Actual:
-                <strong>{{ sourceTankDetail.nivel_actual }} L</strong>
+                <template v-slot:selected-item="scope">
+                    <span v-if="scope.opt">{{ scope.opt.codigo }} - {{ scope.opt.nombre }}</span>
+                    <span v-else-if="initialData?.TanqueOrigen">{{ initialData.TanqueOrigen.codigo }} - {{ initialData.TanqueOrigen.nombre }}</span>
+                </template>
+              </q-select>
+              <div v-if="sourceTankDetail" class="text-caption text-grey-8 q-ml-sm">
+                Nivel Actual: <strong>{{ sourceTankDetail.nivel_actual }} L</strong>
               </div>
             </div>
 
             <div class="col-12 col-md-6">
               <q-select
                 dense
-                filled
+                outlined
                 v-model="formData.id_tanque_destino"
-                :options="tanksList"
+                :options="filteredDestinationTanks"
                 option-value="id_tanque"
-                :option-label="
-                  (opt) =>
-                    `${opt.codigo} - ${opt.nombre} (${opt.tipo_combustible})`
-                "
+                :option-label="(opt) => opt ? `${opt.codigo} - ${opt.nombre} (${opt.TipoCombustible?.nombre || ''})` : ''"
                 label="Tanque Destino"
                 emit-value
                 map-options
+                :disable="!formData.id_tanque_origen"
+                :readonly="isReadOnly || isEditing"
                 :rules="[
                   (val) => !!val || 'Requerido',
-                  (val) =>
-                    val !== formData.id_tanque_origen ||
-                    'Debe ser diferente al origen',
+                  (val) => val !== formData.id_tanque_origen || 'Debe ser diferente al origen',
                 ]"
                 @update:model-value="onDestinationTankSelect"
-              />
-              <div
-                v-if="destinationTankDetail"
-                class="text-caption text-grey-8 q-ml-sm"
               >
-                Nivel Actual:
-                <strong>{{ destinationTankDetail.nivel_actual }} L</strong>
+                <template v-slot:selected-item="scope">
+                    <span v-if="scope.opt">{{ scope.opt.codigo }} - {{ scope.opt.nombre }}</span>
+                    <span v-else-if="initialData?.TanqueDestino">{{ initialData.TanqueDestino.codigo }} - {{ initialData.TanqueDestino.nombre }}</span>
+                </template>
+              </q-select>
+              <div v-if="destinationTankDetail" class="text-caption text-grey-8 q-ml-sm">
+                Nivel Actual: <strong>{{ destinationTankDetail.nivel_actual }} L</strong>
+              </div>
+              <div v-if="formData.id_tanque_origen && filteredDestinationTanks.length === 0" class="text-caption text-negative q-ml-sm">
+                * No hay otros tanques con el mismo combustible en este llenadero.
               </div>
             </div>
 
             <!-- 3. DETALLES DE TRANSFERENCIA -->
-            <div class="col-12 text-subtitle2 text-primary q-mt-md">
-              Detalles de la Transferencia
+            <div class="col-12 text-subtitle2 text-primary uppercase text-weight-bold q-mt-md">
+              Detalles de la Operación
             </div>
 
-            <div class="col-12 q-mb-sm">
+            <div class="col-12 q-mb-sm" v-if="!isReadOnly && !isEditing">
               <q-btn-toggle
                 v-model="calculationMode"
                 spread
-                class="my-custom-toggle"
                 no-caps
                 rounded
                 unelevated
@@ -125,134 +155,77 @@
                 color="grey-3"
                 text-color="primary"
                 :options="[
-                  {
-                    label: 'Por Medición Final (Vara/Total)',
-                    value: 'final',
-                  },
+                  { label: 'Por Medición Final (Vara)', value: 'final' },
                   { label: 'Por Cantidad a Transferir', value: 'amount' },
                 ]"
-                @update:model-value="onCalculationModeChange"
               />
             </div>
 
-            <!-- MODO FINAL (VARA O MANUAL FINAL) -->
+            <!-- MODO FINAL (VARA) -->
             <template v-if="calculationMode === 'final'">
               <div class="col-12 col-md-6">
                 <q-input
                   dense
-                  filled
+                  outlined
                   v-model.number="formData.medida_vara_destino"
-                  :label="
-                    tieneAforo || isFormulaMode
-                      ? 'Medida Vara Final (cm)'
-                      : 'Medida Vara (Referencial)'
-                  "
+                  :label="tieneAforo || isFormulaMode ? 'Medida Vara Final Destino' : 'Medida Vara (Ref)'"
                   type="number"
-                  :rules="[
-                    (val) =>
-                      !tieneAforo || val >= 0 || 'Requerido si tiene Aforo',
-                  ]"
+                  :suffix="destinationTankDetail?.unidad_medida || 'cm'"
+                  :readonly="isReadOnly"
                   :disable="!formData.id_tanque_destino"
-                  @update:model-value="calculateLitrosDestino"
-                />
-              </div>
-
-              <div class="col-12 col-md-6">
-                <div class="text-caption text-grey-7 q-pl-sm">
-                  {{
-                    tieneAforo || isFormulaMode
-                      ? "Volumen Calculado:"
-                      : "Volumen Final Manual:"
-                  }}
-
-                  <div class="text-xs text-negative" v-if="isFormulaMode">
-                    DEBUG: h={{ debugInfo.h }} m, L={{ debugInfo.l }} m, R={{
-                      debugInfo.r
-                    }}
-                    m, U={{ debugInfo.u }}
-                  </div>
-
-                  <strong
-                    v-if="!editingLitros"
-                    class="editable-value"
-                    :class="{ 'was-edited': litersWereEdited }"
-                    @click="startEdit"
-                  >
-                    {{ litersFinales }} L
-                    <q-icon name="edit" size="xs" class="edit-icon q-ml-xs" />
-                    <q-tooltip>Click para editar manualmente</q-tooltip>
-                  </strong>
-
-                  <q-input
-                    v-else
-                    ref="inputLitros"
-                    v-model.number="litersFinales"
-                    type="number"
-                    dense
-                    borderless
-                    input-class="text-weight-bold inline-input-text"
-                    class="inline-edit-small"
-                    @blur="finishEdit"
-                    @keyup.enter="finishEdit"
-                    @keyup.escape="cancelEdit"
-                  >
-                    <template v-slot:append>
-                      <span class="text-weight-bold">L</span>
-                    </template>
-                  </q-input>
+                  @update:model-value="calculate"
+                >
+                  <template v-slot:append v-if="!isReadOnly && (tieneAforo || isFormulaMode)">
+                    <q-btn flat round dense icon="edit" size="xs" color="primary" @click="startEdit">
+                      <q-tooltip>Editar volumen manualmente</q-tooltip>
+                    </q-btn>
+                  </template>
+                </q-input>
+                <div v-if="tieneAforo || isFormulaMode" class="text-caption text-grey-7 q-pl-sm q-mt-xs">
+                  {{ isFormulaMode ? "Volumen Calculado:" : "Volumen según Tabla:" }}
+                  <strong :class="{'text-orange': manualEdit.final}">{{ liters.final }} Lts</strong>
                 </div>
+                <q-input v-if="editing.final" v-model.number="liters.final" type="number" dense outlined label="Volumen Final Manual" class="q-mt-xs bg-orange-1" @blur="finishEdit" autofocus />
               </div>
             </template>
 
-            <!-- MODO CANTIDAD (TRANSFERIR X LITROS) -->
+            <!-- MODO CANTIDAD -->
             <template v-if="calculationMode === 'amount'">
               <div class="col-12 col-md-6">
                 <q-input
                   dense
-                  filled
+                  outlined
                   v-model.number="litersToTransfer"
                   label="Cantidad a Transferir"
                   type="number"
                   suffix="Lts"
+                  :readonly="isReadOnly"
                   :rules="[(val) => val > 0 || 'Debe ser mayor a 0']"
                   :disable="!formData.id_tanque_destino"
                   @update:model-value="calculateFinalFromAmount"
                 />
               </div>
-              <div class="col-12 col-md-6 flex items-center">
-                <div class="text-caption text-grey-8">
-                  Nivel Final Estimado: <strong>{{ litersFinales }} L</strong>
-                </div>
-              </div>
             </template>
 
-            <!-- 4. RESULTADOS -->
+            <!-- 4. RESULTADOS (RESUMEN) -->
             <div class="col-12 q-mt-md">
               <q-banner rounded class="bg-blue-1 text-primary">
-                <div class="text-subtitle1 text-weight-bold">
-                  Resumen de Transferencia
-                </div>
-                <div class="row">
+                <div class="text-subtitle2 text-weight-bold uppercase q-mb-xs">Resumen de Movimiento</div>
+                <div class="row q-col-gutter-sm">
                   <div class="col-6">
-                    Transferido:
-                    <strong>{{ computedLitersTransferidos }} L</strong>
+                    A TRANSFERIR:
+                    <div class="text-h6 text-weight-bold">{{ computedLitersTransferidos }} L</div>
                   </div>
                   <div class="col-6 text-right">
-                    Nuevo Nivel Origen:
-                    <strong>{{ litersOrigenDespues }} L</strong>
+                    NUEVO NIVEL ORIGEN:
+                    <div class="text-h6 text-weight-bold" :class="{'text-negative': parseFloat(litersOrigenDespues) < 0}">{{ litersOrigenDespues }} L</div>
                   </div>
                 </div>
-                <div
-                  v-if="parseFloat(computedLitersTransferidos) <= 0"
-                  class="text-caption text-negative"
-                >
-                  * El nivel final del destino debe ser mayor a su nivel actual.
+                <div v-if="parseFloat(computedLitersTransferidos) <= 0" class="text-caption text-negative q-mt-xs">
+                  * El nivel final debe ser mayor al actual.
                 </div>
-                <div
-                  v-if="parseFloat(litersOrigenDespues) < 0"
-                  class="text-caption text-negative"
-                >
-                  * Insuficiente combustible en origen.
+                <div v-if="parseFloat(litersOrigenDespues) < 0" class="text-caption text-negative q-mt-xs">
+                  * Insuficiente producto en origen.
                 </div>
               </q-banner>
             </div>
@@ -260,25 +233,28 @@
             <div class="col-12">
               <q-input
                 dense
+                outlined
                 v-model="formData.observacion"
                 type="textarea"
                 label="Observaciones"
                 rows="2"
+                :readonly="isReadOnly"
               />
             </div>
           </div>
         </q-card-section>
 
+        <q-separator />
+
         <q-card-actions align="right" class="q-pa-md">
-          <q-btn flat label="Cancelar" v-close-popup />
+          <q-btn flat label="Cerrar" color="grey-7" v-close-popup />
           <q-btn
-            label="Registrar"
+            v-if="!isReadOnly"
+            :label="isEditing ? 'Guardar Cambios' : 'Registrar Movimiento'"
             type="submit"
             color="primary"
-            :disable="
-              parseFloat(computedLitersTransferidos) <= 0 ||
-              parseFloat(litersOrigenDespues) < 0
-            "
+            unelevated
+            :disable="parseFloat(computedLitersTransferidos) <= 0 || parseFloat(litersOrigenDespues) < 0"
           />
         </q-card-actions>
       </q-form>
@@ -287,323 +263,95 @@
 </template>
 
 <script setup>
-import { ref, watch, reactive, computed, nextTick } from "vue";
-import { date } from "quasar";
-import { calcularVolumenTanque } from "../measurements/formula.js";
+import { ref, watch, computed } from "vue";
+import { useInternalTransferForm } from "./composables/useInternalTransferForm";
 
 const props = defineProps({
   modelValue: Boolean,
+  initialData: Object,
+  isEditing: Boolean,
+  isReadOnly: Boolean,
+  llenaderosList: { type: Array, default: () => [] },
   tanksList: { type: Array, default: () => [] },
-  warehousemenList: { type: Array, default: () => [] },
   sourceTankDetail: { type: Object, default: null },
   destinationTankDetail: { type: Object, default: null },
-  destinationTankAforo: { type: Object, default: () => ({}) },
+  destinationTankAforo: { type: [Object, Array], default: () => [] },
 });
 
 const emit = defineEmits([
   "update:modelValue",
   "save",
+  "llenadero-changed",
   "source-tank-changed",
   "destination-tank-changed",
 ]);
 
-const formData = ref({});
-const filteredWarehousemen = ref([]);
+const {
+  formData, calculationMode, litersToTransfer, editing, manualEdit, liters,
+  tieneAforo, isFormulaMode, computedLitersTransferidos, litersOrigenDespues,
+  calculate, calculateFinalFromAmount, startEdit, finishEdit, initializeForm, resetAllStates
+} = useInternalTransferForm(props, emit);
 
-// Modos de cálculo
-const calculationMode = ref("final"); // 'final' | 'amount'
-const litersToTransfer = ref(null);
+const almacenistaNombre = ref("");
 
-// Estados de edición manual de litros
-const editingLitros = ref(false);
-const litersWereEdited = ref(false);
-const originalLitersValue = ref(0);
-const inputLitros = ref(null);
+// Filtrado de tanques destino (mismo combustible que origen)
+const filteredDestinationTanks = computed(() => {
+  if (!formData.value.id_tanque_origen || !props.sourceTankDetail) return [];
+  
+  // Usamos el id_tipo_combustible del detalle cargado
+  const combustibleOrigen = props.sourceTankDetail.id_tipo_combustible;
+  
+  console.log("Combustible Origen:", combustibleOrigen);
+  console.log("Lista de tanques disponibles:", props.tanksList);
 
-const litersFinales = ref(0); // v-model para el display/input
-const debugInfo = ref({ h: 0, l: 0, r: 0, u: "" });
-
-// Watchers
-watch(
-  () => props.modelValue,
-  (val) => {
-    if (val) {
-      const now = new Date();
-      formData.value = {
-        fecha: date.formatDate(now, "YYYY-MM-DD"),
-        hora: date.formatDate(now, "HH:mm"),
-        id_almacenista: null,
-        id_tanque_origen: null,
-        id_tanque_destino: null,
-        medida_vara_destino: null,
-        observacion: "",
-      };
-      filteredWarehousemen.value = props.warehousemenList;
-      resetEditState();
-    }
-  }
-);
-
-watch(
-  () => props.destinationTankDetail,
-  () => {
-    if (!litersWereEdited.value && calculationMode.value === "final") {
-      calculateLitrosDestino();
-    }
-  }
-);
-
-watch(
-  () => props.destinationTankAforo,
-  () => {
-    if (!litersWereEdited.value && calculationMode.value === "final") {
-      calculateLitrosDestino();
-    }
-  }
-);
-
-// Computed
-const tieneAforo = computed(() => {
-  const aforo = props.destinationTankAforo || {};
-  return aforo && typeof aforo === "object" && Object.keys(aforo).length > 0;
-});
-
-const isFormulaMode = computed(() => {
-  const t = props.destinationTankDetail;
-  if (!t) return false;
-
-  if (tieneAforo.value) return false;
-
-  // Verificar dimensiones según tipo
-  if (t.tipo_tanque === "RECTANGULAR" || t.tipo_tanque === "CUADRADO") {
-    return t.largo > 0 && t.ancho > 0 && t.alto > 0;
-  } else {
-    // Por defecto CILINDRICO
-    return t.largo > 0 && t.radio > 0;
-  }
-});
-
-const computedLitersTransferidos = computed(() => {
-  if (!props.destinationTankDetail) return "0.00";
-  const antes = parseFloat(props.destinationTankDetail.nivel_actual) || 0;
-  const despues = parseFloat(litersFinales.value) || 0;
-  return (despues - antes).toFixed(2);
-});
-
-const litersOrigenDespues = computed(() => {
-  if (!props.sourceTankDetail) return "0.00";
-  const origenAntes = parseFloat(props.sourceTankDetail.nivel_actual) || 0;
-  const transferido = parseFloat(computedLitersTransferidos.value);
-  return (origenAntes - transferido).toFixed(2);
-});
-
-// Métodos
-function resetEditState() {
-  litersFinales.value = 0;
-  editingLitros.value = false;
-  litersWereEdited.value = false;
-  calculationMode.value = "final";
-  litersToTransfer.value = null;
-}
-
-function onSourceTankSelect(val) {
-  emit("source-tank-changed", val);
-}
-
-function onDestinationTankSelect(val) {
-  emit("destination-tank-changed", val);
-  formData.value.medida_vara_destino = null;
-  resetEditState();
-}
-
-function filterWarehousemen(val, update) {
-  if (val === "") {
-    update(() => {
-      filteredWarehousemen.value = props.warehousemenList;
-    });
-    return;
-  }
-  update(() => {
-    const needle = val.toLowerCase();
-    filteredWarehousemen.value = props.warehousemenList.filter((w) =>
-      w.nombre.toLowerCase().includes(needle)
-    );
+  return props.tanksList.filter(t => {
+    // Aseguramos comparación numérica y verificamos existencia de tipos
+    const match = t.id_tanque !== formData.value.id_tanque_origen && 
+                  Number(t.id_tipo_combustible) === Number(combustibleOrigen);
+    return match;
   });
-}
+});
 
-function onCalculationModeChange(mode) {
-  if (mode === "amount") {
-    // Si cambiamos a amount, reseteamos la vara y calculamos desde 0 o desde la dif actual
-    formData.value.medida_vara_destino = null;
-    litersToTransfer.value = null;
-  } else {
-    // Si cambiamos a final, limpiamos amount
-    litersToTransfer.value = null;
-    litersWereEdited.value = false; // Permitimos recalcular por aforo/vara
-    calculateLitrosDestino();
+watch(() => props.modelValue, (isOpen) => {
+  if (isOpen) {
+    initializeForm();
+    const user = JSON.parse(localStorage.getItem("user") || "{}");
+    almacenistaNombre.value = `${user.nombre} ${user.apellido}`;
   }
+});
+
+watch(() => props.destinationTankDetail, () => {
+    if (!manualEdit.final) calculate();
+});
+
+watch(() => props.destinationTankAforo, () => {
+    if (!manualEdit.final) calculate();
+});
+
+function onLlenaderoSelect(id) {
+  formData.value.id_tanque_origen = null;
+  formData.value.id_tanque_destino = null;
+  emit("llenadero-changed", id);
+  resetAllStates();
 }
 
-function calculateFinalFromAmount() {
-  if (calculationMode.value !== "amount") return;
-  const current = parseFloat(props.destinationTankDetail?.nivel_actual || 0);
-  const amount = parseFloat(litersToTransfer.value || 0);
-  litersFinales.value = (current + amount).toFixed(2);
-  litersWereEdited.value = true; // Marcamos como editado para que el backend sepa que es manual
+function onSourceTankSelect(id) {
+  formData.value.id_tanque_destino = null;
+  emit("source-tank-changed", id);
+  resetAllStates();
 }
 
-function calculateLitrosDestino() {
-  if (litersWereEdited.value || calculationMode.value !== "final") return;
-
-  const vara = parseFloat(formData.value.medida_vara_destino);
-
-  if (tieneAforo.value) {
-    const aforo = props.destinationTankAforo || {};
-    litersFinales.value =
-      aforo[String(vara)] !== undefined ? parseFloat(aforo[String(vara)]) : 0;
-  } else if (isFormulaMode.value && !isNaN(vara)) {
-    const t = props.destinationTankDetail;
-    const unidad = t.unidad_medida || "CM";
-
-    let h_calc = 0;
-    if (unidad === "PULGADAS") {
-      h_calc = vara * 0.0254;
-    } else {
-      h_calc = vara / 100;
-    }
-
-    if (t.tipo_tanque === "RECTANGULAR" || t.tipo_tanque === "CUADRADO") {
-      // CORRECCIÓN: Para rectangulares usamos las dimensiones directas
-      const largo_m = parseFloat(t.largo);
-      const ancho_m = parseFloat(t.ancho);
-      const alto_m = parseFloat(t.alto);
-      debugInfo.value = { h: h_calc, l: largo_m, r: ancho_m, u: unidad };
-      const calc = calcularVolumenTanque(
-        h_calc,
-        largo_m,
-        ancho_m,
-        t.tipo_tanque,
-        alto_m
-      );
-      litersFinales.value = parseFloat(calc.toFixed(2));
-    } else {
-      // CORRECCIÓN: Para cilíndricos usamos las dimensiones directas
-      const largo_m = parseFloat(t.largo);
-      const radio_m = parseFloat(t.radio);
-      debugInfo.value = { h: h_calc, l: largo_m, r: radio_m, u: unidad };
-      const calc = calcularVolumenTanque(
-        h_calc,
-        largo_m,
-        radio_m,
-        "CILINDRICO"
-      );
-      litersFinales.value = parseFloat(calc.toFixed(2));
-    }
-  } else {
-    // Modo Manual puro (sin aforo, sin formula)
-  }
+function onDestinationTankSelect(id) {
+  emit("destination-tank-changed", id);
+  formData.value.medida_vara_destino = null;
+  resetAllStates();
 }
 
-// Edición Manual
-async function startEdit() {
-  originalLitersValue.value = litersFinales.value;
-  editingLitros.value = true;
-  await nextTick();
-  if (inputLitros.value) {
-    inputLitros.value.focus();
-    inputLitros.value.select();
-  }
-}
-
-function finishEdit() {
-  editingLitros.value = false;
-  if (
-    litersFinales.value === null ||
-    litersFinales.value === "" ||
-    isNaN(litersFinales.value)
-  ) {
-    litersFinales.value = 0;
-  }
-  litersFinales.value = parseFloat(parseFloat(litersFinales.value).toFixed(2));
-
-  if (litersFinales.value !== originalLitersValue.value) {
-    litersWereEdited.value = true;
-  }
-}
-
-function cancelEdit() {
-  litersFinales.value = originalLitersValue.value;
-  editingLitros.value = false;
-}
-
-async function onSave() {
+function handleSaveInternal() {
   const payload = { ...formData.value };
-  payload.litros_destino_manual = litersFinales.value;
-  // Si estamos en modo 'amount', implícitamente es edición manual
-  payload.litros_editados_manualmente =
-    litersWereEdited.value || calculationMode.value === "amount";
-
+  payload.cantidad_transferida = parseFloat(computedLitersTransferidos.value);
+  payload.nivel_destino_despues = parseFloat(liters.final);
+  payload.fecha_transferencia = `${formData.value.fecha}T${formData.value.hora}`;
   emit("save", payload);
 }
 </script>
-
-<style scoped>
-/* Estilos replicados de CisternLoad */
-.editable-value {
-  cursor: pointer;
-  padding: 2px 6px;
-  border-radius: 3px;
-  transition: all 0.2s ease;
-  display: inline-flex;
-  align-items: center;
-}
-.editable-value:hover {
-  background-color: rgba(25, 118, 210, 0.1);
-  color: #1976d2;
-}
-.editable-value.was-edited {
-  background-color: rgba(255, 152, 0, 0.15);
-  border-bottom: 2px dashed #ff9800;
-}
-.edit-icon {
-  opacity: 0;
-  transition: opacity 0.2s ease;
-  font-size: 12px;
-  color: #1976d2;
-}
-.editable-value:hover .edit-icon {
-  opacity: 0.7;
-}
-.inline-edit-small {
-  display: inline-flex;
-  max-width: 120px;
-  vertical-align: middle;
-  animation: fadeIn 0.15s ease-out;
-}
-.inline-edit-small :deep(.q-field__control) {
-  height: auto;
-  min-height: unset;
-  padding: 2px 6px;
-  background-color: rgba(25, 118, 210, 0.1);
-  border-radius: 3px;
-  border: 1px solid #1976d2;
-}
-.inline-edit-small :deep(.q-field__native) {
-  padding: 0;
-  min-height: unset;
-  font-size: inherit;
-}
-.inline-input-text {
-  font-size: inherit !important;
-}
-@keyframes fadeIn {
-  from {
-    opacity: 0;
-    transform: scale(0.95);
-  }
-  to {
-    opacity: 1;
-    transform: scale(1);
-  }
-}
-</style>

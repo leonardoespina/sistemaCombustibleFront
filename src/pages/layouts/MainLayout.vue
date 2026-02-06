@@ -242,6 +242,7 @@
       <!-- ================================== -->
       <!--          INVENTARIO                -->
       <!-- ================================== -->
+
       <q-expansion-item
         expand-separator
         icon="inventory"
@@ -288,6 +289,90 @@
         <q-item-section avatar><q-icon name="fact_check" /></q-item-section>
         <q-item-section>Validación (Cierre)</q-item-section>
       </q-item>
+
+      <!-- ================================== -->
+      <!--      OPERACIONES TANQUES           -->
+      <!-- ================================== -->
+
+      <q-expansion-item
+        expand-separator
+        icon="oil_barrel"
+        label="Operaciones de Tanques"
+        class="text-grey-8"
+      >
+        <q-list class="q-pl-md">
+          <q-item
+            clickable
+            v-ripple
+            to="/measurements"
+            @click="leftDrawerOpen = false"
+          >
+            <q-item-section avatar>
+              <q-icon name="straighten" size="xs" />
+            </q-item-section>
+            <q-item-section>
+              <q-item-label>Medición de Tanques</q-item-label>
+              <q-item-label caption>Varillaje y Auditoría</q-item-label>
+            </q-item-section>
+          </q-item>
+
+          <q-item
+            clickable
+            v-ripple
+            to="/loads"
+            @click="leftDrawerOpen = false"
+          >
+            <q-item-section avatar>
+              <q-icon name="local_shipping" size="xs" />
+            </q-item-section>
+            <q-item-section>
+              <q-item-label>Recepción de Cisternas</q-item-label>
+              <q-item-label caption>Ingreso de combustible</q-item-label>
+            </q-item-section>
+          </q-item>
+
+          <q-item
+            clickable
+            v-ripple
+            to="/internal-transfers"
+            @click="leftDrawerOpen = false"
+          >
+            <q-item-section avatar>
+              <q-icon name="swap_horiz" size="xs" />
+            </q-item-section>
+            <q-item-section>
+              <q-item-label>Transferencias Internas</q-item-label>
+              <q-item-label caption>Movimientos entre tanques</q-item-label>
+            </q-item-section>
+          </q-item>
+        </q-list>
+      </q-expansion-item>
+      <!-- ================================== -->
+      <!--          REPORTES                  -->
+      <!-- ================================== -->
+      <q-expansion-item
+        expand-separator
+        icon="analytics"
+        label="Reportes"
+        class="text-grey-8"
+      >
+        <q-list class="q-pl-md">
+          <q-item
+            clickable
+            v-ripple
+            to="/reportes/diario"
+            @click="leftDrawerOpen = false"
+          >
+            <q-item-section avatar>
+              <q-icon name="today" size="xs" />
+            </q-item-section>
+            <q-item-section>
+              <q-item-label>Reporte Diario</q-item-label>
+              <q-item-label caption>Resumen de solicitudes</q-item-label>
+            </q-item-section>
+          </q-item>
+        </q-list>
+      </q-expansion-item>
     </q-drawer>
 
     <!-- ================================== -->

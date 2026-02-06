@@ -112,6 +112,20 @@
               />
             </div>
 
+            <!-- Nivel Actual -->
+            <div class="col-12 col-md-4">
+              <q-input
+                dense
+                outlined
+                v-model.number="formData.nivel_actual"
+                type="number"
+                label="Nivel Actual (L) *"
+                suffix="L"
+                hint="Inventario inicial o actual"
+                :rules="[(val) => val >= 0 || 'Debe ser mayor o igual a 0']"
+              />
+            </div>
+
             <!-- Dimensiones Dinámicas -->
             <div class="col-12 col-md-3">
               <q-input
@@ -357,6 +371,7 @@ async function initializeForm() {
         id_tipo_combustible: data.id_tipo_combustible ? Number(data.id_tipo_combustible) : null,
         tipo_tanque: data.tipo_tanque || "RECTANGULAR",
         capacidad_maxima: data.capacidad_maxima ? Number(data.capacidad_maxima) : 0,
+        nivel_actual: data.nivel_actual ? Number(data.nivel_actual) : 0,
         nivel_alarma_bajo: data.nivel_alarma_bajo ? Number(data.nivel_alarma_bajo) : null,
         nivel_alarma_alto: data.nivel_alarma_alto ? Number(data.nivel_alarma_alto) : null,
         unidad_medida: data.unidad_medida || "CM",

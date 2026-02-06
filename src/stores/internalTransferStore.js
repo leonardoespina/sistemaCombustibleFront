@@ -13,23 +13,23 @@ export const useInternalTransferStore = defineStore("internalTransfers", () => {
   const pagination = ref({
     page: 1,
     rowsPerPage: 10,
-    sortBy: "hora_inicio",
+    sortBy: "fecha_transferencia",
     descending: true,
     rowsNumber: 0,
   });
 
-  // Listas
-  const tanksList = ref([]);
-  const warehousemenList = ref([]);
+  // Listas Auxiliares
+  const llenaderosList = ref([]);
+  const tanksList = ref([]); // Todos los tanques o filtrados
 
-  // Detalles de tanques seleccionados (para validaciones y aforo destino)
+  // Detalles de tanques para cálculos
   const sourceTankDetail = ref(null);
   const destinationTankDetail = ref(null);
   const destinationTankAforo = ref(null);
 
-  // --- ACTIONS ---
+  // --- ACTIONS (CRUD) ---
 
-  async function fetchTransfers() {
+  async function fetchTransfers(extraParams = {}) {
     loading.value = true;
     try {
       const params = {
@@ -38,6 +38,7 @@ export const useInternalTransferStore = defineStore("internalTransfers", () => {
         sortBy: pagination.value.sortBy,
         descending: pagination.value.descending,
         search: filter.value,
+        ...extraParams,
       };
       const response = await api.get("/transferencias-internas", { params });
       rows.value = response.data.data;
@@ -55,81 +56,75 @@ export const useInternalTransferStore = defineStore("internalTransfers", () => {
       await fetchTransfers();
       return true;
     } catch (error) {
-      // El interceptor maneja la notificación visual del error, pero retornamos false
       return false;
     } finally {
       loading.value = false;
     }
   }
 
-  // Cargar listas para combos
-  async function loadFormOptions() {
+  async function updateTransfer(id, data) {
+    loading.value = true;
     try {
-      const [resTanks, resWarehouse] = await Promise.all([
-        api.get("/tanques/lista"),
-        api.get("/almacenistas/lista"),
-      ]);
-
-      tanksList.value = Array.isArray(resTanks.data) ? resTanks.data : [];
-      warehousemenList.value = Array.isArray(resWarehouse.data)
-        ? resWarehouse.data
-        : [];
+      const response = await api.put(`/transferencias-internas/${id}`, data);
+      $q.notify({ type: "positive", message: response.data.msg });
+      await fetchTransfers();
+      return true;
     } catch (error) {
-      console.error("Error listas:", error);
-      $q.notify({ type: "warning", message: "Error cargando listas." });
+      return false;
+    } finally {
+      loading.value = false;
     }
   }
 
-  // Helper para obtener detalle de un tanque (para validaciones y aforo destino)
-  async function fetchTankDetail(tankId, isDestination = false) {
-    if (!tankId) {
-      if (isDestination) {
-        destinationTankDetail.value = null;
-        destinationTankAforo.value = null;
-      } else {
-        sourceTankDetail.value = null;
-      }
-      return;
+  // --- CARGA DE LISTAS ---
+  async function fetchLlenaderos() {
+    try {
+      const response = await api.get("/llenaderos");
+      // El backend devuelve directamente el array o envuelto en data
+      const data = response.data.data || response.data;
+      
+      llenaderosList.value = Array.isArray(data) ? data : (data.docs || []);
+    } catch (error) {
+      console.error("Error al cargar llenaderos", error);
     }
+  }
+
+  async function loadTanksList(id_llenadero) {
+    try {
+      const params = id_llenadero ? { id_llenadero } : {};
+      const response = await api.get("/tanques/lista", { params });
+      tanksList.value = Array.isArray(response.data) ? response.data : [];
+    } catch (error) {
+      $q.notify({ type: "warning", message: "Error cargando tanques." });
+    }
+  }
+
+  async function fetchTankDetail(tankId, target = 'source') {
+    if (!tankId) return;
     try {
       const response = await api.get(`/tanques/${tankId}`);
-      const tankData = response.data;
+      const tank = response.data;
+      
+      // Parsear aforo
+      if (typeof tank.aforo === "string") {
+        try { tank.aforo = JSON.parse(tank.aforo); } catch (e) { tank.aforo = []; }
+      }
 
-      if (isDestination) {
-        destinationTankDetail.value = tankData;
-        let aforo = tankData.tabla_aforo;
-        if (typeof aforo === "string") {
-          try {
-            aforo = JSON.parse(aforo);
-          } catch (e) {
-            aforo = {};
-          }
-        }
-        destinationTankAforo.value = aforo || {};
+      if (target === 'source') {
+        sourceTankDetail.value = tank;
       } else {
-        sourceTankDetail.value = tankData;
+        destinationTankDetail.value = tank;
+        destinationTankAforo.value = tank.aforo || [];
       }
     } catch (error) {
-      $q.notify({
-        type: "negative",
-        message: "Error al cargar detalle del tanque.",
-      });
+      console.error("Error detalle tanque:", error);
     }
   }
 
   return {
-    rows,
-    loading,
-    filter,
-    pagination,
-    tanksList,
-    warehousemenList,
-    sourceTankDetail,
-    destinationTankDetail,
-    destinationTankAforo,
-    fetchTransfers,
-    createTransfer,
-    loadFormOptions,
-    fetchTankDetail,
+    rows, loading, filter, pagination, llenaderosList, tanksList,
+    sourceTankDetail, destinationTankDetail, destinationTankAforo,
+    fetchTransfers, createTransfer, updateTransfer,
+    fetchLlenaderos, loadTanksList, fetchTankDetail
   };
 });

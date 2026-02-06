@@ -1,7 +1,8 @@
 import { defineStore } from "pinia";
-import { ref } from "vue";
+import { ref, onUnmounted } from "vue";
 import { useQuasar } from "quasar";
 import api from "../api/index.js";
+import socket from "../services/socket";
 
 export const useMeasurementStore = defineStore("measurements", () => {
   const $q = useQuasar();
@@ -13,20 +14,47 @@ export const useMeasurementStore = defineStore("measurements", () => {
   const pagination = ref({
     page: 1,
     rowsPerPage: 10,
-    sortBy: "fecha_hora_medicion",
+    sortBy: "fecha_medicion",
     descending: true,
     rowsNumber: 0,
   });
 
   // Listas Auxiliares
+  const llenaderosList = ref([]);
   const tanksList = ref([]);
 
   // Estado para el tanque seleccionado en el formulario (Aforo + Info)
   const selectedTankDetail = ref(null);
 
+  // --- SOCKET IO LISTENERS ---
+  function initSocketListeners() {
+    socket.on("medicion:creada", () => {
+      fetchMeasurements();
+    });
+
+    socket.on("medicion:actualizada", () => {
+      fetchMeasurements();
+    });
+
+    socket.on("tanque:actualizado", (data) => {
+      // Si el tanque actualizado es el que tenemos seleccionado, refrescar su detalle
+      if (selectedTankDetail.value && selectedTankDetail.value.id_tanque === data.id_tanque) {
+        fetchTankDetail(data.id_tanque);
+      }
+      // También refrescar la lista general de tanques por si acaso
+      loadTanksList();
+    });
+  }
+
+  function removeSocketListeners() {
+    socket.off("medicion:creada");
+    socket.off("medicion:actualizada");
+    socket.off("tanque:actualizado");
+  }
+
   // --- ACTIONS (CRUD) ---
 
-  async function fetchMeasurements() {
+  async function fetchMeasurements(extraParams = {}) {
     loading.value = true;
     try {
       const params = {
@@ -35,6 +63,7 @@ export const useMeasurementStore = defineStore("measurements", () => {
         sortBy: pagination.value.sortBy,
         descending: pagination.value.descending,
         search: filter.value,
+        ...extraParams,
       };
       const response = await api.get("/mediciones", { params });
       rows.value = response.data.data;
@@ -52,10 +81,10 @@ export const useMeasurementStore = defineStore("measurements", () => {
 
       // Mostrar resumen de ajuste
       const res = response.data.resumen;
-      const tipo = res.ajuste_aplicado < 0 ? "Sobrante" : "Faltante";
+      const tipo = res.diferencia > 0 ? "Faltante" : "Sobrante";
       $q.notify({
         type: "info",
-        message: `Ajuste: ${Math.abs(res.ajuste_aplicado).toFixed(
+        message: `Diferencia: ${Math.abs(res.diferencia).toFixed(
           2
         )} Lts (${tipo})`,
         timeout: 5000,
@@ -70,10 +99,24 @@ export const useMeasurementStore = defineStore("measurements", () => {
     }
   }
 
+  async function updateMeasurement(id, data) {
+    loading.value = true;
+    try {
+      const response = await api.put(`/mediciones/${id}`, data);
+      $q.notify({ type: "positive", message: response.data.msg });
+      await fetchMeasurements();
+      return true;
+    } catch (error) {
+      return false;
+    } finally {
+      loading.value = false;
+    }
+  }
+
   async function annulMeasurement(id) {
     loading.value = true;
     try {
-      const response = await api.delete(`/mediciones/${id}`);
+      const response = await api.put(`/mediciones/${id}/anular`);
       $q.notify({ type: "positive", message: response.data.msg });
       await fetchMeasurements();
     } finally {
@@ -82,9 +125,20 @@ export const useMeasurementStore = defineStore("measurements", () => {
   }
 
   // --- CARGA DE DATOS ---
-  async function loadTanksList() {
+  async function fetchLlenaderos() {
     try {
-      const response = await api.get("/tanques/lista");
+      const response = await api.get("/llenaderos");
+      llenaderosList.value = response.data.data || response.data;
+    } catch (error) {
+      console.error("Error al cargar llenaderos", error);
+    }
+  }
+
+  async function loadTanksList(id_llenadero) {
+    try {
+      // Filtrar por llenadero si se proporciona
+      const params = id_llenadero ? { id_llenadero } : {};
+      const response = await api.get("/tanques/lista", { params });
       tanksList.value = Array.isArray(response.data) ? response.data : [];
     } catch (error) {
       $q.notify({
@@ -126,12 +180,17 @@ export const useMeasurementStore = defineStore("measurements", () => {
     loading,
     filter,
     pagination,
+    llenaderosList,
     tanksList,
     selectedTankDetail,
     fetchMeasurements,
     createMeasurement,
+    updateMeasurement,
     annulMeasurement,
+    fetchLlenaderos,
     loadTanksList,
     fetchTankDetail,
+    initSocketListeners,
+    removeSocketListeners,
   };
 });

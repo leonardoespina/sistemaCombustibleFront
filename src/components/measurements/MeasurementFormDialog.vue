@@ -19,6 +19,7 @@
                 v-model="formData.fecha"
                 type="date"
                 label="Fecha Medición"
+                :readonly="isReadOnly"
                 :rules="[(val) => !!val || 'Requerido']"
               />
             </div>
@@ -28,24 +29,41 @@
                 v-model="formData.hora"
                 type="time"
                 label="Hora Medición"
+                :readonly="isReadOnly"
                 :rules="[(val) => !!val || 'Requerido']"
               />
             </div>
 
-            <div class="col-12">
+            <div class="col-12 col-md-6">
+              <q-select
+                dense
+                filled
+                v-model="formData.id_llenadero"
+                :options="llenaderosList"
+                option-value="id_llenadero"
+                option-label="nombre_llenadero"
+                label="Seleccionar Llenadero"
+                emit-value
+                map-options
+                :readonly="isReadOnly || isEditing"
+                @update:model-value="onLlenaderoSelect"
+                :rules="[(val) => !!val || 'Requerido']"
+              />
+            </div>
+
+            <div class="col-12 col-md-6">
               <q-select
                 dense
                 filled
                 v-model="formData.id_tanque"
                 :options="tanksList"
                 option-value="id_tanque"
-                :option-label="
-                  (opt) =>
-                    `${opt.codigo} - ${opt.nombre} (${opt.tipo_combustible})`
-                "
+                :option-label="(opt) => `${opt.codigo} - ${opt.nombre}`"
                 label="Seleccionar Tanque"
                 emit-value
                 map-options
+                :disable="!formData.id_llenadero"
+                :readonly="isReadOnly || isEditing"
                 :rules="[(val) => !!val || 'Requerido']"
                 @update:model-value="onTankSelect"
               />
@@ -74,6 +92,7 @@
                   isFormulaMode ? 'm' : currentTankDetail?.unidad_medida || 'cm'
                 "
                 :disable="!formData.id_tanque"
+                :readonly="isReadOnly"
                 :rules="[
                   (val) =>
                     isManualMode ||
@@ -144,11 +163,12 @@
                   type="number"
                   suffix="Lts"
                   :disable="autoEvaporacion"
+                  :readonly="isReadOnly"
                   @update:model-value="calculate"
                 />
                 <!-- CHECKBOX AUTOMÁTICO (Solo Gasolina) -->
                 <q-checkbox
-                  v-if="isGasolina"
+                  v-if="isGasolina && !isReadOnly"
                   v-model="autoEvaporacion"
                   dense
                   label="Auto (0.25%)"
@@ -183,12 +203,20 @@
                     <!-- Modo Visualización -->
                     <div
                       v-if="!editing.real"
-                      class="text-h6 text-primary text-weight-bold editable-field"
-                      @click="startEdit('real')"
+                      class="text-h6 text-primary text-weight-bold"
+                      :class="{ 'editable-field': !isReadOnly }"
+                      @click="!isReadOnly && startEdit('real')"
                     >
                       {{ liters.real }} L
-                      <q-icon name="edit" size="xs" class="edit-icon q-ml-xs" />
-                      <q-tooltip>Click para editar</q-tooltip>
+                      <q-icon
+                        v-if="!isReadOnly"
+                        name="edit"
+                        size="xs"
+                        class="edit-icon q-ml-xs"
+                      />
+                      <q-tooltip v-if="!isReadOnly"
+                        >Click para editar</q-tooltip
+                      >
                     </div>
 
                     <!-- Modo Edición -->
@@ -218,17 +246,25 @@
                     <!-- Modo Visualización -->
                     <div
                       v-if="!editing.diferencia"
-                      class="text-h6 editable-field"
-                      :class="
+                      class="text-h6"
+                      :class="[
                         parseFloat(liters.diferencia) > 0
                           ? 'text-negative'
-                          : 'text-positive'
-                      "
-                      @click="startEdit('diferencia')"
+                          : 'text-positive',
+                        { 'editable-field': !isReadOnly },
+                      ]"
+                      @click="!isReadOnly && startEdit('diferencia')"
                     >
                       {{ liters.diferencia }} L
-                      <q-icon name="edit" size="xs" class="edit-icon q-ml-xs" />
-                      <q-tooltip>Click para editar</q-tooltip>
+                      <q-icon
+                        v-if="!isReadOnly"
+                        name="edit"
+                        size="xs"
+                        class="edit-icon q-ml-xs"
+                      />
+                      <q-tooltip v-if="!isReadOnly"
+                        >Click para editar</q-tooltip
+                      >
                     </div>
 
                     <!-- Modo Edición -->
@@ -284,14 +320,20 @@
                 type="textarea"
                 label="Observaciones"
                 rows="2"
+                :readonly="isReadOnly"
               />
             </div>
           </div>
         </q-card-section>
 
         <q-card-actions align="right" class="q-pa-md">
-          <q-btn flat label="Cancelar" v-close-popup />
-          <q-btn label="Registrar Medición" type="submit" color="primary" />
+          <q-btn flat label="Cerrar" v-close-popup />
+          <q-btn
+            v-if="!isReadOnly"
+            :label="isEditing ? 'Guardar Cambios' : 'Registrar Medición'"
+            type="submit"
+            color="primary"
+          />
         </q-card-actions>
       </q-form>
     </q-card>
@@ -305,11 +347,20 @@ import { calcularVolumenTanque } from "./formula.js";
 
 const props = defineProps({
   modelValue: Boolean,
+  llenaderosList: { type: Array, default: () => [] },
   tanksList: { type: Array, default: () => [] },
   currentTankDetail: { type: Object, default: null },
+  isEditing: { type: Boolean, default: false },
+  isReadOnly: { type: Boolean, default: false },
+  initialData: { type: Object, default: null },
 });
 
-const emit = defineEmits(["update:modelValue", "save", "tank-changed"]);
+const emit = defineEmits([
+  "update:modelValue",
+  "save",
+  "llenadero-changed",
+  "tank-changed",
+]);
 
 const formData = ref({});
 const autoEvaporacion = ref(false);
@@ -409,10 +460,11 @@ const isGasolina = computed(() => {
 const isFormulaMode = computed(() => {
   const t = props.currentTankDetail;
   if (!t) return false;
-  const hasAforo =
-    t.tabla_aforo &&
-    typeof t.tabla_aforo === "object" &&
-    Object.keys(t.tabla_aforo).length > 0;
+
+  const aforoData = t.aforo || t.tabla_aforo;
+  const hasAforo = Array.isArray(aforoData)
+    ? aforoData.length > 0
+    : aforoData && Object.keys(aforoData).length > 0;
 
   if (hasAforo) return false;
 
@@ -429,10 +481,11 @@ const isFormulaMode = computed(() => {
 const isManualMode = computed(() => {
   if (!props.currentTankDetail) return false;
   const t = props.currentTankDetail;
-  const hasAforo =
-    t.tabla_aforo &&
-    typeof t.tabla_aforo === "object" &&
-    Object.keys(t.tabla_aforo).length > 0;
+
+  const aforoData = t.aforo || t.tabla_aforo;
+  const hasAforo = Array.isArray(aforoData)
+    ? aforoData.length > 0
+    : aforoData && Object.keys(aforoData).length > 0;
 
   if (hasAforo) return false;
   if (isFormulaMode.value) return false;
@@ -442,15 +495,33 @@ const isManualMode = computed(() => {
 // --- INICIALIZACIÓN ---
 function initializeForm() {
   const now = new Date();
+  const init = props.initialData || {};
+
   formData.value = {
-    fecha: date.formatDate(now, "YYYY-MM-DD"),
-    hora: date.formatDate(now, "HH:mm"),
-    id_tanque: null,
-    medida_vara: null,
-    litros_manuales_ingresados: null,
-    litros_evaporacion: 0,
-    observacion: "",
+    fecha: init.fecha_medicion || date.formatDate(now, "YYYY-MM-DD"),
+    hora: init.hora_medicion || date.formatDate(now, "HH:mm"),
+    id_llenadero: init.Tanque?.id_llenadero || null,
+    id_tanque: init.id_tanque || null,
+    medida_vara: init.medida_vara || null,
+    litros_manuales_ingresados: null, // Podría inferirse si es necesario
+    litros_evaporacion: init.merma_evaporacion || 0,
+    observacion: init.observaciones || "",
   };
+
+  if (props.isEditing || props.isReadOnly) {
+    liters.real = parseFloat(init.volumen_real || 0);
+    liters.diferencia = parseFloat(init.diferencia || 0);
+    // Marcamos como manual para que no se pisen al cargar el tanque
+    manualEdit.real = true;
+    manualEdit.diferencia = true;
+  } else {
+    liters.real = 0;
+    liters.diferencia = 0;
+    manualEdit.real = false;
+    manualEdit.diferencia = false;
+  }
+
+  autoEvaporacion.value = false;
   autoEvaporacion.value = false;
   resetCalculos();
   // Resetear estados de edición
@@ -464,8 +535,14 @@ watch(
     if (isNowOpen) {
       initializeForm();
     }
-  }
+  },
 );
+
+function onLlenaderoSelect(llenaderoId) {
+  formData.value.id_tanque = null;
+  emit("llenadero-changed", llenaderoId);
+  resetCalculos();
+}
 
 function onTankSelect(tankId) {
   emit("tank-changed", tankId);
@@ -494,7 +571,7 @@ function calculate() {
   if (!manualEdit.real) {
     if (isManualMode.value) {
       const litrosManuales = parseFloat(
-        formData.value.litros_manuales_ingresados
+        formData.value.litros_manuales_ingresados,
       );
       volReal = isNaN(litrosManuales) ? 0 : litrosManuales;
     } else if (isFormulaMode.value) {
@@ -526,7 +603,7 @@ function calculate() {
             largo_m,
             ancho_m,
             t.tipo_tanque,
-            alto_m
+            alto_m,
           );
           volReal = parseFloat(calc.toFixed(2));
         } else {
@@ -546,7 +623,7 @@ function calculate() {
             h_m,
             largo_m,
             radio_m,
-            "CILINDRICO"
+            "CILINDRICO",
           );
           volReal = parseFloat(calc.toFixed(2));
         }
@@ -554,9 +631,20 @@ function calculate() {
         volReal = 0;
       }
     } else {
-      const aforo = props.currentTankDetail.tabla_aforo || {};
-      const medida = formData.value.medida_vara;
-      volReal = aforo[String(medida)] || 0;
+      const aforoData =
+        props.currentTankDetail.aforo ||
+        props.currentTankDetail.tabla_aforo ||
+        [];
+      const medida = parseFloat(formData.value.medida_vara);
+
+      if (Array.isArray(aforoData)) {
+        // Formato array de objetos: [{"altura": 1, "volumen": 93}, ...]
+        const entry = aforoData.find((e) => parseFloat(e.altura) === medida);
+        volReal = entry ? parseFloat(entry.volumen) : 0;
+      } else {
+        // Formato objeto: {"1": 93, "2": 180}
+        volReal = aforoData[String(medida)] || 0;
+      }
     }
     liters.real = volReal;
   } else {
@@ -583,18 +671,20 @@ function calculate() {
 async function onSave() {
   await nextTick();
 
-  const payload = { ...formData.value };
-
-  // Agregar los valores editables al payload
-  payload.litros_real = liters.real;
-  payload.litros_diferencia = liters.diferencia;
-
-  // Bandera para indicar al backend que respete estos valores
-  payload.es_edicion_manual = manualEdit.real || manualEdit.diferencia;
+  const payload = {
+    id_medicion: props.initialData?.id_medicion,
+    id_tanque: formData.value.id_tanque,
+    fecha_medicion: formData.value.fecha,
+    hora_medicion: formData.value.hora,
+    medida_vara: formData.value.medida_vara,
+    volumen_real: liters.real,
+    merma_evaporacion: formData.value.litros_evaporacion,
+    observaciones: formData.value.observacion,
+  };
 
   if (isManualMode.value) {
     payload.litros_manuales_ingresados = parseFloat(
-      payload.litros_manuales_ingresados
+      payload.litros_manuales_ingresados,
     );
     if (payload.medida_vara !== null && payload.medida_vara !== "") {
       payload.medida_vara = parseFloat(payload.medida_vara);

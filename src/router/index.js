@@ -80,6 +80,30 @@ const routes = [
         component: () => import("../pages/tanks/TankPage.vue"),
       },
       {
+        path: "measurements",
+        name: "measurement-list",
+        meta: {
+          allowedRoles: ["ADMIN", "GERENTE", "JEFE DIVISION", "ALMACENISTA"],
+        },
+        component: () => import("../pages/measurements/MeasurementPage.vue"),
+      },
+      {
+        path: "loads",
+        name: "cistern-loads",
+        meta: {
+          allowedRoles: ["ADMIN", "GERENTE", "JEFE DIVISION", "ALMACENISTA"],
+        },
+        component: () => import("../pages/loads/CisternLoadPage.vue"),
+      },
+      {
+        path: "internal-transfers",
+        name: "internal-transfers",
+        meta: {
+          allowedRoles: ["ADMIN", "GERENTE", "JEFE DIVISION", "ALMACENISTA"],
+        },
+        component: () => import("../pages/internal-transfers/InternalTransferPage.vue"),
+      },
+      {
         path: "dispensadores",
         name: "dispenser-list",
         component: () => import("../pages/dispensers/DispenserPage.vue"),
@@ -149,6 +173,14 @@ const routes = [
         path: "validacion",
         name: "validation-page",
         component: () => import("../pages/dispatches/ValidationPage.vue"),
+      },
+      {
+        path: "reportes/diario",
+        name: "reporte-diario",
+        meta: {
+          allowedRoles: ["ADMIN", "GERENTE", "JEFE DIVISION", "ALMACENISTA"],
+        },
+        component: () => import("../pages/reports/ReporteDiarioPage.vue"),
       },
 
       // Aquí puedes seguir añadiendo más rutas protegidas, como /vehiculos, etc.

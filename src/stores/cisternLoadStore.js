@@ -20,9 +20,6 @@ export const useCisternLoadStore = defineStore("cisternLoads", () => {
 
   // Listas Auxiliares
   const tanksList = ref([]);
-  const vehiclesList = ref([]);
-  const driversList = ref([]);
-  const warehousemenList = ref([]);
 
   // Estado para la tabla de aforo del tanque seleccionado
   const selectedTankAforo = ref(null);
@@ -30,7 +27,7 @@ export const useCisternLoadStore = defineStore("cisternLoads", () => {
 
   // --- ACTIONS (CRUD) ---
 
-  async function fetchLoads() {
+  async function fetchLoads(extraParams = {}) {
     loading.value = true;
     try {
       const params = {
@@ -39,6 +36,7 @@ export const useCisternLoadStore = defineStore("cisternLoads", () => {
         sortBy: pagination.value.sortBy,
         descending: pagination.value.descending,
         search: filter.value,
+        ...extraParams,
       };
       const response = await api.get("/cargas-cisterna", { params });
       rows.value = response.data.data;
@@ -88,27 +86,28 @@ export const useCisternLoadStore = defineStore("cisternLoads", () => {
   }
 
   // --- CARGA DE LISTAS ---
-  async function loadFormOptions() {
-    try {
-      const [resTanks, resVehicles, resDrivers, resWarehouse] =
-        await Promise.all([
-          api.get("/tanques/lista"),
-          api.get("/vehiculos/lista"),
-          api.get("/choferes/lista"),
-          api.get("/almacenistas/lista"),
-        ]);
+  const llenaderosList = ref([]);
 
-      tanksList.value = Array.isArray(resTanks.data) ? resTanks.data : [];
-      vehiclesList.value = Array.isArray(resVehicles.data)
-        ? resVehicles.data
-        : [];
-      driversList.value = Array.isArray(resDrivers.data) ? resDrivers.data : [];
-      warehousemenList.value = Array.isArray(resWarehouse.data)
-        ? resWarehouse.data
-        : [];
+  // --- CARGA DE LISTAS ---
+  async function fetchLlenaderos() {
+    try {
+      const response = await api.get("/llenaderos");
+      llenaderosList.value = response.data.data || response.data;
     } catch (error) {
-      console.error("Error listas:", error);
-      $q.notify({ type: "warning", message: "Error cargando listas." });
+      console.error("Error al cargar llenaderos", error);
+    }
+  }
+
+  async function loadTanksList(id_llenadero) {
+    try {
+      const params = id_llenadero ? { id_llenadero } : {};
+      const response = await api.get("/tanques/lista", { params });
+      tanksList.value = Array.isArray(response.data) ? response.data : [];
+    } catch (error) {
+      $q.notify({
+        type: "warning",
+        message: "Error cargando lista de tanques.",
+      });
     }
   }
 
@@ -151,17 +150,16 @@ export const useCisternLoadStore = defineStore("cisternLoads", () => {
     loading,
     filter,
     pagination,
+    llenaderosList,
     tanksList,
-    vehiclesList,
-    driversList,
-    warehousemenList,
     selectedTankAforo,
     selectedTankDetail,
     fetchLoads,
     createLoad,
     updateLoad,
     annulLoad,
-    loadFormOptions,
+    fetchLlenaderos,
+    loadTanksList,
     fetchTankDetail,
   };
 });

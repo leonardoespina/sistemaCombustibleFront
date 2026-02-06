@@ -1,82 +1,57 @@
 <template>
-  <q-page class="bg-grey-2 q-pb-xl">
-    <!-- Header Dashboard -->
-    <div class="bg-white q-py-md q-px-lg shadow-1 q-mb-lg">
-      <div class="row items-center justify-between">
-        <div>
-          <div class="text-h5 text-weight-bold text-grey-9">
-            Monitor de Combustible
-          </div>
-          <div class="text-subtitle2 text-grey-6 flex items-center" v-if="user">
-            <q-icon name="person_outline" class="q-mr-xs" />
-            Operador: {{ user.nombre }} {{ user.apellido }}
-          </div>
-        </div>
+  <q-page class="q-pa-md bg-grey-2">
+    <div class="row q-col-gutter-md">
+      <!-- HEADER -->
+      <div class="col-12 row items-center justify-between q-mb-sm">
+        <div class="text-h4 text-weight-bold text-primary">Estado de Llenaderos SIRECC</div>
+        <q-btn flat icon="refresh" color="primary" label="Actualizar" @click="fetchStats" :loading="loading" />
+      </div>
 
-        
+      <!-- LLENADEROS (LiquidLlenadero con Konva) -->
+      <div v-for="ll in stats.llenaderos" :key="ll.id_llenadero" class="col-12 col-sm-6 col-md-3 col-lg-2">
+        <LiquidLlenadero :llenadero="ll" class="tank-card-compact" />
+      </div>
+
+      <!-- MENSAJE SI NO HAY DATOS -->
+      <div v-if="stats.llenaderos.length === 0 && !loading" class="col-12 flex flex-center q-pa-xl">
+        <q-banner class="bg-warning text-white rounded-borders">
+          No se encontraron llenaderos activos registrados en el sistema.
+        </q-banner>
       </div>
     </div>
-
-    
   </q-page>
 </template>
 
 <script setup>
 import { ref, onMounted } from "vue";
-import { useRouter } from "vue-router";
-//import api from "../api/index.js";
-import LiquidTank from "../components/LiquidTank.vue";
-import { useQuasar } from "quasar";
+import api from "../api/index";
+import LiquidLlenadero from "../components/LiquidLlenadero.vue";
 
-const router = useRouter();
-const $q = useQuasar();
-
-const user = ref(null);
-const tanks = ref([]);
 const loading = ref(false);
-
-onMounted(async () => {
-  const userData = localStorage.getItem("user");
-  if (userData) {
-    user.value = JSON.parse(userData);
-  }
- // await fetchTanks();
+const stats = ref({
+  llenaderos: []
 });
 
-/*const fetchTanks = async () => {
+async function fetchStats() {
   loading.value = true;
   try {
-    const response = await api.get("/tanques/lista");
-    tanks.value = Array.isArray(response.data) ? response.data : [];
+    const res = await api.get("/dashboard/stats");
+    stats.value = res.data;
   } catch (error) {
-    console.error("Error cargando tanques:", error);
-    $q.notify({
-      type: "negative",
-      message: "Error al cargar datos de tanques",
-      position: "bottom-right",
-    });
+    console.error("Error Dashboard Stats:", error);
   } finally {
     loading.value = false;
   }
-};*/
+}
 
-const handleLogout = () => {
-  $q.dialog({
-    title: "Cerrar Sesión",
-    message: "¿Estás seguro que deseas salir del sistema?",
-    cancel: true,
-    persistent: true,
-  }).onOk(() => {
-    localStorage.removeItem("token");
-    localStorage.removeItem("user");
-    router.replace("/login");
-  });
-};
+onMounted(() => {
+  fetchStats();
+});
 </script>
 
 <style scoped>
-.max-width-container {
-  max-width: 1600px;
+.tank-card-compact {
+  max-width: 300px;
   margin: 0 auto;
 }
 </style>

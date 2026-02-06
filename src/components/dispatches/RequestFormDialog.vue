@@ -320,14 +320,30 @@ async function onCombustibleChange(combId) {
   await loadPrecios(combId);
 }
 
+function formatAmount(amount) {
+  const val = Number(amount);
+  if (isNaN(val)) return amount;
+
+  // Si tiene 2 decimales o menos (ej: 1.2000 -> 1.2)
+  if (Math.abs(val * 100 - Math.round(val * 100)) < 0.001) {
+    return val.toFixed(2);
+  }
+  // Si tiene más decimales (ej: 0.0250 -> 0.025)
+  return parseFloat(val.toFixed(4)).toString();
+}
+
 async function loadPrecios(idTipoCombustible) {
   if (!idTipoCombustible) return;
   try {
     const response = await api.get(`/precios/combustible/${idTipoCombustible}`);
-    precioOptions.value = response.data.map((p) => ({
-      ...p,
-      etiqueta_precio: `${p.Moneda?.nombre}: ${p.precio} x Lto`,
-    }));
+    precioOptions.value = response.data.map((p) => {
+      const precioFmt = formatAmount(p.precio);
+      return {
+        ...p,
+        etiqueta_precio: `${p.Moneda?.nombre}: ${precioFmt} x Lto`,
+        precio_formateado: precioFmt,
+      };
+    });
   } catch (error) {
     console.error("Error cargando precios:", error);
   }

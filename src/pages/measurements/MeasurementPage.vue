@@ -1,59 +1,120 @@
 <template>
   <q-page class="q-pa-md">
     <div class="q-gutter-y-md">
-      <h4 class="text-h4 q-my-none">Mediciones de Tanque (Varillaje)</h4>
+      <!-- HEADER Y TITULO -->
+      <div class="row items-center justify-between q-mb-sm">
+        <div class="col-12 col-md-auto">
+          <h4 class="text-h4 q-my-none text-primary text-weight-bold">
+            <q-icon name="straighten" class="q-mr-sm" />
+            Mediciones de Tanque
+          </h4>
+          <div class="text-caption text-grey-7">Varillaje, Aforo y Auditoría de Inventario Físico</div>
+        </div>
+        <div class="col-12 col-md-auto q-mt-sm q-mt-md-none">
+          <q-btn
+            color="primary"
+            icon="add"
+            label="Nueva Medición"
+            unelevated
+            @click="openAddDialog"
+          />
+        </div>
+      </div>
 
+      <!-- SECCIÓN DE FILTROS -->
+      <q-card flat bordered class="bg-grey-1">
+        <q-expansion-item
+          icon="filter_list"
+          label="Filtros de Búsqueda"
+          header-class="text-weight-medium"
+        >
+          <q-card-section>
+            <div class="row q-col-gutter-md items-end">
+              <div class="col-12 col-sm-3">
+                <q-input dense outlined v-model="filters.fecha_inicio" type="date" label="Desde" />
+              </div>
+              <div class="col-12 col-sm-3">
+                <q-input dense outlined v-model="filters.fecha_fin" type="date" label="Hasta" />
+              </div>
+              <div class="col-12 col-sm-4">
+                <q-input
+                  outlined
+                  dense
+                  v-model="filter"
+                  placeholder="Buscar por observaciones..."
+                >
+                  <template v-slot:append><q-icon name="search" /></template>
+                </q-input>
+              </div>
+              <div class="col-12 col-sm-2 row q-gutter-sm justify-end">
+                <q-btn flat color="grey-7" label="Limpiar" @click="clearFilters" />
+                <q-btn color="secondary" label="Filtrar" unelevated @click="applyFilters" />
+              </div>
+            </div>
+          </q-card-section>
+        </q-expansion-item>
+      </q-card>
+
+      <!-- TABLA DE RESULTADOS -->
       <q-table
         :rows="rows"
         :columns="columns"
         row-key="id_medicion"
         :loading="loading"
         v-model:pagination="pagination"
-        v-model:filter="filter"
         @request="handleRequest"
+        flat
+        bordered
         binary-state-sort
       >
-        <template v-slot:top>
-          <q-input
-            borderless
-            dense
-            debounce="500"
-            v-model="filter"
-            placeholder="Buscar..."
-            style="width: 300px"
-          >
-            <template v-slot:append><q-icon name="search" /></template>
-          </q-input>
-          <q-space />
-          <q-btn
-            color="primary"
-            icon="add"
-            label="Nueva Medición"
-            @click="openAddDialog"
-          />
-        </template>
-
+        <!-- ESTADO CHIP -->
         <template v-slot:body-cell-estado="props">
           <q-td :props="props">
-            <q-badge :color="props.value === 'PROCESADO' ? 'green' : 'red'">{{
-              props.value
-            }}</q-badge>
+            <q-badge :color="props.value === 'PROCESADO' ? 'green' : 'red'" rounded>
+              {{ props.value }}
+            </q-badge>
           </q-td>
         </template>
 
-        <template v-slot:body-cell-actions="props">
+        <!-- DIFERENCIA COLOREADA -->
+        <template v-slot:body-cell-diferencia="props">
           <q-td :props="props">
-            <!-- Botón Anular -->
+            <div :class="parseFloat(props.value) > 0 ? 'text-negative text-weight-bold' : 'text-positive text-weight-bold'">
+              <q-icon 
+                :name="parseFloat(props.value) > 0 ? 'trending_up' : 'trending_down'" 
+                size="xs" 
+                class="q-mr-xs"
+              />
+              {{ props.value }} L
+              <div class="text-xxs text-grey-6 text-weight-normal">
+                {{ parseFloat(props.value) > 0 ? 'FALTANTE' : 'SOBRANTE' }}
+              </div>
+            </div>
+          </q-td>
+        </template>
+
+        <!-- ACCIONES -->
+        <template v-slot:body-cell-actions="props">
+          <q-td :props="props" class="q-gutter-x-sm">
             <q-btn
               dense
               round
               flat
-              color="negative"
-              icon="block"
-              @click="openAnnulDialog(props.row)"
-              :disable="props.row.estado === 'ANULADO'"
+              color="primary"
+              icon="visibility"
+              @click="openViewDialog(props.row)"
             >
-              <q-tooltip>Anular (Solo Admin)</q-tooltip>
+              <q-tooltip>Ver Detalles</q-tooltip>
+            </q-btn>
+            <q-btn
+              dense
+              round
+              flat
+              color="warning"
+              icon="edit"
+              @click="openEditDialog(props.row)"
+            >
+              <q-tooltip>Modificar</q-tooltip>
             </q-btn>
           </q-td>
         </template>
@@ -63,60 +124,63 @@
     <!-- Diálogo de Formulario -->
     <MeasurementFormDialog
       v-model="isFormDialogVisible"
+      :llenaderos-list="llenaderosList"
       :tanks-list="tanksList"
       :current-tank-detail="selectedTankDetail"
+      :is-editing="isEditing"
+      :is-read-only="isReadOnly"
+      :initial-data="selectedItem"
       @save="onFormSave"
+      @llenadero-changed="handleLlenaderoChange"
       @tank-changed="handleTankChange"
     />
 
-    <!-- Diálogo de Confirmación Anulación -->
-    <q-dialog v-model="isAnnulDialogVisible" persistent>
-      <q-card>
-        <q-card-section class="row items-center">
-          <q-avatar icon="warning" color="negative" text-color="white" />
-          <div class="q-ml-sm">
-            <div class="text-weight-bold">¿Anular Medición?</div>
-            <div class="text-caption">
-              Se revertirá el inventario al estado anterior. Solo se permite
-              anular la última medición.
-            </div>
-          </div>
-        </q-card-section>
-        <q-card-actions align="right">
-          <q-btn flat label="Cancelar" v-close-popup />
-          <q-btn
-            flat
-            label="Confirmar Anulación"
-            color="negative"
-            @click="confirmAnnul"
-            :loading="loading"
-          />
-        </q-card-actions>
-      </q-card>
-    </q-dialog>
+    <!-- Diálogo de Detalle -->
+    <MeasurementDetailDialog
+      v-model="isDetailDialogVisible"
+      :data="selectedItem"
+    />
   </q-page>
 </template>
 
 <script setup>
-import { ref, onMounted } from "vue";
-import { storeToRefs } from "pinia";
+import { onMounted, onUnmounted, ref } from "vue";
 import { date } from "quasar";
-import { useMeasurementStore } from "../../stores/measurementStore.js";
+import { useMeasurementTable } from "./composables/useMeasurementTable.js";
 import MeasurementFormDialog from "../../components/measurements/MeasurementFormDialog.vue";
+import MeasurementDetailDialog from "../../components/measurements/MeasurementDetailDialog.vue";
 
-const measStore = useMeasurementStore();
-const { rows, loading, filter, pagination, tanksList, selectedTankDetail } =
-  storeToRefs(measStore);
+const {
+  rows,
+  loading,
+  filter,
+  pagination,
+  llenaderosList,
+  tanksList,
+  selectedTankDetail,
+  isFormDialogVisible,
+  isDetailDialogVisible,
+  isEditing,
+  isReadOnly,
+  selectedItem,
+  filters,
+  handleRequest,
+  openAddDialog,
+  openViewDialog,
+  openEditDialog,
+  handleLlenaderoChange,
+  handleTankChange,
+  onFormSave,
+  applyFilters,
+  clearFilters,
+  measStore
+} = useMeasurementTable();
 
-const isFormDialogVisible = ref(false);
-const isAnnulDialogVisible = ref(false);
-const selectedItem = ref(null);
-
-const columns = ref([
+const columns = [
   {
     name: "fecha",
     label: "Fecha/Hora",
-    field: (row) => date.formatDate(row.fecha_hora_medicion, "DD/MM HH:mm"),
+    field: (row) => date.formatDate(`${row.fecha_medicion}T${row.hora_medicion}`, "DD/MM HH:mm"),
     sortable: true,
     align: "left",
   },
@@ -129,32 +193,29 @@ const columns = ref([
   },
   {
     name: "medida",
-    label: "Vara CM/PULG",
+    label: "Vara (cm/pulg)",
     field: "medida_vara",
     align: "right",
   },
-  ,
   {
-    name: "Medicion_Anterior",
-    label: "Medicion Anterior",
-    field: "nivel_sistema_anterior",
+    name: "volumen_teorico",
+    label: "Sistema (L)",
+    field: "volumen_teorico",
     align: "right",
+    format: val => `${parseFloat(val).toLocaleString()} L`
   },
-
   {
-    name: "real",
-    label: "Medicion",
-    field: "litros_reales_aforo",
+    name: "volumen_real",
+    label: "Real (Físico)",
+    field: "volumen_real",
     align: "right",
-    style: "font-weight: bold",
+    format: val => `${parseFloat(val).toLocaleString()} L`
   },
   {
     name: "diferencia",
-    label: "Diferencia/Evaporizacion/planta",
-    field: "diferencia_neta",
+    label: "Diferencia Neta",
+    field: "diferencia",
     align: "center",
-    classes: (row) =>
-      row.diferencia_neta > 0 ? "text-negative" : "text-positive",
   },
   {
     name: "usuario",
@@ -165,45 +226,14 @@ const columns = ref([
   },
   { name: "estado", label: "Estado", field: "estado", align: "center" },
   { name: "actions", label: "Acciones", align: "right" },
-]);
-
-function handleRequest(props) {
-  pagination.value = props.pagination;
-  filter.value = props.filter;
-  measStore.fetchMeasurements();
-}
-
-function openAddDialog() {
-  measStore.selectedTankDetail = null; // Limpiar selección anterior
-  isFormDialogVisible.value = true;
-}
-
-function openAnnulDialog(item) {
-  selectedItem.value = item;
-  isAnnulDialogVisible.value = true;
-}
-
-function handleTankChange(tankId) {
-  measStore.fetchTankDetail(tankId);
-}
-
-async function onFormSave(formData) {
-  const success = await measStore.createMeasurement(formData);
-  if (success) {
-    isFormDialogVisible.value = false;
-    // --- SOLUCIÓN ---
-    // Refrescar la lista de tanques para que se actualice el nivel_actual
-    measStore.loadTanksList();
-  }
-}
-
-async function confirmAnnul() {
-  await measStore.annulMeasurement(selectedItem.value.id_medicion);
-  isAnnulDialogVisible.value = false;
-}
+];
 
 onMounted(() => {
   measStore.fetchMeasurements();
-  measStore.loadTanksList();
+  measStore.initSocketListeners();
+});
+
+onUnmounted(() => {
+  measStore.removeSocketListeners();
 });
 </script>

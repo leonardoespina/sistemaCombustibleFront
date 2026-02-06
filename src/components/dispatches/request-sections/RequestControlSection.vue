@@ -67,7 +67,7 @@
                   <q-item-section>
                     <q-item-label>{{ scope.opt.Moneda?.nombre }}</q-item-label>
                     <q-item-label caption
-                      >{{ scope.opt.precio }} por Litro</q-item-label
+                      >{{ scope.opt.precio_formateado || scope.opt.precio }} por Litro</q-item-label
                     >
                   </q-item-section>
                 </q-item>

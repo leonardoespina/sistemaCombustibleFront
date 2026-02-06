@@ -1,271 +1,167 @@
 <template>
   <q-page class="q-pa-md">
     <div class="q-gutter-y-md">
-      <h4 class="text-h4 q-my-none">Recepción de Cisternas</h4>
+      <!-- HEADER -->
+      <div class="row items-center justify-between q-mb-sm">
+        <div class="col-12 col-md-auto">
+          <h4 class="text-h4 q-my-none text-primary text-weight-bold">
+            <q-icon name="local_shipping" class="q-mr-sm" />
+            Recepción de Cisternas
+          </h4>
+          <div class="text-caption text-grey-7">Gestión de cargas, pesaje y control de inventario de entrada</div>
+        </div>
+        <div class="col-12 col-md-auto q-mt-sm q-mt-md-none">
+          <q-btn
+            color="primary"
+            icon="add"
+            label="Registrar Carga"
+            unelevated
+            @click="openAddDialog"
+          />
+        </div>
+      </div>
 
+      <!-- FILTROS -->
+      <q-card flat bordered class="bg-grey-1">
+        <q-expansion-item
+          icon="filter_list"
+          label="Filtros de Búsqueda"
+          header-class="text-weight-medium"
+        >
+          <q-card-section>
+            <div class="row q-col-gutter-md items-end">
+              <div class="col-12 col-sm-3">
+                <q-input dense outlined v-model="filters.fecha_inicio" type="date" label="Desde" />
+              </div>
+              <div class="col-12 col-sm-3">
+                <q-input dense outlined v-model="filters.fecha_fin" type="date" label="Hasta" />
+              </div>
+              <div class="col-12 col-sm-4">
+                <q-input
+                  outlined
+                  dense
+                  v-model="filter"
+                  placeholder="Buscar por guía o cisterna..."
+                >
+                  <template v-slot:append><q-icon name="search" /></template>
+                </q-input>
+              </div>
+              <div class="col-12 col-sm-2 row q-gutter-sm justify-end">
+                <q-btn flat color="grey-7" label="Limpiar" @click="clearFilters" />
+                <q-btn color="secondary" label="Filtrar" unelevated @click="applyFilters" />
+              </div>
+            </div>
+          </q-card-section>
+        </q-expansion-item>
+      </q-card>
+
+      <!-- TABLA -->
       <q-table
         :rows="rows"
         :columns="columns"
         row-key="id_carga"
         :loading="loading"
         v-model:pagination="pagination"
-        v-model:filter="filter"
         @request="handleRequest"
+        flat
+        bordered
         binary-state-sort
       >
-        <template v-slot:top>
-          <q-input
-            borderless
-            dense
-            debounce="500"
-            v-model="filter"
-            placeholder="Buscar guía..."
-            style="width: 300px"
-          >
-            <template v-slot:append><q-icon name="search" /></template>
-          </q-input>
-          <q-space />
-          <q-btn
-            color="primary"
-            icon="add"
-            label="Registrar Carga"
-            @click="openAddDialog"
-          />
-        </template>
-
-        <template v-slot:body-cell-estado="props">
+        <!-- TICKET / GUIA -->
+        <template v-slot:body-cell-guia="props">
           <q-td :props="props">
-            <q-badge :color="props.value === 'PROCESADO' ? 'green' : 'red'">{{
-              props.value
-            }}</q-badge>
+            <div class="text-weight-bold text-primary">{{ props.value }}</div>
+            <div class="text-xxs text-grey-6">{{ props.row.Vehiculo?.placa || 'S/I' }}</div>
           </q-td>
         </template>
 
-        <!-- ACCIONES ACTUALIZADAS -->
-        <template v-slot:body-cell-actions="props">
+        <!-- VOLUMEN RECIBIDO -->
+        <template v-slot:body-cell-recibido="props">
+          <q-td :props="props" class="text-weight-bold text-blue-9">
+            {{ parseFloat(props.value).toLocaleString() }} L
+          </q-td>
+        </template>
+
+        <!-- DIFERENCIA -->
+        <template v-slot:body-cell-diferencia="props">
           <q-td :props="props">
-            <!-- 1. CONSULTAR (VER DETALLE) -->
-            <q-btn
-              dense
-              round
-              flat
-              color="info"
-              icon="visibility"
-              @click="openDetailDialog(props.row)"
+            <q-badge
+              :color="parseFloat(props.value) > 0 ? 'negative' : 'positive'"
+              class="q-pa-xs"
             >
-              <q-tooltip>Ver Detalle</q-tooltip>
-            </q-btn>
+              {{ props.value }} L
+            </q-badge>
+          </q-td>
+        </template>
 
-            <!-- 2. EDITAR -->
-            <q-btn
-              dense
-              round
-              flat
-              icon="edit"
-              @click="openEditDialog(props.row)"
-              :disable="props.row.estado === 'ANULADO'"
-            >
-              <q-tooltip>Editar Datos</q-tooltip>
+        <!-- ACCIONES -->
+        <template v-slot:body-cell-actions="props">
+          <q-td :props="props" class="q-gutter-x-sm">
+            <q-btn dense round flat color="primary" icon="visibility" @click="openViewDialog(props.row)">
+              <q-tooltip>Ver Detalles</q-tooltip>
             </q-btn>
-
-            <!-- 3. ANULAR -->
-            <q-btn
-              dense
-              round
-              flat
-              color="negative"
-              icon="block"
-              @click="openAnnulDialog(props.row)"
-              :disable="props.row.estado === 'ANULADO'"
-            >
-              <q-tooltip>Anular</q-tooltip>
+            <q-btn dense round flat color="warning" icon="edit" @click="openEditDialog(props.row)">
+              <q-tooltip>Editar</q-tooltip>
             </q-btn>
           </q-td>
         </template>
       </q-table>
     </div>
 
-    <!-- Componentes de Diálogo -->
+    <!-- Diálogo de Formulario -->
     <CisternLoadFormDialog
       v-model="isFormDialogVisible"
-      :initial-data="editingItem"
-      :is-editing="!!editingItem"
+      :initial-data="selectedItem"
+      :is-editing="isEditing"
+      :is-read-only="isReadOnly"
+      :llenaderos-list="llenaderosList"
       :tanks-list="tanksList"
-      :vehicles-list="vehiclesList"
-      :drivers-list="driversList"
-      :warehousemen-list="warehousemenList"
       :current-tank-aforo="selectedTankAforo"
       :current-tank-detail="selectedTankDetail"
       @save="onFormSave"
+      @llenadero-changed="handleLlenaderoChange"
       @tank-changed="handleTankChange"
     />
 
-    <!-- NUEVO: Diálogo de Detalle -->
+    <!-- Diálogo de Detalle -->
     <CisternLoadDetailDialog
       v-model="isDetailDialogVisible"
-      :load="selectedLoad"
+      :data="selectedItem"
     />
-
-    <q-dialog v-model="isAnnulDialogVisible" persistent>
-      <q-card>
-        <q-card-section class="row items-center">
-          <q-avatar icon="warning" color="negative" text-color="white" />
-          <div class="q-ml-sm">
-            <div class="text-weight-bold">
-              ¿Anular Guía #{{ editingItem?.numero_guia }}?
-            </div>
-            <div class="text-caption">
-              Se descontarán {{ editingItem?.litros_recibidos_real }} litros del
-              tanque.
-            </div>
-          </div>
-        </q-card-section>
-        <q-card-actions align="right">
-          <q-btn flat label="Cancelar" v-close-popup />
-          <q-btn
-            flat
-            label="Anular"
-            color="negative"
-            @click="confirmAnnul"
-            :loading="loading"
-          />
-        </q-card-actions>
-      </q-card>
-    </q-dialog>
   </q-page>
 </template>
 
 <script setup>
-import { ref, onMounted } from "vue";
-import { storeToRefs } from "pinia";
+import { onMounted, onUnmounted } from "vue";
 import { date } from "quasar";
-import { useCisternLoadStore } from "../../stores/cisternLoadStore.js";
+import { useCisternLoadTable } from "./composables/useCisternLoadTable";
 import CisternLoadFormDialog from "../../components/loads/CisternLoadFormDialog.vue";
-import CisternLoadDetailDialog from "../../components/loads/CisternLoadDetailDialog.vue"; // Importar
+import CisternLoadDetailDialog from "../../components/loads/CisternLoadDetailDialog.vue";
 
-const loadStore = useCisternLoadStore();
 const {
-  rows,
-  loading,
-  filter,
-  pagination,
-  tanksList,
-  vehiclesList,
-  driversList,
-  warehousemenList,
-  selectedTankAforo,
-  selectedTankDetail,
-} = storeToRefs(loadStore);
+  rows, loading, filter, pagination, llenaderosList, tanksList, 
+  selectedTankAforo, selectedTankDetail, isFormDialogVisible, isDetailDialogVisible, isEditing, isReadOnly, selectedItem, filters,
+  handleRequest, openAddDialog, openViewDialog, openEditDialog, handleLlenaderoChange, handleTankChange, onFormSave,
+  applyFilters, clearFilters, initSocketListeners, removeSocketListeners
+} = useCisternLoadTable();
 
-const isFormDialogVisible = ref(false);
-const isDetailDialogVisible = ref(false); // Nuevo estado
-const isAnnulDialogVisible = ref(false);
-const editingItem = ref(null);
-const selectedLoad = ref(null); // Para pasar al detalle
-
-const columns = ref([
-  {
-    name: "guia",
-    label: "N° Guía",
-    field: "numero_guia",
-    sortable: true,
-    align: "left",
-  },
-  {
-    name: "fecha",
-    label: "Fecha",
-    field: (row) => date.formatDate(row.fecha_hora_llegada, "DD/MM HH:mm"),
-    sortable: true,
-    align: "left",
-  },
-
-  {
-    name: "cisterna",
-    label: "Cisterna",
-    field: (row) => (row.Vehiculo ? row.Vehiculo.placa : "N/A"),
-    align: "left",
-  },
-  {
-    name: "Usuario",
-    label: "Usuario",
-    field: (row) =>
-      row.Usuario ? `${row.Usuario.nombre} ${row.Usuario.apellido} ` : "N/A",
-    align: "left",
-  },
-  {
-    name: "tanque",
-    label: "Tanque",
-    field: (row) => (row.Tanque ? row.Tanque.codigo : "N/A"),
-    align: "left",
-  },
-  {
-    name: "litros",
-    label: "Litros Real",
-    field: "litros_recibidos_real",
-    sortable: true,
-    align: "right",
-    style: "font-weight: bold",
-  },
-  {
-    name: "faltante",
-    label: "Dif. Guía",
-    field: "litros_faltantes",
-    align: "right",
-    classes: (row) =>
-      row.litros_faltantes > 0 ? "text-negative" : "text-positive",
-  },
-  { name: "estado", label: "Estado", field: "estado", align: "center" },
-  { name: "actions", label: "Acciones", align: "right" },
-]);
-
-function handleRequest(props) {
-  pagination.value = props.pagination;
-  filter.value = props.filter;
-  loadStore.fetchLoads();
-}
-
-function openAddDialog() {
-  editingItem.value = null;
-  loadStore.selectedTankAforo = null;
-  isFormDialogVisible.value = true;
-}
-
-function openEditDialog(item) {
-  editingItem.value = { ...item };
-  isFormDialogVisible.value = true;
-}
-
-function openDetailDialog(item) {
-  selectedLoad.value = item;
-  isDetailDialogVisible.value = true;
-}
-
-function openAnnulDialog(item) {
-  editingItem.value = item;
-  isAnnulDialogVisible.value = true;
-}
-
-function handleTankChange(tankId) {
-  loadStore.fetchTankDetail(tankId);
-}
-
-async function onFormSave(formData) {
-  let success = false;
-  if (editingItem.value) {
-    success = await loadStore.updateLoad(editingItem.value.id_carga, formData);
-  } else {
-    success = await loadStore.createLoad(formData);
-  }
-  if (success) isFormDialogVisible.value = false;
-}
-
-async function confirmAnnul() {
-  await loadStore.annulLoad(editingItem.value.id_carga);
-  isAnnulDialogVisible.value = false;
-}
+const columns = [
+  { name: "fecha", label: "Llegada", field: row => date.formatDate(row.fecha_llegada, "DD/MM HH:mm"), align: "left", sortable: true },
+  { name: "guia", label: "N° Guía / Cisterna", field: "numero_guia", align: "left" },
+  { name: "tanque", label: "Tanque Receptor", field: row => row.Tanque?.nombre || 'N/A', align: "left" },
+  { name: "guia_litros", label: "Guía (L)", field: "litros_segun_guia", align: "right", format: val => `${parseFloat(val).toLocaleString()} L` },
+  { name: "recibido", label: "Recibido (L)", field: "litros_recibidos", align: "right" },
+  { name: "diferencia", label: "Dif. Guía", field: "diferencia_guia", align: "center" },
+  { name: "almacenista", label: "Recibido Por", field: row => `${row.Almacenista?.nombre} ${row.Almacenista?.apellido}`, align: "left" },
+  { name: "actions", label: "Acciones", align: "right" }
+];
 
 onMounted(() => {
-  loadStore.fetchLoads();
-  loadStore.loadFormOptions();
+  handleRequest({ pagination: pagination.value, filter: filter.value });
+  initSocketListeners();
+});
+
+onUnmounted(() => {
+  removeSocketListeners();
 });
 </script>
