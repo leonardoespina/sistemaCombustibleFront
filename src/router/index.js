@@ -182,6 +182,22 @@ const routes = [
         },
         component: () => import("../pages/reports/ReporteDiarioPage.vue"),
       },
+      {
+        path: "reportes/despachos",
+        name: "reporte-despachos",
+        meta: {
+          allowedRoles: ["ADMIN", "GERENTE", "JEFE DIVISION", "ALMACENISTA"],
+        },
+        component: () => import("../pages/reports/ReporteDespachosPage.vue"),
+      },
+      {
+        path: "reportes/consumo-dependencia",
+        name: "reporte-consumo-dependencia",
+        meta: {
+          allowedRoles: ["ADMIN", "GERENTE", "JEFE DIVISION"],
+        },
+        component: () => import("../pages/reports/DependenciaConsumptionPage.vue"),
+      },
 
       // Aquí puedes seguir añadiendo más rutas protegidas, como /vehiculos, etc.
     ],

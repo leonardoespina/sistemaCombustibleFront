@@ -127,7 +127,12 @@ const observaciones = ref('');
 watch(() => props.modelValue, (val) => {
   if (val) {
     password.value = '';
-    cantidadReal.value = null;
+    // Si es confirmación de carga completa, la cantidad real toma el valor de la aprobada
+    if (props.mode === 'CONFIRMATION') {
+      cantidadReal.value = props.ticket.cantidad_litros;
+    } else {
+      cantidadReal.value = null;
+    }
     observaciones.value = '';
   }
 });
@@ -148,7 +153,7 @@ const onConfirm = () => {
   const payload = {
     mode: props.mode,
     password: password.value,
-    cantidad_real: props.mode === 'CONFIRMATION' ? props.ticket.cantidad_litros : cantidadReal.value,
+    cantidad_real: cantidadReal.value,
     observaciones: observaciones.value
   };
   emit('confirm', payload);

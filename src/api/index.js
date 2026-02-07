@@ -1,17 +1,37 @@
 // src/api/index.js
 
 import axios from "axios";
-import { Notify } from "quasar";
+import { Notify, Loading } from "quasar";
 
 // Creamos una instancia de Axios con configuración base
 const api = axios.create({
   baseURL: "http://10.60.0.90:3000/api", //"http://10.60.6.57:3000/api", // O http://localhost:3000/api
 });
 
+// Contador para manejar múltiples peticiones simultáneas
+let pendingRequests = 0;
+
+const showLoading = () => {
+  pendingRequests++;
+  Loading.show({
+    message: 'Procesando...',
+    // spinner: QSpinnerGears // Opcional
+  });
+};
+
+const hideLoading = () => {
+  pendingRequests--;
+  if (pendingRequests <= 0) {
+    pendingRequests = 0;
+    Loading.hide();
+  }
+};
+
 // --- ¡NUEVO! INTERCEPTOR DE PETICIONES ---
 // Esta función se ejecuta ANTES de que cada petición sea enviada.
 api.interceptors.request.use(
   (config) => {
+    showLoading();
     // 1. Buscamos el token en localStorage
     const token = localStorage.getItem("token");
 
@@ -25,6 +45,7 @@ api.interceptors.request.use(
     return config;
   },
   (error) => {
+    hideLoading();
     // Manejar errores de configuración de la petición
     return Promise.reject(error);
   }
@@ -33,8 +54,12 @@ api.interceptors.request.use(
 // --- INTERCEPTOR DE RESPUESTAS (YA LO TENÍAS) ---
 // Esta función se ejecuta DESPUÉS de recibir una respuesta.
 api.interceptors.response.use(
-  (response) => response,
+  (response) => {
+    hideLoading();
+    return response;
+  },
   (error) => {
+    hideLoading();
     const message = error.response?.data?.msg || "Ocurrió un error inesperado.";
 
     Notify.create({

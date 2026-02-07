@@ -371,6 +371,36 @@
               <q-item-label caption>Resumen de solicitudes</q-item-label>
             </q-item-section>
           </q-item>
+
+          <q-item
+            clickable
+            v-ripple
+            to="/reportes/despachos"
+            @click="leftDrawerOpen = false"
+          >
+            <q-item-section avatar>
+              <q-icon name="list_alt" size="xs" />
+            </q-item-section>
+            <q-item-section>
+              <q-item-label>Reporte de Despachos</q-item-label>
+              <q-item-label caption>Detalle por dependencia</q-item-label>
+            </q-item-section>
+          </q-item>
+
+          <q-item
+            clickable
+            v-ripple
+            to="/reportes/consumo-dependencia"
+            @click="leftDrawerOpen = false"
+          >
+            <q-item-section avatar>
+              <q-icon name="bar_chart" size="xs" />
+            </q-item-section>
+            <q-item-section>
+              <q-item-label>Consumo por Dependencia</q-item-label>
+              <q-item-label caption>Estadísticas agregadas</q-item-label>
+            </q-item-section>
+          </q-item>
         </q-list>
       </q-expansion-item>
     </q-drawer>
