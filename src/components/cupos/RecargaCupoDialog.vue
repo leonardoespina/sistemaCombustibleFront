@@ -14,7 +14,8 @@
 
       <q-card-section class="q-pt-sm">
         <div class="text-subtitle2 text-primary" v-if="cupo">
-          {{ cupo.CupoBase?.Categoria?.nombre }} - {{ cupo.CupoBase?.Dependencia?.nombre_dependencia }}
+          {{ cupo.CupoBase?.Categoria?.nombre }} -
+          {{ cupo.CupoBase?.Dependencia?.nombre_dependencia }}
         </div>
         <div class="text-caption text-grey" v-if="cupo">
           Saldo Actual: <strong>{{ cupo.cantidad_disponible }} L</strong>
@@ -32,7 +33,7 @@
             autofocus
             :rules="[
               (val) => !!val || 'Campo requerido',
-              (val) => val > 0 || 'La cantidad debe ser mayor a 0'
+              (val) => val > 0 || 'La cantidad debe ser mayor a 0',
             ]"
           />
 
@@ -48,7 +49,13 @@
 
         <q-card-actions align="right">
           <q-btn flat label="Cancelar" v-close-popup />
-          <q-btn flat label="Confirmar Recarga" type="submit" color="primary" :loading="loading" />
+          <q-btn
+            flat
+            label="Confirmar Recarga"
+            type="submit"
+            color="primary"
+            :loading="loading"
+          />
         </q-card-actions>
       </q-form>
     </q-card>
@@ -56,26 +63,39 @@
 </template>
 
 <script setup>
-import { ref } from "vue";
+import { ref, watch } from "vue";
 
 const props = defineProps({
   modelValue: Boolean,
   cupo: Object, // El registro de CupoActual
-  loading: Boolean
+  loading: Boolean,
 });
 
 const emit = defineEmits(["update:modelValue", "save"]);
 
 const formData = ref({
   cantidad: 0,
-  motivo: ""
+  motivo: "",
 });
+
+// Resetear formulario al abrir
+watch(
+  () => props.modelValue,
+  (val) => {
+    if (val) {
+      formData.value = {
+        cantidad: "",
+        motivo: "",
+      };
+    }
+  }
+);
 
 function onSave() {
   emit("save", {
     id_cupo_base: props.cupo.id_cupo_base,
     cantidad: formData.value.cantidad,
-    motivo: formData.value.motivo
+    motivo: formData.value.motivo,
   });
 }
 </script>

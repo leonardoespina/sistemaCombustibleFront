@@ -40,7 +40,13 @@
                     outlined
                     dense
                     bg-color="grey-1"
-                    :rules="[(val) => !!val || 'Requerido']"
+                    :rules="[
+                      (val) => !!val || 'Requerido',
+                      (val) => !cedulaExists || 'Cédula ya registrada'
+                    ]"
+                    :error="cedulaExists"
+                    :loading="validatingCedula"
+                    @blur="validateCedula"
                     hide-bottom-space
                   />
                 </div>
@@ -93,11 +99,11 @@
           <!-- BOTÓN GUARDAR -->
           <div class="row justify-center q-mt-xs">
             <q-btn
-              label="Guardar Registro"
+              :label="isEditing ? 'Actualizar Registro' : 'Guardar Registro'"
               type="submit"
               color="primary"
               icon="save"
-              :disable="samples.length < 4"
+              :disable="!isEditing && samples.length < 4"
               dense
               class="q-px-lg shadow-2"
               unelevated
@@ -165,10 +171,15 @@
               </div>
 
               <!-- Estado -->
-              <div class="text-subtitle2 text-grey-8 q-mb-sm">
+              <div class="text-subtitle2 text-grey-8 q-mb-sm text-center">
                 <template v-if="validating">
                   <q-spinner-dots color="primary" size="20px" />
                   Validando consistencia...
+                </template>
+                <template v-else-if="isEditing && samples.length === 0">
+                   <q-icon name="fingerprint" color="grey" />
+                   Huellas registradas. <br/>
+                   <span class="text-caption">Pulse Capturar para reemplazarlas.</span>
                 </template>
                 <template v-else>
                   {{
@@ -256,7 +267,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted, onBeforeUnmount, reactive, computed } from "vue";
+import { ref, onMounted, onBeforeUnmount, reactive, computed, watch } from "vue";
 import { useQuasar } from "quasar";
 import websdkUrl from "./websdk.client.ui.js?url";
 import fingerprintSdkUrl from "./fingerprint.sdk.min.js?url";
@@ -271,7 +282,10 @@ const props = defineProps({
 
 const emit = defineEmits(["success"]);
 
+const isEditing = computed(() => !!props.initialData && !!props.initialData.id_biometria);
+
 const form = reactive({
+  id_biometria: null,
   cedula: "",
   nombre: "",
   rol: null,
@@ -311,6 +325,8 @@ const validationError = ref(false);
 const errorMessage = ref("");
 const readers = ref([]);
 const samples = ref([]);
+const cedulaExists = ref(false);
+const validatingCedula = ref(false);
 let fingerprintApi = null;
 let Fingerprint = null;
 
@@ -376,6 +392,24 @@ const initApi = async () => {
   }
 };
 
+const validateCedula = async () => {
+  if (!form.cedula || isEditing.value) return;
+  
+  validatingCedula.value = true;
+  cedulaExists.value = false;
+  try {
+    const { data } = await api.get('/biometria', { params: { search: form.cedula } });
+    if (data.data && data.data.some(r => r.cedula === form.cedula)) {
+      cedulaExists.value = true;
+      $q.notify({ type: 'warning', message: 'Esta cédula ya se encuentra registrada.' });
+    }
+  } catch (error) {
+    console.error("Error validando cédula", error);
+  } finally {
+    validatingCedula.value = false;
+  }
+};
+
 const startCapture = async () => {
   if (capturing.value || !fingerprintApi) return;
   if (samples.value.length >= 4) return;
@@ -400,6 +434,20 @@ const stopCapture = async () => {
 
 const clearSamples = () => {
   samples.value = [];
+};
+
+const resetComponentState = () => {
+  form.id_biometria = null;
+  form.cedula = "";
+  form.nombre = "";
+  form.rol = null;
+  form.categoria = null;
+  form.dependencia = null;
+  form.subdependencia = null;
+  samples.value = [];
+  errorMessage.value = "";
+  capturing.value = false;
+  cedulaExists.value = false;
 };
 
 const refreshReadersView = async () => {
@@ -493,22 +541,29 @@ const handleError = (error) => {
 };
 
 const onSubmit = async () => {
+  if (cedulaExists.value && !isEditing.value) {
+    $q.notify({ type: 'negative', message: 'Corrija la cédula antes de guardar.' });
+    return;
+  }
+
   $q.loading.show({ message: "Guardando..." });
   try {
     const payload = {
+      id_biometria: form.id_biometria,
       cedula: form.cedula,
       nombre: form.nombre,
       rol: form.rol,
       id_categoria: form.categoria,
       id_dependencia: form.dependencia,
       id_subdependencia: form.subdependencia,
-      huellas: samples.value.map((s) => s.data),
+      huellas: samples.value.length > 0 ? samples.value.map((s) => s.data) : null,
     };
     await api.post("/biometria/registrar", payload);
     $q.notify({
       type: "positive",
-      message: "Registro Exitoso",
+      message: isEditing.value ? "Actualización Exitosa" : "Registro Exitoso",
     });
+    resetComponentState();
     emit("success");
   } catch (error) {
     $q.notify({
@@ -520,16 +575,27 @@ const onSubmit = async () => {
   }
 };
 
-onMounted(async () => {
+const loadInitialData = () => {
   if (props.initialData) {
     Object.assign(form, props.initialData);
+    form.id_biometria = props.initialData.id_biometria;
     if (props.initialData.id_categoria)
       form.categoria = props.initialData.id_categoria;
     if (props.initialData.id_dependencia)
       form.dependencia = props.initialData.id_dependencia;
     if (props.initialData.id_subdependencia)
       form.subdependencia = props.initialData.id_subdependencia;
+  } else {
+    resetComponentState();
   }
+};
+
+watch(() => props.initialData, () => {
+  loadInitialData();
+}, { deep: true });
+
+onMounted(async () => {
+  loadInitialData();
   await initApi();
 });
 

@@ -90,7 +90,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted, computed } from "vue";
+import { ref, onMounted, onUnmounted, computed } from "vue";
 import { storeToRefs } from "pinia";
 import { useCategoriaStore } from "../../stores/categoriaStore.js";
 import CategoriaFormDialog from "../../components/categoria/CategoriaFormDialog.vue";
@@ -163,5 +163,16 @@ async function confirmDelete() {
 
 onMounted(() => {
   categoriaStore.fetchCategorias();
+});
+
+onUnmounted(() => {
+  categoriaStore.filter = "";
+  categoriaStore.pagination = {
+    page: 1,
+    rowsPerPage: 10,
+    sortBy: "id_categoria",
+    descending: false,
+    rowsNumber: 0,
+  };
 });
 </script>

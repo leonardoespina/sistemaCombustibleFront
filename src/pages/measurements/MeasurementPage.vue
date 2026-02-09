@@ -235,5 +235,13 @@ onMounted(() => {
 
 onUnmounted(() => {
   measStore.removeSocketListeners();
+  filter.value = "";
+  pagination.value = {
+    page: 1,
+    rowsPerPage: 10,
+    sortBy: "fecha_medicion",
+    descending: true,
+    rowsNumber: 0,
+  };
 });
 </script>

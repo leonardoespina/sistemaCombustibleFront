@@ -122,6 +122,9 @@
               <q-input v-model="formData.numero_factura" label="N° Factura" outlined dense :rules="[val => !!val || 'Requerido']" />
             </div>
             <div class="col-6">
+              <q-input v-model="formData.litros_factura" label="Litros Factura" type="number" step="0.01" outlined dense />
+            </div>
+            <div class="col-6">
               <q-input v-model="formData.datos_gandola" label="Placa Transporte" outlined dense :rules="[val => !!val || 'Requerido']" />
             </div>
             <div class="col-6">

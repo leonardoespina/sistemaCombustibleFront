@@ -171,5 +171,13 @@ onMounted(() => {
 
 onUnmounted(() => {
   store.cleanupSocket();
+  store.filter = "";
+  store.pagination = {
+    page: 1,
+    rowsPerPage: 10,
+    sortBy: "id_tipo_combustible",
+    descending: false,
+    rowsNumber: 0,
+  };
 });
 </script>

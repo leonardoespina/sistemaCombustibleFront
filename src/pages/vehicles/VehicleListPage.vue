@@ -234,5 +234,13 @@ onMounted(() => {
 
 onUnmounted(() => {
   vehicleStore.cleanupSocket();
+  vehicleStore.filter = "";
+  vehicleStore.pagination = {
+    page: 1,
+    rowsPerPage: 10,
+    sortBy: "id_vehiculo",
+    descending: false,
+    rowsNumber: 0,
+  };
 });
 </script>

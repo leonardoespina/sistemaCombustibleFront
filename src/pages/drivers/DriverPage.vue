@@ -98,7 +98,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from "vue";
+import { ref, onMounted, onUnmounted } from "vue";
 import { storeToRefs } from "pinia";
 // Rutas relativas
 import { useDriverStore } from "../../stores/driverStore.js";
@@ -179,5 +179,16 @@ async function confirmDelete() {
 
 onMounted(() => {
   driverStore.fetchDrivers();
+});
+
+onUnmounted(() => {
+  driverStore.filter = "";
+  driverStore.pagination = {
+    page: 1,
+    rowsPerPage: 10,
+    sortBy: "id_chofer",
+    descending: false,
+    rowsNumber: 0,
+  };
 });
 </script>

@@ -38,7 +38,14 @@
             v-model="formData.password"
             :label="isEditing ? 'Nueva Contraseña (Opcional)' : 'Contraseña'"
             type="password"
-            :rules="isEditing ? [] : [(val) => !!val || 'Campo requerido']"
+            :rules="
+              isEditing
+                ? []
+                : [
+                    (val) => !!val || 'Campo requerido',
+                    (val) => val.length >= 6 || 'Mínimo 6 caracteres',
+                  ]
+            "
           />
           <q-select
             dense
@@ -102,24 +109,10 @@ const formData = ref({});
 // Flag para proteger la inicialización
 const isInitializing = ref(false);
 
-// Listeners de Socket.io
 onMounted(async () => {
-  socket.on("usuarios:creado", (data) => {
-    emit("dataUpdated", data);
-  });
-
-  socket.on("usuarios:actualizado", (data) => {
-    emit("dataUpdated", data);
-  });
-
   if (props.modelValue) {
     await initializeForm();
   }
-});
-
-onUnmounted(() => {
-  socket.off("usuarios:creado");
-  socket.off("usuarios:actualizado");
 });
 
 // Watch para cuando se abre el diálogo (por si acaso, aunque la key forzará remount)

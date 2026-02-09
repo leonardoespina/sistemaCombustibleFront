@@ -15,7 +15,7 @@
           color="primary"
           icon="fingerprint"
           label="Nuevo Registro"
-          @click="isCaptureDialogVisible = true"
+          @click="openCreateDialog"
         />
       </div>
     </div>
@@ -125,7 +125,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from "vue";
+import { ref, onMounted, onUnmounted } from "vue";
 import { useQuasar } from "quasar";
 import FingerprintCapture from "../../components/fingerprint/FingerprintCapture.vue";
 import api from "../../api";
@@ -230,6 +230,12 @@ const handleRequest = (props) => {
   fetchRecords();
 };
 
+const openCreateDialog = () => {
+  selectedRecord.value = null;
+  editingId.value = null;
+  isCaptureDialogVisible.value = true;
+};
+
 const editBiometry = (record) => {
   selectedRecord.value = { ...record };
   editingId.value = record.id_biometria;
@@ -264,5 +270,9 @@ const onCaptureSuccess = () => {
 onMounted(() => {
   fetchRecords();
   socket.on("biometria:actualizado", () => fetchRecords());
+});
+
+onUnmounted(() => {
+  socket.off("biometria:actualizado");
 });
 </script>

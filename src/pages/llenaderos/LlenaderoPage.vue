@@ -187,5 +187,13 @@ onMounted(() => {
 
 onUnmounted(() => {
   store.cleanupSocket();
+  store.filter = "";
+  store.pagination = {
+    page: 1,
+    rowsPerPage: 10,
+    sortBy: "id_llenadero",
+    descending: false,
+    rowsNumber: 0,
+  };
 });
 </script>

@@ -275,5 +275,13 @@ onMounted(() => {
 
 onUnmounted(() => {
   requestStore.cleanupSocket();
+  requestStore.filter = "";
+  requestStore.pagination = {
+    page: 1,
+    rowsPerPage: 10,
+    sortBy: "id_solicitud",
+    descending: true,
+    rowsNumber: 0,
+  };
 });
 </script>

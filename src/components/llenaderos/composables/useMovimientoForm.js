@@ -14,6 +14,7 @@ export function useMovimientoForm(emit) {
     fecha_movimiento: date.formatDate(new Date(), "YYYY/MM/DD HH:mm"),
     // Campos condicionales (Carga)
     numero_factura: "",
+    litros_factura: "",
     datos_gandola: "",
     nombre_conductor: "",
     cedula_conductor: ""
@@ -39,7 +40,7 @@ export function useMovimientoForm(emit) {
 
   const newStock = computed(() => {
     if (!selectedLlenaderoObj.value) return 0;
-    
+
     if (formData.value.tipo_movimiento === "CARGA") {
       return currentStock.value + inputAmount.value;
     } else {
@@ -67,8 +68,8 @@ export function useMovimientoForm(emit) {
     if (formData.value.tipo_movimiento === "CARGA") {
       if (newStock.value > capacity.value) return false; // Excede capacidad
       // Campos requeridos para Carga
-      if (!formData.value.numero_factura || !formData.value.datos_gandola || 
-          !formData.value.nombre_conductor || !formData.value.cedula_conductor) return false;
+      if (!formData.value.numero_factura || !formData.value.datos_gandola ||
+        !formData.value.nombre_conductor || !formData.value.cedula_conductor) return false;
     } else {
       // Evaporación
       if (newStock.value < 0) return false; // Stock negativo
@@ -85,6 +86,7 @@ export function useMovimientoForm(emit) {
       observacion: "",
       fecha_movimiento: date.formatDate(new Date(), "YYYY/MM/DD HH:mm"),
       numero_factura: "",
+      litros_factura: "",
       datos_gandola: "",
       nombre_conductor: "",
       cedula_conductor: ""

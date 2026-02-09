@@ -92,7 +92,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from "vue";
+import { ref, onMounted, onUnmounted } from "vue";
 import { storeToRefs } from "pinia";
 import { useModelStore } from "../../stores/modelStore";
 import ModelFormDialog from "../../components/vehicles/ModelFormDialog.vue";
@@ -177,5 +177,16 @@ onMounted(() => {
   // Cargamos tanto los modelos para la tabla como las marcas para el formulario
   modelStore.fetchModels();
   modelStore.fetchAllBrands();
+});
+
+onUnmounted(() => {
+  modelStore.filter = "";
+  modelStore.pagination = {
+    page: 1,
+    rowsPerPage: 10,
+    sortBy: "id_modelo",
+    descending: false,
+    rowsNumber: 0,
+  };
 });
 </script>

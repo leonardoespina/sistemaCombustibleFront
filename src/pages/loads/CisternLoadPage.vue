@@ -163,5 +163,13 @@ onMounted(() => {
 
 onUnmounted(() => {
   removeSocketListeners();
+  filter.value = "";
+  pagination.value = {
+    page: 1,
+    rowsPerPage: 10,
+    sortBy: "id_carga",
+    descending: true,
+    rowsNumber: 0,
+  };
 });
 </script>

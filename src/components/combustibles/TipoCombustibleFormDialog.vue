@@ -82,18 +82,33 @@ const form = ref({
   activo: true,
 });
 
+const resetForm = () => {
+  if (props.initialData) {
+    form.value = { ...props.initialData };
+  } else {
+    form.value = {
+      nombre: "",
+      descripcion: "",
+      activo: true,
+    };
+  }
+};
+
+// Resetear el formulario cada vez que el diálogo se abre
 watch(
-  () => props.initialData,
+  () => props.modelValue,
   (val) => {
     if (val) {
-      form.value = { ...val };
-    } else {
-      form.value = {
-        nombre: "",
-        descripcion: "",
-        activo: true,
-      };
+      resetForm();
     }
+  }
+);
+
+// También observar cambios en initialData por si cambian mientras el diálogo está abierto
+watch(
+  () => props.initialData,
+  () => {
+    resetForm();
   },
   { immediate: true }
 );

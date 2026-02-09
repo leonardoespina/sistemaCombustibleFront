@@ -91,7 +91,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from "vue";
+import { ref, onMounted, onUnmounted } from "vue";
 import { storeToRefs } from "pinia";
 import { useBrandStore } from "../../stores/brandStore"; // Importamos el nuevo store
 import BrandFormDialog from "../../components/vehicles/BrandFormDialog.vue"; // Importamos el nuevo diálogo
@@ -169,5 +169,16 @@ async function confirmDelete() {
 // --- CICLO DE VIDA ---
 onMounted(() => {
   brandStore.fetchBrands();
+});
+
+onUnmounted(() => {
+  brandStore.filter = "";
+  brandStore.pagination = {
+    page: 1,
+    rowsPerPage: 10,
+    sortBy: "id_marca",
+    descending: false,
+    rowsNumber: 0,
+  };
 });
 </script>

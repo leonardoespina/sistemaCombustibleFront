@@ -101,6 +101,12 @@
               </q-item>
               <q-item>
                 <q-item-section>
+                  <q-item-label caption>Litros Factura</q-item-label>
+                  <q-item-label>{{ data.litros_factura || 'N/A' }} Lts</q-item-label>
+                </q-item-section>
+              </q-item>
+              <q-item>
+                <q-item-section>
                   <q-item-label caption>Transporte (Placa)</q-item-label>
                   <q-item-label>{{ data.datos_gandola || 'N/A' }}</q-item-label>
                 </q-item-section>

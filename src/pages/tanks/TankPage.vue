@@ -220,5 +220,13 @@ onMounted(() => {
 
 onUnmounted(() => {
   tankStore.cleanupSocket();
+  tankStore.filter = "";
+  tankStore.pagination = {
+    page: 1,
+    rowsPerPage: 10,
+    sortBy: "id_tanque",
+    descending: false,
+    rowsNumber: 0,
+  };
 });
 </script>

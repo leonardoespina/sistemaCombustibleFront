@@ -107,7 +107,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from "vue";
+import { ref, onMounted, onUnmounted } from "vue";
 import { storeToRefs } from "pinia";
 import { useDispenserStore } from "../../stores/dispenserStore.js";
 import DispenserFormDialog from "../../components/dispensers/DispenserFormDialog.vue";
@@ -199,5 +199,16 @@ async function confirmDelete() {
 onMounted(() => {
   dispenserStore.fetchDispensers();
   dispenserStore.loadTanks(); // Cargar lista de tanques para el formulario
+});
+
+onUnmounted(() => {
+  dispenserStore.filter = "";
+  dispenserStore.pagination = {
+    page: 1,
+    rowsPerPage: 10,
+    sortBy: "id_dispensador",
+    descending: false,
+    rowsNumber: 0,
+  };
 });
 </script>

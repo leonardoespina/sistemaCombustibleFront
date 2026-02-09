@@ -191,5 +191,13 @@ onMounted(() => {
 
 onUnmounted(() => {
   dependenciaStore.cleanupSocket();
+  dependenciaStore.filter = "";
+  dependenciaStore.pagination = {
+    page: 1,
+    rowsPerPage: 10,
+    sortBy: "id_dependencia",
+    descending: false,
+    rowsNumber: 0,
+  };
 });
 </script>

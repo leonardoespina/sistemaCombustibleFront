@@ -4,6 +4,7 @@ import { defineStore } from "pinia";
 import { ref } from "vue";
 import { useQuasar } from "quasar";
 import api from "../api/index.js";
+import socket from "../services/socket.js";
 
 export const useUserStore = defineStore("users", () => {
   const $q = useQuasar();
@@ -100,6 +101,21 @@ export const useUserStore = defineStore("users", () => {
     }
   }
 
+  // --- SOCKETS ---
+  function initSocket() {
+    socket.on("usuarios:creado", () => {
+      fetchUsers();
+    });
+    socket.on("usuarios:actualizado", () => {
+      fetchUsers();
+    });
+  }
+
+  function cleanupSocket() {
+    socket.off("usuarios:creado");
+    socket.off("usuarios:actualizado");
+  }
+
   // Exponemos el estado y las acciones para que los componentes puedan usarlos.
   return {
     rows,
@@ -110,5 +126,7 @@ export const useUserStore = defineStore("users", () => {
     createUser,
     updateUser,
     deleteUser,
+    initSocket,
+    cleanupSocket,
   };
 });

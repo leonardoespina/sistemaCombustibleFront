@@ -8,7 +8,11 @@
     <q-card style="min-width: 450px">
       <q-card-section>
         <div class="text-h6">
-          {{ isEditing ? "Editar Configuración de Cupo" : "Nueva Configuración de Cupo" }}
+          {{
+            isEditing
+              ? "Editar Configuración de Cupo"
+              : "Nueva Configuración de Cupo"
+          }}
         </div>
       </q-card-section>
 
@@ -48,7 +52,7 @@
             suffix="L"
             :rules="[
               (val) => !!val || 'Campo requerido',
-              (val) => val > 0 || 'La cantidad debe ser mayor a 0'
+              (val) => val > 0 || 'La cantidad debe ser mayor a 0',
             ]"
           />
 
@@ -61,7 +65,13 @@
 
         <q-card-actions align="right">
           <q-btn flat label="Cancelar" v-close-popup />
-          <q-btn flat label="Guardar" type="submit" color="primary" :loading="loading" />
+          <q-btn
+            flat
+            label="Guardar"
+            type="submit"
+            color="primary"
+            :loading="loading"
+          />
         </q-card-actions>
       </q-form>
     </q-card>
@@ -77,7 +87,7 @@ const props = defineProps({
   modelValue: Boolean,
   initialData: Object,
   isEditing: Boolean,
-  loading: Boolean
+  loading: Boolean,
 });
 
 const emit = defineEmits(["update:modelValue", "save"]);
@@ -94,7 +104,7 @@ const mappedCategory = computed(() => {
   if (!props.initialData?.Categoria) return null;
   return {
     id_categoria: props.initialData.id_categoria,
-    nombre: props.initialData.Categoria.nombre
+    nombre: props.initialData.Categoria.nombre,
   };
 });
 
@@ -102,7 +112,7 @@ const mappedDependency = computed(() => {
   if (!props.initialData?.Dependencia) return null;
   return {
     id_dependencia: props.initialData.id_dependencia,
-    nombre_dependencia: props.initialData.Dependencia.nombre_dependencia
+    nombre_dependencia: props.initialData.Dependencia.nombre_dependencia,
   };
 });
 
@@ -110,13 +120,13 @@ const mappedSubdependency = computed(() => {
   if (!props.initialData?.Subdependencia) return null;
   return {
     id_subdependencia: props.initialData.id_subdependencia,
-    nombre: props.initialData.Subdependencia.nombre
+    nombre: props.initialData.Subdependencia.nombre,
   };
 });
 
 const initializeForm = async () => {
   isInitializing.value = true;
-  
+
   if (props.initialData) {
     formData.value = {
       ...props.initialData,
@@ -137,7 +147,7 @@ const initializeForm = async () => {
       activo: true,
     };
   }
-  
+
   await nextTick();
   isInitializing.value = false;
 };
@@ -149,7 +159,7 @@ watch(
       await initializeForm();
     }
   },
-  { immediate: true }
+  { immediate: true },
 );
 
 onMounted(async () => {
@@ -165,7 +175,7 @@ function onSave() {
   delete payload.Dependencia;
   delete payload.Subdependencia;
   delete payload.TipoCombustible;
-  
+
   emit("save", payload);
 }
 </script>

@@ -78,7 +78,7 @@ export const useCupoStore = defineStore("cupos", () => {
   }
 
   /**
-   * Crear nueva configuración de cupo base
+   * Crear nueva configuración de kuota base
    */
   async function createCupoBase(formData) {
     loading.value = true;
@@ -86,9 +86,11 @@ export const useCupoStore = defineStore("cupos", () => {
       const response = await api.post("/cupos/base", formData);
       $q.notify({ type: "positive", message: response.data.msg });
       await fetchCuposBase();
-      await fetchCuposActuales(); // También refrescamos actuales por si se creó el registro del mes
+      await fetchCuposActuales();
       return true;
     } catch (error) {
+      const errorMsg = error.response?.data?.msg || "Error al crear kuota base";
+      $q.notify({ type: "negative", message: errorMsg });
       return false;
     } finally {
       loading.value = false;
@@ -96,7 +98,7 @@ export const useCupoStore = defineStore("cupos", () => {
   }
 
   /**
-   * Actualizar configuración de cupo base
+   * Actualizar configuración de kuota base
    */
   async function updateCupoBase(id, formData) {
     loading.value = true;
@@ -104,8 +106,11 @@ export const useCupoStore = defineStore("cupos", () => {
       const response = await api.put(`/cupos/base/${id}`, formData);
       $q.notify({ type: "positive", message: response.data.msg });
       await fetchCuposBase();
+      await fetchCuposActuales();
       return true;
     } catch (error) {
+      const errorMsg = error.response?.data?.msg || "Error al actualizar kuota base";
+      $q.notify({ type: "negative", message: errorMsg });
       return false;
     } finally {
       loading.value = false;
@@ -113,7 +118,7 @@ export const useCupoStore = defineStore("cupos", () => {
   }
 
   /**
-   * Recargar un cupo actual con saldo extra
+   * Recargar un kuota actual con saldo extra
    */
   async function recargarCupo(payload) {
     loading.value = true;
@@ -147,7 +152,7 @@ export const useCupoStore = defineStore("cupos", () => {
   }
 
   /**
-   * Obtiene información detallada de cupo para una combinación específica
+   * Obtiene información detallada de kuota para una combinación específica
    */
   async function fetchCupoEspecifico(id_subdependencia, id_tipo_combustible) {
     if (!id_subdependencia || !id_tipo_combustible) {
@@ -157,12 +162,12 @@ export const useCupoStore = defineStore("cupos", () => {
       const response = await api.get("/cupos/especifico", {
         params: { id_subdependencia, id_tipo_combustible },
       });
-      const cupo = response.data.data;
-      if (cupo) {
-        const asignado = parseFloat(cupo.cantidad_asignada);
-        const consumido = parseFloat(cupo.cantidad_consumida);
+      const kuota = response.data.data;
+      if (kuota) {
+        const asignado = parseFloat(kuota.cantidad_asignada);
+        const consumido = parseFloat(kuota.cantidad_consumida);
         return {
-          disponible: parseFloat(cupo.cantidad_disponible),
+          disponible: parseFloat(kuota.cantidad_disponible),
           asignado: asignado,
           consumido: consumido,
           porcentaje: asignado > 0 ? ((consumido / asignado) * 100).toFixed(1) : 0,
@@ -170,7 +175,7 @@ export const useCupoStore = defineStore("cupos", () => {
       }
       return { disponible: 0, asignado: 0, consumido: 0, porcentaje: 0 };
     } catch (error) {
-      console.warn("Cupo no disponible para esta combinación");
+      console.warn("Kuota no disponible para esta combinación");
       return { disponible: 0, asignado: 0, consumido: 0, porcentaje: 0 };
     }
   }
@@ -194,12 +199,10 @@ export const useCupoStore = defineStore("cupos", () => {
       fetchCuposActuales();
     });
 
-    // Eventos globales del sistema que afectan cupos
     socket.on("cupo:reinicio-mensual", () => {
       fetchCuposActuales();
     });
 
-    // Escuchar cambios en solicitudes que afectan los cupos
     socket.on("solicitud:creada", () => {
       fetchCuposActuales();
     });

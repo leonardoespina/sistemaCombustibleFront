@@ -161,5 +161,13 @@ onMounted(() => {
 
 onUnmounted(() => {
   removeSocketListeners();
+  filter.value = "";
+  pagination.value = {
+    page: 1,
+    rowsPerPage: 10,
+    sortBy: "fecha_transferencia",
+    descending: true,
+    rowsNumber: 0,
+  };
 });
 </script>

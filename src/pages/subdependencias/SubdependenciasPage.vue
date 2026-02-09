@@ -182,5 +182,13 @@ onMounted(() => {
 
 onUnmounted(() => {
   subdependenciaStore.cleanupSocket();
+  subdependenciaStore.filter = "";
+  subdependenciaStore.pagination = {
+    page: 1,
+    rowsPerPage: 10,
+    sortBy: "id_subdependencia",
+    descending: false,
+    rowsNumber: 0,
+  };
 });
 </script>

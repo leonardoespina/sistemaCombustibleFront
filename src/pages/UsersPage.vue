@@ -93,7 +93,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from "vue";
+import { ref, onMounted, onUnmounted } from "vue";
 import { storeToRefs } from "pinia";
 import { useUserStore } from "../stores/userStore";
 import UserFormDialog from "../components/UserFormDialog.vue";
@@ -190,5 +190,19 @@ async function confirmDelete() {
 onMounted(() => {
   // Carga inicial de datos
   userStore.fetchUsers();
+  userStore.initSocket();
+});
+
+onUnmounted(() => {
+  userStore.cleanupSocket();
+  // Limpiar filtros al salir de la página para evitar que queden residuos
+  userStore.filter = "";
+  userStore.pagination = {
+    page: 1,
+    rowsPerPage: 10,
+    sortBy: "id_usuario",
+    descending: false,
+    rowsNumber: 0,
+  };
 });
 </script>

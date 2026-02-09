@@ -42,7 +42,7 @@
         <q-item-label header class="text-grey-8"> Navegación </q-item-label>
 
         <!-- El @click para cerrar el menú ahora funciona en todos los tamaños -->
-        <q-item clickable v-ripple to="/" @click="leftDrawerOpen = false">
+        <q-item clickable v-ripple to="/">
           <q-item-section avatar><q-icon name="dashboard" /></q-item-section>
           <q-item-section>Dashboard</q-item-section>
         </q-item>
@@ -78,7 +78,7 @@
                 clickable
                 v-ripple
                 to="/subdependencias"
-                @click="leftDrawerOpen = false"
+               
               >
                 <q-item-section avatar><q-icon name="list" /></q-item-section>
                 <q-item-section>Subdependencias</q-item-section>
@@ -96,7 +96,7 @@
                 clickable
                 v-ripple
                 to="/vehiculos/lista"
-                @click="leftDrawerOpen = false"
+               
               >
                 <q-item-section avatar>
                   <q-icon name="list" size="xs" />
@@ -110,7 +110,7 @@
                 clickable
                 v-ripple
                 to="/vehiculos/marcas"
-                @click="leftDrawerOpen = false"
+               
               >
                 <q-item-section avatar>
                   <q-icon name="branding_watermark" size="xs" />
@@ -125,7 +125,7 @@
                 clickable
                 v-ripple
                 to="/vehiculos/modelos"
-                @click="leftDrawerOpen = false"
+               
               >
                 <q-item-section avatar>
                   <q-icon name="model_training" size="xs" />
@@ -142,7 +142,7 @@
               clickable
               v-ripple
               to="/usuarios"
-              @click="leftDrawerOpen = false"
+             
             >
               <q-item-section avatar><q-icon name="group" /></q-item-section>
               <q-item-section>Usuarios</q-item-section>
@@ -152,7 +152,7 @@
               clickable
               v-ripple
               to="/tipos-combustible"
-              @click="leftDrawerOpen = false"
+             
             >
               <q-item-section avatar><q-icon name="category" /></q-item-section>
               <q-item-section>Tipos de Combustible</q-item-section>
@@ -162,7 +162,7 @@
               clickable
               v-ripple
               to="/cupos"
-              @click="leftDrawerOpen = false"
+             
             >
               <q-item-section avatar
                 ><q-icon name="assignment"
@@ -174,7 +174,7 @@
               clickable
               v-ripple
               to="/precios"
-              @click="leftDrawerOpen = false"
+             
             >
               <q-item-section avatar><q-icon name="payments" /></q-item-section>
               <q-item-section>Relación de Precios</q-item-section>
@@ -184,7 +184,7 @@
               clickable
               v-ripple
               to="/llenaderos"
-              @click="leftDrawerOpen = false"
+             
             >
               <q-item-section avatar
                 ><q-icon name="ev_station"
@@ -197,7 +197,7 @@
               clickable
               v-ripple
               to="/huella"
-              @click="leftDrawerOpen = false"
+             
             >
               <q-item-section avatar
                 ><q-icon name="fingerprint"
@@ -209,7 +209,7 @@
               clickable
               v-ripple
               to="/tanques"
-              @click="leftDrawerOpen = false"
+             
             >
               <q-item-section avatar
                 ><q-icon name="oil_barrel"
@@ -227,7 +227,7 @@
         clickable
         v-ripple
         to="/solicitudes"
-        @click="leftDrawerOpen = false"
+       
       >
         <q-item-section avatar
           ><q-icon name="local_gas_station"
@@ -235,7 +235,7 @@
         <q-item-section>Solicitudes</q-item-section>
       </q-item>
 
-      <q-item clickable v-ripple to="/despacho" @click="leftDrawerOpen = false">
+      <q-item clickable v-ripple to="/despacho">
         <q-item-section avatar><q-icon name="print" /></q-item-section>
         <q-item-section>Despacho</q-item-section>
       </q-item>
@@ -254,7 +254,7 @@
             clickable
             v-ripple
             to="/movimientos-llenadero"
-            @click="leftDrawerOpen = false"
+           
           >
             <q-item-section avatar>
               <q-icon name="compare_arrows" size="xs" />
@@ -268,7 +268,7 @@
             clickable
             v-ripple
             to="/evaporaciones"
-            @click="leftDrawerOpen = false"
+           
           >
             <q-item-section avatar>
               <q-icon name="opacity" size="xs" />
@@ -284,7 +284,7 @@
         clickable
         v-ripple
         to="/validacion"
-        @click="leftDrawerOpen = false"
+       
       >
         <q-item-section avatar><q-icon name="fact_check" /></q-item-section>
         <q-item-section>Validación (Cierre)</q-item-section>
@@ -305,7 +305,7 @@
             clickable
             v-ripple
             to="/measurements"
-            @click="leftDrawerOpen = false"
+           
           >
             <q-item-section avatar>
               <q-icon name="straighten" size="xs" />
@@ -320,7 +320,7 @@
             clickable
             v-ripple
             to="/loads"
-            @click="leftDrawerOpen = false"
+           
           >
             <q-item-section avatar>
               <q-icon name="local_shipping" size="xs" />
@@ -335,7 +335,7 @@
             clickable
             v-ripple
             to="/internal-transfers"
-            @click="leftDrawerOpen = false"
+           
           >
             <q-item-section avatar>
               <q-icon name="swap_horiz" size="xs" />
@@ -361,7 +361,7 @@
             clickable
             v-ripple
             to="/reportes/diario"
-            @click="leftDrawerOpen = false"
+           
           >
             <q-item-section avatar>
               <q-icon name="today" size="xs" />
@@ -376,7 +376,7 @@
             clickable
             v-ripple
             to="/reportes/despachos"
-            @click="leftDrawerOpen = false"
+           
           >
             <q-item-section avatar>
               <q-icon name="list_alt" size="xs" />
@@ -391,7 +391,7 @@
             clickable
             v-ripple
             to="/reportes/consumo-dependencia"
-            @click="leftDrawerOpen = false"
+           
           >
             <q-item-section avatar>
               <q-icon name="bar_chart" size="xs" />
@@ -416,16 +416,22 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from "vue";
+import { ref, computed, onMounted, watch } from "vue";
 import { useQuasar } from "quasar";
-import { useRouter } from "vue-router";
+import { useRouter, useRoute } from "vue-router";
 
 const $q = useQuasar();
 const router = useRouter();
+const route = useRoute();
 
 // El único estado que necesitamos para el drawer
 const leftDrawerOpen = ref(false);
 const userData = ref(null);
+
+// Cerrar el drawer automáticamente al cambiar de ruta
+watch(route, () => {
+  leftDrawerOpen.value = false;
+});
 
 onMounted(() => {
   const storedUser = localStorage.getItem("user");
