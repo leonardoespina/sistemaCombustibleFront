@@ -78,17 +78,17 @@
     <TipoCombustibleFormDialog
       v-model="showDialog"
       :initial-data="selectedItem"
+      :is-editing="!!selectedItem"
     />
   </q-page>
 </template>
 
 <script setup>
 import { ref, onMounted, onUnmounted, computed } from "vue";
-import { useQuasar } from "quasar";
 import { useTipoCombustibleStore } from "../../stores/tipoCombustibleStore";
+import { useTipoCombustiblePage } from "./composables/useTipoCombustiblePage.js";
 import TipoCombustibleFormDialog from "../../components/combustibles/TipoCombustibleFormDialog.vue";
 
-const $q = useQuasar();
 const store = useTipoCombustibleStore();
 
 const rows = computed(() => store.rows);
@@ -102,8 +102,16 @@ const pagination = computed({
   set: (val) => (store.pagination = val),
 });
 
-const showDialog = ref(false);
-const selectedItem = ref(null);
+// Composable de la página
+const {
+  showDialog,
+  selectedItem,
+  openCreateDialog,
+  openEditDialog,
+  confirmDelete,
+  setupSocketListeners,
+  cleanupSocketListeners,
+} = useTipoCombustiblePage(store);
 
 const columns = [
   {
@@ -143,34 +151,13 @@ const onRequest = (props) => {
   store.fetchTiposCombustible();
 };
 
-const openCreateDialog = () => {
-  selectedItem.value = null;
-  showDialog.value = true;
-};
-
-const openEditDialog = (row) => {
-  selectedItem.value = row;
-  showDialog.value = true;
-};
-
-const confirmDelete = (row) => {
-  $q.dialog({
-    title: "Confirmar eliminación",
-    message: `¿Estás seguro de eliminar el tipo de combustible "${row.nombre}"?`,
-    cancel: true,
-    persistent: true,
-  }).onOk(() => {
-    store.deleteTipoCombustible(row.id_tipo_combustible);
-  });
-};
-
 onMounted(() => {
   store.fetchTiposCombustible();
-  store.initSocket();
+  setupSocketListeners();
 });
 
 onUnmounted(() => {
-  store.cleanupSocket();
+  cleanupSocketListeners();
   store.filter = "";
   store.pagination = {
     page: 1,

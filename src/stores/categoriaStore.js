@@ -3,7 +3,6 @@ import { defineStore } from "pinia";
 import { ref } from "vue";
 import { useQuasar } from "quasar";
 import api from "../api/index.js";
-import socket from "../services/socket";
 
 export const useCategoriaStore = defineStore("categorias", () => {
   const $q = useQuasar();
@@ -35,6 +34,16 @@ export const useCategoriaStore = defineStore("categorias", () => {
       const response = await api.get("/categorias", { params });
       rows.value = response.data.data;
       pagination.value.rowsNumber = response.data.pagination.totalItems;
+    } catch (error) {
+      console.error("Error fetching categorias:", error);
+      const errorMsg =
+        error.response?.data?.msg || "Error al cargar las categorías";
+      $q.notify({
+        type: "negative",
+        message: errorMsg,
+        icon: "error",
+        position: "top-right",
+      });
     } finally {
       loading.value = false;
     }
@@ -44,10 +53,24 @@ export const useCategoriaStore = defineStore("categorias", () => {
     loading.value = true;
     try {
       const response = await api.post("/categorias", data);
-      $q.notify({ type: "positive", message: response.data.msg });
+      $q.notify({
+        type: "positive",
+        message: response.data.msg || "Categoría creada exitosamente",
+        icon: "check_circle",
+        position: "top-right",
+      });
       await fetchCategorias();
       return true;
     } catch (error) {
+      console.error("Error creating categoria:", error);
+      const errorMsg =
+        error.response?.data?.msg || "Error al crear la categoría";
+      $q.notify({
+        type: "negative",
+        message: errorMsg,
+        icon: "error",
+        position: "top-right",
+      });
       return false;
     } finally {
       loading.value = false;
@@ -58,10 +81,24 @@ export const useCategoriaStore = defineStore("categorias", () => {
     loading.value = true;
     try {
       const response = await api.put(`/categorias/${id}`, data);
-      $q.notify({ type: "positive", message: response.data.msg });
+      $q.notify({
+        type: "positive",
+        message: response.data.msg || "Categoría actualizada exitosamente",
+        icon: "check_circle",
+        position: "top-right",
+      });
       await fetchCategorias();
       return true;
     } catch (error) {
+      console.error("Error updating categoria:", error);
+      const errorMsg =
+        error.response?.data?.msg || "Error al actualizar la categoría";
+      $q.notify({
+        type: "negative",
+        message: errorMsg,
+        icon: "error",
+        position: "top-right",
+      });
       return false;
     } finally {
       loading.value = false;
@@ -72,22 +109,32 @@ export const useCategoriaStore = defineStore("categorias", () => {
     loading.value = true;
     try {
       const response = await api.delete(`/categorias/${id}`);
-      $q.notify({ type: "positive", message: response.data.msg });
+      $q.notify({
+        type: "positive",
+        message: response.data.msg || "Categoría desactivada exitosamente",
+        icon: "check_circle",
+        position: "top-right",
+      });
       await fetchCategorias();
+      return true;
+    } catch (error) {
+      console.error("Error deleting categoria:", error);
+      const errorMsg =
+        error.response?.data?.msg || "Error al desactivar la categoría";
+      $q.notify({
+        type: "negative",
+        message: errorMsg,
+        icon: "error",
+        position: "top-right",
+      });
+      return false;
     } finally {
       loading.value = false;
     }
   }
 
-  function initSocket() {
-    socket.on("categoria:creado", () => fetchCategorias());
-    socket.on("categoria:actualizado", () => fetchCategorias());
-  }
-
-  function cleanupSocket() {
-    socket.off("categoria:creado");
-    socket.off("categoria:actualizado");
-  }
+  // Nota: Los socket listeners se han movido a useCategoriaPage composable
+  // para evitar duplicados y tener mejor control del ciclo de vida
 
   return {
     rows,
@@ -98,7 +145,5 @@ export const useCategoriaStore = defineStore("categorias", () => {
     createCategoria,
     updateCategoria,
     deleteCategoria,
-    initSocket,
-    cleanupSocket,
   };
 });

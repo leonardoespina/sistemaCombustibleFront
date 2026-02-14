@@ -1,3 +1,4 @@
+<!-- src/pages/dependencias/DependenciasPage.vue -->
 <template>
   <q-page class="q-pa-md">
     <div class="q-gutter-y-md">
@@ -74,7 +75,7 @@
           <q-avatar icon="warning" color="negative" text-color="white" />
           <span class="q-ml-sm"
             >¿Seguro que deseas desactivar la dependencia
-            <strong>{{ editingItem?.nombre_dependencia }}</strong
+            <strong>{{ editingItem?.nombre_dependencia }}</strong>
             >?</span
           >
         </q-card-section>
@@ -97,14 +98,25 @@
 import { ref, onMounted, onUnmounted } from "vue";
 import { storeToRefs } from "pinia";
 import { useDependenciaStore } from "../../stores/dependenciaStore.js";
+import { useDependenciaPage } from "./composables/useDependenciaPage.js";
 import DependenciaFormDialog from "../../components/dependencias/DependenciaFormDialog.vue";
 
 const dependenciaStore = useDependenciaStore();
 const { rows, loading, filter, pagination } = storeToRefs(dependenciaStore);
 
-const isFormDialogVisible = ref(false);
-const isDeleteDialogVisible = ref(false);
-const editingItem = ref(null);
+// Composable de la página
+const {
+  isFormDialogVisible,
+  isDeleteDialogVisible,
+  editingItem,
+  openAddDialog,
+  openEditDialog,
+  openDeleteDialog,
+  onFormSave,
+  confirmDelete,
+  setupSocketListeners,
+  cleanupSocketListeners,
+} = useDependenciaPage(dependenciaStore);
 
 const columns = ref([
   {
@@ -149,48 +161,12 @@ function handleRequest(props) {
   dependenciaStore.fetchDependencias();
 }
 
-function openAddDialog() {
-  editingItem.value = null;
-  isFormDialogVisible.value = true;
-}
-
-function openEditDialog(item) {
-  editingItem.value = { ...item };
-  isFormDialogVisible.value = true;
-}
-
-function openDeleteDialog(item) {
-  editingItem.value = item;
-  isDeleteDialogVisible.value = true;
-}
-
-async function onFormSave(formData) {
-  let success = false;
-  if (editingItem.value) {
-    success = await dependenciaStore.updateDependencia(
-      editingItem.value.id_dependencia,
-      formData,
-    );
-  } else {
-    success = await dependenciaStore.createDependencia(formData);
-  }
-  if (success) {
-    isFormDialogVisible.value = false;
-  }
-}
-
-async function confirmDelete() {
-  await dependenciaStore.deleteDependencia(editingItem.value.id_dependencia);
-  isDeleteDialogVisible.value = false;
-}
-
 onMounted(() => {
   dependenciaStore.fetchDependencias();
-  dependenciaStore.initSocket();
+  setupSocketListeners();
 });
 
 onUnmounted(() => {
-  dependenciaStore.cleanupSocket();
   dependenciaStore.filter = "";
   dependenciaStore.pagination = {
     page: 1,
@@ -199,5 +175,6 @@ onUnmounted(() => {
     descending: false,
     rowsNumber: 0,
   };
+  cleanupSocketListeners();
 });
 </script>

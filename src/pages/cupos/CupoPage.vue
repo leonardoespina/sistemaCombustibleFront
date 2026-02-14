@@ -220,19 +220,21 @@
       :initial-data="editingCupo"
       :is-editing="!!editingCupo"
       :loading="loading"
-      @save="onFormSave"
+      @dataUpdated="cupoStore.fetchCuposBase(); cupoStore.fetchCuposActuales()"
     />
 
     <RecargaCupoDialog
       v-model="isRecargaDialogVisible"
       :cupo="selectedCupoActual"
       :loading="loading"
-      @save="onRecargaSave"
     />
   </q-page>
 </template>
 
 <script setup>
+// ============================================
+// IMPORTS
+// ============================================
 import { ref, onMounted, computed, onUnmounted } from "vue";
 import { storeToRefs } from "pinia";
 import { useCupoStore } from "../../stores/cupoStore";
@@ -241,33 +243,75 @@ import { useQuasar, date } from "quasar";
 
 import CupoFormDialog from "../../components/cupos/CupoFormDialog.vue";
 import RecargaCupoDialog from "../../components/cupos/RecargaCupoDialog.vue";
+import { useCupoPage } from "./composables/useCupoPage.js";
 
+// ============================================
+// COMPOSABLES & STORES
+// ============================================
 const $q = useQuasar();
 const cupoStore = useCupoStore();
 const userStore = useUserStore();
 
+// Refs del store de cupos (estado reactivo de las 2 tablas)
 const {
   loading,
-  cuposActuales,
-  paginationActual,
-  filterActual,
-  cuposBase,
-  paginationBase,
-  filterBase,
+  cuposActuales,      // Tabla 1: Saldos del mes actual
+  paginationActual,   // Paginación tabla 1
+  filterActual,       // Filtro de búsqueda tabla 1
+  cuposBase,          // Tabla 2: Configuraciones base mensuales
+  paginationBase,     // Paginación tabla 2
+  filterBase,         // Filtro de búsqueda tabla 2
 } = storeToRefs(cupoStore);
 
-const tab = ref("actual");
-const isFormDialogVisible = ref(false);
-const isRecargaDialogVisible = ref(false);
-const editingCupo = ref(null);
-const selectedCupoActual = ref(null);
+// Composable de la página (maneja diálogos, Socket.IO, helpers visuales)
+const {
+  isFormDialogVisible,
+  isRecargaDialogVisible,
+  editingCupo,
+  selectedCupoActual,
+  openAddDialog,
+  openEditDialog,
+  openRecargaDialog,
+  confirmarReinicio,
+  getProgressColor,
+  getEstadoColor,
+  setupSocketListeners,
+  cleanupSocketListeners,
+} = useCupoPage(cupoStore);
 
+// ============================================
+// ESTADO LOCAL
+// ============================================
+
+// Tab activo ('actual' para saldos, 'base' para configuración)
+const tab = ref("actual");
+
+// ============================================
+// COMPUTED
+// ============================================
+
+/**
+ * Periodo actual formateado (ej: "FEBRERO 2024")
+ * Se muestra en el header para indicar el mes en curso
+ */
 const periodoActual = computed(() =>
-  date.formatDate(Date.now(), "MMMM YYYY").toUpperCase(),
+  date.formatDate(Date.now(), "MMMM YYYY").toUpperCase()
 );
+
+/**
+ * Verifica si el usuario actual es administrador
+ * Solo ADMIN puede ejecutar el reinicio mensual
+ */
 const isAdmin = computed(() => userStore.user?.tipo_usuario === "ADMIN");
 
-// COLUMNAS TABLA ACTUAL
+// ============================================
+// DEFINICIÓN DE COLUMNAS
+// ============================================
+
+/**
+ * TABLA 1: Columnas para Cupos Actuales (Estado de Saldos)
+ * Muestra el estado real de los cupos en el mes actual
+ */
 const columnsActual = [
   {
     name: "dependencia",
@@ -298,6 +342,7 @@ const columnsActual = [
     name: "disponibilidad",
     label: "Disponibilidad Actual",
     align: "center",
+    // Esta columna usa un template personalizado con progress bar
   },
   {
     name: "consumido",
@@ -315,7 +360,10 @@ const columnsActual = [
   { name: "actions", label: "Acciones", align: "right" },
 ];
 
-// COLUMNAS TABLA BASE
+/**
+ * TABLA 2: Columnas para Cupos Base (Configuración Mensual)
+ * Muestra las configuraciones que se usan para generar cupos cada mes
+ */
 const columnsBase = [
   {
     name: "dependencia",
@@ -346,94 +394,58 @@ const columnsBase = [
   { name: "actions", label: "Acciones", align: "right" },
 ];
 
-// HANDLERS
+// ============================================
+// HANDLERS DE TABLA
+// ============================================
+
+/**
+ * Handler de request para la tabla de cupos actuales
+ * Se ejecuta al cambiar página, ordenar, o filtrar
+ */
 function onRequestActual(props) {
   paginationActual.value = props.pagination;
   filterActual.value = props.filter;
   cupoStore.fetchCuposActuales();
 }
 
+/**
+ * Handler de request para la tabla de cupos base
+ * Se ejecuta al cambiar página, ordenar, o filtrar
+ */
 function onRequestBase(props) {
   paginationBase.value = props.pagination;
   filterBase.value = props.filter;
   cupoStore.fetchCuposBase();
 }
 
-function openAddDialog() {
-  editingCupo.value = null;
-  isFormDialogVisible.value = true;
-}
+// ============================================
+// LIFECYCLE HOOKS
+// ============================================
 
-function openEditDialog(row) {
-  editingCupo.value = { ...row };
-  isFormDialogVisible.value = true;
-}
-
-function openRecargaDialog(row) {
-  selectedCupoActual.value = row;
-  isRecargaDialogVisible.value = true;
-}
-
-async function onFormSave(formData) {
-  let success;
-  if (editingCupo.value) {
-    success = await cupoStore.updateCupoBase(
-      editingCupo.value.id_cupo_base,
-      formData,
-    );
-  } else {
-    success = await cupoStore.createCupoBase(formData);
-  }
-  if (success) isFormDialogVisible.value = false;
-}
-
-async function onRecargaSave(payload) {
-  const success = await cupoStore.recargarCupo(payload);
-  if (success) isRecargaDialogVisible.value = false;
-}
-
-function confirmarReinicio() {
-  $q.dialog({
-    title: "Confirmar Reinicio Mensual",
-    message:
-      "Esto cerrará los cupos del mes anterior y creará los nuevos basados en la configuración base. ¿Deseas continuar?",
-    cancel: true,
-    persistent: true,
-  }).onOk(async () => {
-    await cupoStore.reiniciarMes();
-  });
-}
-
-// HELPERS VISUALES
-function getProgressColor(percent) {
-  if (percent > 0.5) return "positive";
-  if (percent > 0.2) return "warning";
-  return "negative";
-}
-
-function getEstadoColor(estado) {
-  switch (estado) {
-    case "ACTIVO":
-      return "positive";
-    case "AGOTADO":
-      return "negative";
-    case "CERRADO":
-      return "grey-7";
-    default:
-      return "primary";
-  }
-}
-
+/**
+ * Al montar el componente:
+ * 1. Cargar datos de ambas tablas
+ * 2. Configurar listeners de Socket.IO (8 eventos diferentes)
+ */
 onMounted(() => {
+  // Cargar ambas tablas en paralelo
   cupoStore.fetchCuposActuales();
   cupoStore.fetchCuposBase();
-  cupoStore.initSocket();
+  
+  // Configurar sincronización en tiempo real
+  setupSocketListeners();
 });
 
+/**
+ * Al desmontar el componente:
+ * 1. Limpiar listeners de Socket.IO
+ * 2. Resetear filtros y paginación de ambas tablas
+ */
 onUnmounted(() => {
-  cupoStore.cleanupSocket();
-  
-  // Reset Actual
+  // Cleanup de Socket.IO (crítico para evitar memory leaks)
+  cleanupSocketListeners();
+
+  // Reset de la tabla de cupos actuales
   cupoStore.filterActual = "";
   cupoStore.paginationActual = {
     page: 1,
@@ -443,7 +455,7 @@ onUnmounted(() => {
     rowsNumber: 0,
   };
 
-  // Reset Base
+  // Reset de la tabla de cupos base
   cupoStore.filterBase = "";
   cupoStore.paginationBase = {
     page: 1,
@@ -454,3 +466,4 @@ onUnmounted(() => {
   };
 });
 </script>
+

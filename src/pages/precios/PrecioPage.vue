@@ -1,14 +1,27 @@
+<!-- src/pages/precios/PrecioPage.vue -->
 <template>
   <q-page class="q-pa-md">
-    <!-- Header -->
+    <!--
+      PÁGINA DE GESTIÓN DE PRECIOS
+      Sistema Multi-Moneda con Layout Split de 2 columnas
+
+      Columna izq (4/12): Monedas/Unidades (CRUD completo + paginación)
+      Columna der (8/12): Precios por Combustible (solo edición)
+    -->
+
+    <!-- HEADER -->
     <div class="row items-center justify-between q-mb-md">
       <h4 class="text-h4 q-my-none">Gestión de Precios</h4>
     </div>
 
+    <!-- LAYOUT SPLIT: 2 COLUMNAS -->
     <div class="row q-gutter-md">
-      <!-- Sección Izquierda: Monedas -->
+      <!-- ================================================ -->
+      <!-- COLUMNA IZQUIERDA: TABLA DE MONEDAS           -->
+      <!-- ================================================ -->
       <div class="col-12 col-md-4">
         <q-card>
+          <!-- Header de la card de monedas -->
           <q-card-section class="row items-center justify-between">
             <div class="text-h6">Monedas/Unidades</div>
             <q-btn
@@ -20,8 +33,8 @@
             />
           </q-card-section>
 
+          <!-- Tabla de monedas con paginación y filtro -->
           <q-card-section class="q-pt-none">
-            <!-- Lista de Monedas -->
             <q-table
               :rows="monedas"
               :columns="monedasColumns"
@@ -33,6 +46,7 @@
               binary-state-sort
               dense
             >
+              <!-- Buscador de monedas -->
               <template v-slot:top-left>
                 <q-input
                   borderless
@@ -47,6 +61,7 @@
                 </q-input>
               </template>
 
+              <!-- Acciones: Editar y Eliminar -->
               <template v-slot:body-cell-actions="props">
                 <q-td :props="props" class="q-gutter-xs">
                   <q-btn
@@ -78,9 +93,12 @@
         </q-card>
       </div>
 
-      <!-- Sección Derecha: Precios por Combustible -->
+      <!-- ================================================ -->
+      <!-- COLUMNA DERECHA: TABLA DE PRECIOS             -->
+      <!-- ================================================ -->
       <div class="col-12 col-md-8">
         <q-card>
+          <!-- Header de la card de precios -->
           <q-card-section class="row items-center justify-between">
             <div class="text-h6">Precios por Combustible</div>
             <q-btn
@@ -92,8 +110,8 @@
             />
           </q-card-section>
 
+          <!-- Tabla de precios dinámicos (sin paginación) -->
           <q-card-section class="q-pt-none">
-            <!-- Tabla de Precios Dinámicos -->
             <q-table
               :rows="preciosActuales"
               :columns="preciosColumns"
@@ -101,9 +119,15 @@
               :loading="loading"
               dense
             >
+              <!--
+                COLUMNA DE PRECIOS: Chips dinámicos
+                Muestra un chip por cada moneda configurada
+                Ej: [Bs: 50.00] [USD: 1.20] [Au: 0.00025000]
+              -->
               <template v-slot:body-cell-precios="props">
                 <q-td :props="props">
                   <div class="q-gutter-xs">
+                    <!-- Loop: Un chip por cada precio configurado -->
                     <q-chip
                       v-for="(valor, simbolo) in props.row.precios"
                       :key="simbolo"
@@ -114,6 +138,8 @@
                     >
                       {{ simbolo }}: {{ formatearNumero(valor) }}
                     </q-chip>
+                    
+                    <!-- Si no hay precios configurados -->
                     <q-chip
                       v-if="Object.keys(props.row.precios).length === 0"
                       color="grey"
@@ -127,6 +153,7 @@
                 </q-td>
               </template>
 
+              <!-- Acciones: Configurar Precios -->
               <template v-slot:body-cell-actions="props">
                 <q-td :props="props">
                   <q-btn
@@ -147,10 +174,11 @@
       </div>
     </div>
 
-    <!-- Dialogs -->
+    <!-- DIÁLOGOS -->
     <MonedaFormDialog
       v-model="showMonedaDialog"
       :initial-data="selectedMoneda"
+      @dataUpdated="store.fetchMonedas()"
     />
 
     <PrecioFormDialog
@@ -161,18 +189,53 @@
 </template>
 
 <script setup>
-import { ref, onMounted, onUnmounted, computed } from "vue";
-import { useQuasar } from "quasar";
+// ============================================
+// IMPORTS
+// ============================================
+import { computed, onMounted, onUnmounted } from "vue";
+import { storeToRefs } from "pinia";
 import { usePrecioStore } from "../../stores/precioStore";
 import MonedaFormDialog from "../../components/precios/MonedaFormDialog.vue";
 import PrecioFormDialog from "../../components/precios/PrecioFormDialog.vue";
+import { usePrecioPage } from "./composables/usePrecioPage.js";
 
-const $q = useQuasar();
+// ============================================
+// COMPOSABLES & STORES
+// ============================================
 const store = usePrecioStore();
 
-const monedas = computed(() => store.monedas);
-const preciosActuales = computed(() => store.preciosActuales);
-const loading = computed(() => store.loading);
+// Obtener toda la lógica del composable de página
+const {
+  // Estado de diálogos
+  showMonedaDialog,
+  showPrecioDialog,
+  selectedMoneda,
+  selectedCombustible,
+  
+  // Métodos de diálogos - Monedas
+  openCreateMonedaDialog,
+  openEditMonedaDialog,
+  confirmDeleteMoneda,
+  
+  // Métodos de diálogos - Precios
+  openEditPrecioDialog,
+  
+  // Helpers visuales
+  formatearNumero,
+  
+  // Métodos auxiliares
+  actualizarPrecios,
+  
+  // Socket.IO
+  setupSocketListeners,
+  cleanupSocketListeners,
+} = usePrecioPage(store);
+
+// ============================================
+// COMPUTED - ESTADO DEL STORE
+// ============================================
+
+const { monedas, preciosActuales, loading } = storeToRefs(store);
 
 const filter = computed({
   get: () => store.filter,
@@ -184,10 +247,9 @@ const pagination = computed({
   set: (val) => (store.pagination = val),
 });
 
-const showMonedaDialog = ref(false);
-const selectedMoneda = ref(null);
-const showPrecioDialog = ref(false);
-const selectedCombustible = ref(null);
+// ============================================
+// DEFINICIÓN DE COLUMNAS
+// ============================================
 
 // Columnas para tabla de monedas
 const monedasColumns = [
@@ -226,60 +288,47 @@ const preciosColumns = computed(() => [
   { name: "actions", label: "Acciones", align: "center" },
 ]);
 
-// Métodos para Monedas
+// ============================================
+// HANDLERS DE TABLA
+// ============================================
+
+/**
+ * Handler de paginación/ordenamiento de la tabla de monedas
+ * Se ejecuta cuando el usuario cambia la página, ordena, o filtra
+ */
 const onRequestMonedas = (props) => {
   store.pagination = props.pagination;
   store.filter = props.filter;
   store.fetchMonedas();
 };
 
-const openCreateMonedaDialog = () => {
-  selectedMoneda.value = null;
-  showMonedaDialog.value = true;
-};
+// ============================================
+// LIFECYCLE HOOKS
+// ============================================
 
-const openEditMonedaDialog = (row) => {
-  selectedMoneda.value = row;
-  showMonedaDialog.value = true;
-};
-
-const confirmDeleteMoneda = (row) => {
-  $q.dialog({
-    title: "Confirmar eliminación",
-    message: `¿Estás seguro de eliminar la moneda "${row.nombre}" (${row.simbolo})?`,
-    cancel: true,
-    persistent: true,
-  }).onOk(() => {
-    store.deleteMoneda(row.id_moneda);
-  });
-};
-
-// Métodos para Precios
-const openEditPrecioDialog = (row) => {
-  selectedCombustible.value = row;
-  showPrecioDialog.value = true;
-};
-
-const actualizarPrecios = () => {
-  store.fetchPreciosActuales();
-};
-
-const formatearNumero = (valor) => {
-  if (valor === null || valor === undefined) return "-";
-  return new Intl.NumberFormat("es-ES", {
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 8,
-  }).format(valor);
-};
-
+/**
+ * Al montar el componente:
+ * 1. Fetch de ambas tablas (monedas y precios)
+ * 2. Configurar listeners de Socket.IO (3 eventos)
+ */
 onMounted(() => {
   store.fetchMonedas();
   store.fetchPreciosActuales();
-  store.initSocket();
+  
+  // Configurar listeners de Socket.IO (ver composable para detalles)
+  setupSocketListeners();
 });
 
+/**
+ * Al desmontar el componente:
+ * 1. Limpiar listeners de Socket.IO (prevenir memory leaks)
+ * 2. Resetear filtros y paginación
+ */
 onUnmounted(() => {
-  store.cleanupSocket();
+  // Limpiar Socket.IO
+  cleanupSocketListeners();
+  
+  // Resetear estado de filtros y paginación
   store.filter = "";
   store.pagination = {
     page: 1,
@@ -292,6 +341,7 @@ onUnmounted(() => {
 </script>
 
 <style scoped>
+/* Estilos para chips de precios */
 .q-chip {
   margin-bottom: 4px;
 }

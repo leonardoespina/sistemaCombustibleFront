@@ -83,117 +83,24 @@
 </template>
 
 <script setup>
-import { ref, onMounted, onUnmounted, computed } from "vue";
-import { useQuasar } from "quasar";
-import { useLlenaderoStore } from "../../stores/llenaderoStore";
+import { useLlenaderoPage } from "../../components/llenaderos/composables/useLlenaderoPage";
 import LlenaderoFormDialog from "../../components/llenaderos/LlenaderoFormDialog.vue";
 
-const $q = useQuasar();
-const store = useLlenaderoStore();
+// ============================================
+// COMPOSABLE
+// ============================================
 
-const rows = computed(() => store.rows);
-const loading = computed(() => store.loading);
-const filter = computed({
-  get: () => store.filter,
-  set: (val) => (store.filter = val),
-});
-const pagination = computed({
-  get: () => store.pagination,
-  set: (val) => (store.pagination = val),
-});
-
-const showDialog = ref(false);
-const selectedItem = ref(null);
-
-const columns = [
-  {
-    name: "id_llenadero",
-    label: "ID",
-    field: "id_llenadero",
-    sortable: true,
-    align: "left",
-  },
-  {
-    name: "nombre_llenadero",
-    label: "Nombre del Llenadero",
-    field: "nombre_llenadero",
-    sortable: true,
-    align: "left",
-  },
-  {
-    name: "capacidad",
-    label: "Capacidad (litros)",
-    field: "capacidad",
-    sortable: true,
-    align: "right",
-    format: (val) => val ? `${val} L` : 'No especificado'
-  },
-  {
-    name: "disponibilidadActual",
-    label: "Disponibilidad Actual (litros)",
-    field: "disponibilidadActual",
-    sortable: true,
-    align: "right",
-    format: (val) => val ? `${val} L` : 'No especificado'
-  },
-  {
-    name: "tipo_combustible",
-    label: "Tipo de Combustible",
-    field: (row) => row.TipoCombustible?.nombre || 'No especificado',
-    sortable: true,
-    align: "left",
-  },
-  {
-    name: "estado",
-    label: "Estado",
-    field: "estado",
-    sortable: true,
-    align: "center",
-  },
-  { name: "actions", label: "Acciones", align: "center" },
-];
-
-const onRequest = (props) => {
-  store.pagination = props.pagination;
-  store.filter = props.filter;
-  store.fetchLlenaderos();
-};
-
-const openCreateDialog = () => {
-  selectedItem.value = null;
-  showDialog.value = true;
-};
-
-const openEditDialog = (row) => {
-  selectedItem.value = row;
-  showDialog.value = true;
-};
-
-const confirmDelete = (row) => {
-  $q.dialog({
-    title: "Confirmar acción",
-    message: `¿Estás seguro de desactivar el llenadero "${row.nombre_llenadero}"?`,
-    cancel: true,
-    persistent: true,
-  }).onOk(() => {
-    store.deleteLlenadero(row.id_llenadero);
-  });
-};
-
-onMounted(() => {
-  store.fetchLlenaderos();
-  store.initSocket();
-});
-
-onUnmounted(() => {
-  store.cleanupSocket();
-  store.filter = "";
-  store.pagination = {
-    page: 1,
-    rowsPerPage: 10,
-    sortBy: "id_llenadero",
-    descending: false,
-    rowsNumber: 0,
-  };
-});
+const {
+  showDialog,
+  selectedItem,
+  rows,
+  loading,
+  filter,
+  pagination,
+  columns,
+  onRequest,
+  openCreateDialog,
+  openEditDialog,
+  confirmDelete,
+} = useLlenaderoPage();
 </script>

@@ -152,7 +152,8 @@ export const useCupoStore = defineStore("cupos", () => {
   }
 
   /**
-   * Obtiene información detallada de kuota para una combinación específica
+   * Obtiene información detallada de cupo para una combinación específica
+   * Usado principalmente en el módulo de solicitudes
    */
   async function fetchCupoEspecifico(id_subdependencia, id_tipo_combustible) {
     if (!id_subdependencia || !id_tipo_combustible) {
@@ -162,12 +163,12 @@ export const useCupoStore = defineStore("cupos", () => {
       const response = await api.get("/cupos/especifico", {
         params: { id_subdependencia, id_tipo_combustible },
       });
-      const kuota = response.data.data;
-      if (kuota) {
-        const asignado = parseFloat(kuota.cantidad_asignada);
-        const consumido = parseFloat(kuota.cantidad_consumida);
+      const cupo = response.data.data;
+      if (cupo) {
+        const asignado = parseFloat(cupo.cantidad_asignada);
+        const consumido = parseFloat(cupo.cantidad_consumida);
         return {
-          disponible: parseFloat(kuota.cantidad_disponible),
+          disponible: parseFloat(cupo.cantidad_disponible),
           asignado: asignado,
           consumido: consumido,
           porcentaje: asignado > 0 ? ((consumido / asignado) * 100).toFixed(1) : 0,
@@ -175,66 +176,26 @@ export const useCupoStore = defineStore("cupos", () => {
       }
       return { disponible: 0, asignado: 0, consumido: 0, porcentaje: 0 };
     } catch (error) {
-      console.warn("Kuota no disponible para esta combinación");
+      console.warn("Cupo no disponible para esta combinación");
       return { disponible: 0, asignado: 0, consumido: 0, porcentaje: 0 };
     }
   }
 
-  function initSocket() {
-    socket.on("cupo:creado", () => {
-      fetchCuposBase();
-      fetchCuposActuales();
-    });
-
-    socket.on("cupo:actualizado", () => {
-      fetchCuposBase();
-      fetchCuposActuales();
-    });
-
-    socket.on("cupo:consumo", () => {
-      fetchCuposActuales();
-    });
-
-    socket.on("cupo:recarga", () => {
-      fetchCuposActuales();
-    });
-
-    socket.on("cupo:reinicio-mensual", () => {
-      fetchCuposActuales();
-    });
-
-    socket.on("solicitud:creada", () => {
-      fetchCuposActuales();
-    });
-
-    socket.on("solicitud:actualizada", () => {
-      fetchCuposActuales();
-    });
-
-    socket.on("solicitud:finalizada", () => {
-      fetchCuposActuales();
-    });
-  }
-
-  function cleanupSocket() {
-    socket.off("cupo:creado");
-    socket.off("cupo:actualizado");
-    socket.off("cupo:consumo");
-    socket.off("cupo:recarga");
-    socket.off("cupo:reinicio-mensual");
-    socket.off("solicitud:creada");
-    socket.off("solicitud:actualizada");
-    socket.off("solicitud:finalizada");
-  }
-
   return {
+    // Estado
     loading,
+    
+    // Cupos Actuales
     cuposActuales,
     paginationActual,
     filterActual,
+    
+    // Cupos Base
     cuposBase,
     paginationBase,
     filterBase,
+    
+    // Acciones
     fetchCuposActuales,
     fetchCuposBase,
     createCupoBase,
@@ -242,7 +203,5 @@ export const useCupoStore = defineStore("cupos", () => {
     recargarCupo,
     reiniciarMes,
     fetchCupoEspecifico,
-    initSocket,
-    cleanupSocket,
   };
 });

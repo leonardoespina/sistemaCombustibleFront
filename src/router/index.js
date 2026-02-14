@@ -41,7 +41,7 @@ const routes = [
         path: "usuarios", // Coincide con la ruta '/usuarios'
         name: "users",
         meta: { requiresAdmin: true },
-        component: () => import("../pages/UsersPage.vue"),
+        component: () => import("../pages/users/UsersPage.vue"),
       },
       {
         path: "/vehiculos/marcas", // -> /vehiculos/marcas

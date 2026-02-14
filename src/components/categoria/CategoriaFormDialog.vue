@@ -1,4 +1,4 @@
-<!-- src/components/management/ManagementFormDialog.vue -->
+<!-- src/components/categoria/CategoriaFormDialog.vue -->
 <template>
   <q-dialog
     :model-value="modelValue"
@@ -12,7 +12,7 @@
         </div>
       </q-card-section>
 
-      <q-form @submit.prevent="onSave" class="q-gutter-md">
+      <q-form @submit.prevent="handleSave" class="q-gutter-md">
         <q-card-section>
           <div class="row q-col-gutter-md">
             <div class="col-12">
@@ -20,7 +20,10 @@
                 dense
                 v-model="formData.nombre"
                 label="Nombre de la Categoría"
-                :rules="[(val) => !!val || 'Requerido']"
+                :rules="validationRules.nombre"
+                counter
+                maxlength="50"
+                hint="Solo letras, números, espacios y guiones"
               />
             </div>
             <div class="col-12" v-if="isEditing">
@@ -29,6 +32,7 @@
                 v-model="formData.estado"
                 :options="['ACTIVO', 'INACTIVO']"
                 label="Estado"
+                :rules="validationRules.estado"
               />
             </div>
           </div>
@@ -44,8 +48,10 @@
 </template>
 
 <script setup>
-import { ref, watch, onMounted, onUnmounted } from "vue";
+import { onMounted, onUnmounted } from "vue";
+import { useQuasar } from "quasar";
 import socket from "../../services/socket.js";
+import { useCategoriaForm } from "./composables/useCategoriaForm.js";
 
 const props = defineProps({
   modelValue: Boolean,
@@ -54,19 +60,44 @@ const props = defineProps({
 });
 
 const emit = defineEmits(["update:modelValue", "save", "dataUpdated"]);
+const $q = useQuasar();
 
-const formData = ref({});
+// Composable del formulario
+const { formData, validationRules, handleSave } = useCategoriaForm(
+  props,
+  emit
+);
 
-// Listeners de Socket.io
+// Listeners de Socket.io para sincronización en tiempo real
 onMounted(() => {
   socket.on("categoria:creado", (data) => {
     emit("dataUpdated", data);
+    // Notificación solo si NO es el usuario actual quien creó
+    // (el store ya notifica al creador)
   });
 
   socket.on("categoria:actualizado", (data) => {
-    // Si estamos editando ESTE registro, podríamos avisar al usuario
-    if (props.isEditing && props.initialData?.id_categoria === data.id_categoria) {
-       // Opcional: Mostrar notificación
+    // Notificación de edición concurrente
+    if (
+      props.isEditing &&
+      props.initialData?.id_categoria === data.id_categoria
+    ) {
+      $q.notify({
+        type: "warning",
+        message: "⚠️ Esta categoría fue actualizada por otro usuario",
+        icon: "warning",
+        position: "top",
+        timeout: 4000,
+        actions: [
+          {
+            label: "Recargar",
+            color: "white",
+            handler: () => {
+              emit("dataUpdated", data);
+            },
+          },
+        ],
+      });
     }
     emit("dataUpdated", data);
   });
@@ -76,20 +107,4 @@ onUnmounted(() => {
   socket.off("categoria:creado");
   socket.off("categoria:actualizado");
 });
-
-watch(
-  () => props.modelValue,
-  (isNowOpen) => {
-    if (isNowOpen) {
-      formData.value = {
-        nombre: props.initialData?.nombre || "",
-        estado: props.initialData?.estado || "ACTIVO",
-      };
-    }
-  }
-);
-
-function onSave() {
-  emit("save", formData.value);
-}
 </script>

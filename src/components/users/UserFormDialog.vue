@@ -1,4 +1,4 @@
-<!-- src/components/UserFormDialog.vue -->
+<!-- src/components/users/UserFormDialog.vue -->
 <template>
   <q-dialog
     :model-value="modelValue"
@@ -12,40 +12,44 @@
         </div>
       </q-card-section>
 
-      <q-form @submit.prevent="onSave">
+      <q-form @submit.prevent="handleSave">
         <q-card-section class="q-gutter-md">
           <q-input
             dense
             v-model="formData.nombre"
             label="Nombre"
             autofocus
-            :rules="[(val) => !!val || 'Campo requerido']"
+            :rules="validationRules.nombre"
+            counter
+            maxlength="50"
+            hint="Solo letras y espacios"
           />
           <q-input
             dense
             v-model="formData.apellido"
             label="Apellido"
-            :rules="[(val) => !!val || 'Campo requerido']"
+            :rules="validationRules.apellido"
+            counter
+            maxlength="50"
+            hint="Solo letras y espacios"
           />
           <q-input
             dense
             v-model="formData.cedula"
             label="Cédula"
-            :rules="[(val) => !!val || 'Campo requerido']"
+            :rules="validationRules.cedula"
+            hint="Ej: V-12345678, 12345678"
+            @update:model-value="(val) => (formData.cedula = val?.toUpperCase())"
           />
           <q-input
             dense
             v-model="formData.password"
             :label="isEditing ? 'Nueva Contraseña (Opcional)' : 'Contraseña'"
             type="password"
-            :rules="
-              isEditing
-                ? []
-                : [
-                    (val) => !!val || 'Campo requerido',
-                    (val) => val.length >= 6 || 'Mínimo 6 caracteres',
-                  ]
-            "
+            :rules="isEditing ? validationRules.passwordEditar : validationRules.passwordCrear"
+            counter
+            maxlength="50"
+            :hint="isEditing ? 'Dejar vacío para mantener la actual' : 'Mínimo 6 caracteres'"
           />
           <q-select
             dense
@@ -60,14 +64,14 @@
               'ALMACENISTA',
             ]"
             label="Tipo de Usuario"
-            :rules="[(val) => !!val || 'Campo requerido']"
+            :rules="validationRules.tipo_usuario"
           />
           <q-select
             dense
             v-model="formData.estado"
             :options="['ACTIVO', 'INACTIVO']"
             label="Estado"
-            :rules="[(val) => !!val || 'Campo requerido']"
+            :rules="validationRules.estado"
           />
 
           <q-separator />
@@ -91,10 +95,11 @@
 </template>
 
 <script setup>
-import { ref, watch, onMounted, onUnmounted, nextTick } from "vue";
-import socket from "../services/socket.js";
-
-import OrganizationalHierarchy from "./OrganizationalHierarchy.vue";
+import { onMounted, onUnmounted } from "vue";
+import { useQuasar } from "quasar";
+import socket from "../../services/socket.js";
+import OrganizationalHierarchy from "../OrganizationalHierarchy.vue";
+import { useUserForm } from "./composables/useUserForm.js";
 
 const props = defineProps({
   modelValue: Boolean,
@@ -103,59 +108,48 @@ const props = defineProps({
 });
 
 const emit = defineEmits(["update:modelValue", "save", "dataUpdated"]);
+const $q = useQuasar();
 
-const formData = ref({});
+// Composable del formulario
+const {
+  formData,
+  isInitializing,
+  validationRules,
+  handleSave,
+} = useUserForm(props, emit);
 
-// Flag para proteger la inicialización
-const isInitializing = ref(false);
+// Listeners de Socket.io para sincronización en tiempo real
+onMounted(() => {
+  socket.on("usuarios:creado", (data) => {
+    emit("dataUpdated", data);
+  });
 
-onMounted(async () => {
-  if (props.modelValue) {
-    await initializeForm();
-  }
+  socket.on("usuarios:actualizado", (data) => {
+    // Notificación de edición concurrente
+    if (props.isEditing && props.initialData?.id_usuario === data.id_usuario) {
+      $q.notify({
+        type: "warning",
+        message: "⚠️ Este usuario fue actualizado por otro usuario",
+        icon: "warning",
+        position: "top",
+        timeout: 4000,
+        actions: [
+          {
+            label: "Recargar",
+            color: "white",
+            handler: () => {
+              emit("dataUpdated", data);
+            },
+          },
+        ],
+      });
+    }
+    emit("dataUpdated", data);
+  });
 });
 
-// Watch para cuando se abre el diálogo (por si acaso, aunque la key forzará remount)
-watch(
-  () => props.modelValue,
-  async (val) => {
-    if (val) await initializeForm();
-  },
-);
-
-async function initializeForm() {
-  isInitializing.value = true;
-
-  console.log("Iniciando formulario de usuario...", props.initialData);
-
-  // 1. Limpiar estado local
-  formData.value = {}; // Reset total
-
-  const data = props.initialData ? { ...props.initialData } : {};
-
-  // 2. Mapeo de datos al formulario
-  formData.value = {
-    nombre: data.nombre || "",
-    apellido: data.apellido || "",
-    cedula: data.cedula || "",
-    password: "",
-    tipo_usuario: data.tipo_usuario || "INSPECTOR",
-    estado: data.estado || "ACTIVO",
-    id_categoria: data.id_categoria || null,
-    id_dependencia: data.id_dependencia || null,
-    id_subdependencia: data.id_subdependencia || null,
-  };
-
-  await nextTick();
-  isInitializing.value = false;
-  console.log("Formulario inicializado. isInitializing released.");
-}
-
-function onSave() {
-  // Asegurar que subdependencia sea null si no está seleccionada
-  const payload = { ...formData.value };
-  if (!payload.id_subdependencia) payload.id_subdependencia = null;
-
-  emit("save", payload);
-}
+onUnmounted(() => {
+  socket.off("usuarios:creado");
+  socket.off("usuarios:actualizado");
+});
 </script>

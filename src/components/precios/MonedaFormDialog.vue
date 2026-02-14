@@ -1,6 +1,8 @@
+<!-- src/components/precios/MonedaFormDialog.vue -->
 <template>
   <q-dialog v-model="visible" persistent>
-    <q-card style="min-width: 400px">
+    <q-card style="width: 500px; max-width: 80vw">
+      <!-- HEADER -->
       <q-card-section class="row items-center">
         <div class="text-h6">
           {{ isEdit ? "Editar Moneda" : "Nueva Moneda" }}
@@ -9,112 +11,154 @@
         <q-btn icon="close" flat round dense v-close-popup />
       </q-card-section>
 
-      <q-card-section>
-        <q-form @submit="onSubmit" class="q-gutter-md">
+      <!-- FORMULARIO -->
+      <q-form @submit.prevent="handleSave" class="q-gutter-md">
+        <q-card-section>
+          <!-- Nombre de la Moneda -->
           <q-input
-            v-model="form.nombre"
+            v-model="formData.nombre"
             label="Nombre *"
             outlined
             dense
-            hint="Ej: Dólar Americano, Bolívar Digital"
-            :rules="[(val) => (val && val.length > 0) || 'El nombre es requerido']"
+            hint="Ej: Dólar Americano, Bolívar Digital, Oro"
+            :rules="validationRules.nombre"
+            counter
+            maxlength="50"
           />
 
+          <!-- Símbolo de la Moneda -->
           <q-input
-            v-model="form.simbolo"
+            v-model="formData.simbolo"
             label="Símbolo *"
             outlined
             dense
-            hint="Ej: $, Bs, Au"
-            :rules="[(val) => (val && val.length > 0) || 'El símbolo es requerido']"
+            hint="Ej: USD, $, Bs, Au (se convertirá a mayúsculas)"
+            :rules="validationRules.simbolo"
+            counter
+            maxlength="5"
+            class="q-mt-md"
           />
+        </q-card-section>
 
-          <div class="row justify-end q-mt-md">
-            <q-btn
-              label="Cancelar"
-              color="negative"
-              flat
-              v-close-popup
-              class="q-mr-sm"
-            />
-            <q-btn
-              :label="isEdit ? 'Actualizar' : 'Guardar'"
-              type="submit"
-              color="primary"
-              :loading="loading"
-            />
-          </div>
-        </q-form>
-      </q-card-section>
+        <!-- ACCIONES -->
+        <q-card-section class="row justify-end q-pt-none">
+          <q-btn
+            label="Cancelar"
+            color="negative"
+            flat
+            v-close-popup
+            class="q-mr-sm"
+          />
+          <q-btn
+            :label="isEdit ? 'Actualizar' : 'Guardar'"
+            type="submit"
+            color="primary"
+            :loading="loading"
+          />
+        </q-card-section>
+      </q-form>
     </q-card>
   </q-dialog>
 </template>
 
 <script setup>
-import { ref, computed, watch } from "vue";
+// ============================================
+// IMPORTS
+// ============================================
+import { computed, onMounted, onUnmounted } from "vue";
+import { useQuasar } from "quasar";
 import { usePrecioStore } from "../../stores/precioStore";
+import socket from "../../services/socket.js";
+import { useMonedaForm } from "./composables/useMonedaForm.js";
 
+// ============================================
+// PROPS & EMITS
+// ============================================
 const props = defineProps({
   modelValue: Boolean,
   initialData: Object,
 });
 
-const emit = defineEmits(["update:modelValue"]);
+const emit = defineEmits(["update:modelValue", "dataUpdated"]);
 
+// ============================================
+// COMPOSABLES & STORES
+// ============================================
+const $q = useQuasar();
 const store = usePrecioStore();
-const loading = computed(() => store.loading);
 
+// Composable del formulario (maneja estado, validaciones, y guardado)
+const { formData, validationRules, handleSave } = useMonedaForm(
+  props,
+  emit,
+  store
+);
+
+// ============================================
+// COMPUTED
+// ============================================
+
+// Control del diálogo (v-model bidireccional)
 const visible = computed({
   get: () => props.modelValue,
   set: (val) => emit("update:modelValue", val),
 });
 
+// Detecta si estamos en modo edición
 const isEdit = computed(() => !!props.initialData);
 
-const form = ref({
-  nombre: "",
-  simbolo: "",
+// Loading state del store
+const loading = computed(() => store.loading);
+
+// ============================================
+// LIFECYCLE HOOKS
+// ============================================
+
+/**
+ * Al montar el componente:
+ * Configurar listeners de Socket.IO para sincronización en tiempo real
+ */
+onMounted(() => {
+  // Listener para monedas creadas
+  socket.on("moneda:creado", (data) => {
+    emit("dataUpdated", data);
+  });
+
+  // Listener para monedas actualizadas
+  // Incluye notificación de edición concurrente
+  socket.on("moneda:actualizado", (data) => {
+    // Si estamos editando y otro usuario modifica la misma moneda, notificar
+    if (
+      props.initialData?.id_moneda === data.id_moneda
+    ) {
+      $q.notify({
+        type: "warning",
+        message: `⚠️ La moneda "${data.nombre}" fue actualizada por otro usuario`,
+        icon: "warning",
+        position: "top",
+        timeout: 4000,
+        actions: [
+          {
+            label: "Recargar",
+            color: "white",
+            handler: () => {
+              emit("dataUpdated", data);
+            },
+          },
+        ],
+      });
+    }
+    emit("dataUpdated", data);
+  });
 });
 
-watch(
-  () => props.initialData,
-  (val) => {
-    resetForm(val);
-  },
-  { immediate: true }
-);
-
-// Resetear form cuando se cierra el diálogo
-watch(visible, (val) => {
-  if (!val) {
-    resetForm(props.initialData);
-  }
+/**
+ * Al desmontar el componente:
+ * Limpiar listeners de Socket.IO para evitar memory leaks
+ */
+onUnmounted(() => {
+  socket.off("moneda:creado");
+  socket.off("moneda:actualizado");
 });
-
-function resetForm(data) {
-  if (data) {
-    form.value = { ...data };
-  } else {
-    form.value = {
-      nombre: "",
-      simbolo: "",
-    };
-  }
-}
-
-const onSubmit = async () => {
-  let success;
-  if (isEdit.value) {
-    success = await store.updateMoneda(
-      props.initialData.id_moneda,
-      form.value
-    );
-  } else {
-    success = await store.createMoneda(form.value);
-  }
-
-  if (success) {
-    visible.value = false;
-  }
-};
 </script>
+

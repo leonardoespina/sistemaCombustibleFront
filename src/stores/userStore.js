@@ -4,7 +4,6 @@ import { defineStore } from "pinia";
 import { ref } from "vue";
 import { useQuasar } from "quasar";
 import api from "../api/index.js";
-import socket from "../services/socket.js";
 
 export const useUserStore = defineStore("users", () => {
   const $q = useQuasar();
@@ -40,8 +39,15 @@ export const useUserStore = defineStore("users", () => {
       rows.value = response.data.data;
       pagination.value.rowsNumber = response.data.pagination.totalItems;
     } catch (error) {
-      console.error("Error al obtener usuarios:", error);
-      // La notificación ya la maneja el interceptor de Axios
+      console.error("Error fetching usuarios:", error);
+      const errorMsg =
+        error.response?.data?.msg || "Error al cargar los usuarios";
+      $q.notify({
+        type: "negative",
+        message: errorMsg,
+        icon: "error",
+        position: "top-right",
+      });
     } finally {
       loading.value = false;
     }
@@ -55,11 +61,25 @@ export const useUserStore = defineStore("users", () => {
     loading.value = true;
     try {
       const response = await api.post("/usuarios", userData);
-      $q.notify({ type: "positive", message: response.data.msg });
-      await fetchUsers(); // Refrescar la tabla
-      return true; // Indicar éxito
+      $q.notify({
+        type: "positive",
+        message: response.data.msg || "Usuario creado exitosamente",
+        icon: "check_circle",
+        position: "top-right",
+      });
+      await fetchUsers();
+      return true;
     } catch (error) {
-      return false; // Indicar fallo
+      console.error("Error creating usuario:", error);
+      const errorMsg =
+        error.response?.data?.msg || "Error al crear el usuario";
+      $q.notify({
+        type: "negative",
+        message: errorMsg,
+        icon: "error",
+        position: "top-right",
+      });
+      return false;
     } finally {
       loading.value = false;
     }
@@ -74,10 +94,24 @@ export const useUserStore = defineStore("users", () => {
     loading.value = true;
     try {
       const response = await api.put(`/usuarios/${userId}`, userData);
-      $q.notify({ type: "positive", message: response.data.msg });
-      await fetchUsers(); // Refrescar la tabla
+      $q.notify({
+        type: "positive",
+        message: response.data.msg || "Usuario actualizado exitosamente",
+        icon: "check_circle",
+        position: "top-right",
+      });
+      await fetchUsers();
       return true;
     } catch (error) {
+      console.error("Error updating usuario:", error);
+      const errorMsg =
+        error.response?.data?.msg || "Error al actualizar el usuario";
+      $q.notify({
+        type: "negative",
+        message: errorMsg,
+        icon: "error",
+        position: "top-right",
+      });
       return false;
     } finally {
       loading.value = false;
@@ -92,31 +126,33 @@ export const useUserStore = defineStore("users", () => {
     loading.value = true;
     try {
       const response = await api.delete(`/usuarios/${userId}`);
-      $q.notify({ type: "positive", message: response.data.msg });
-      await fetchUsers(); // Refrescar la tabla
+      $q.notify({
+        type: "positive",
+        message: response.data.msg || "Usuario desactivado exitosamente",
+        icon: "check_circle",
+        position: "top-right",
+      });
+      await fetchUsers();
+      return true;
     } catch (error) {
-      // Notificación de error manejada por el interceptor
+      console.error("Error deleting usuario:", error);
+      const errorMsg =
+        error.response?.data?.msg || "Error al desactivar el usuario";
+      $q.notify({
+        type: "negative",
+        message: errorMsg,
+        icon: "error",
+        position: "top-right",
+      });
+      return false;
     } finally {
       loading.value = false;
     }
   }
 
-  // --- SOCKETS ---
-  function initSocket() {
-    socket.on("usuarios:creado", () => {
-      fetchUsers();
-    });
-    socket.on("usuarios:actualizado", () => {
-      fetchUsers();
-    });
-  }
+  // Nota: Los socket listeners se han movido a useUserPage composable
+  // para evitar duplicados y tener mejor control del ciclo de vida
 
-  function cleanupSocket() {
-    socket.off("usuarios:creado");
-    socket.off("usuarios:actualizado");
-  }
-
-  // Exponemos el estado y las acciones para que los componentes puedan usarlos.
   return {
     rows,
     loading,
@@ -126,7 +162,5 @@ export const useUserStore = defineStore("users", () => {
     createUser,
     updateUser,
     deleteUser,
-    initSocket,
-    cleanupSocket,
   };
 });

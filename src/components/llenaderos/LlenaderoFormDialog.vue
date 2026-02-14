@@ -10,61 +10,39 @@
       </q-card-section>
 
       <q-card-section>
-        <q-form @submit="onSubmit" class="q-gutter-md">
+        <q-form @submit="handleSave" class="q-gutter-md">
           <q-input
-            v-model="form.nombre_llenadero"
+            v-model="formData.nombre_llenadero"
             label="Nombre del Llenadero / Operario *"
             outlined
             dense
-            :rules="[
-              (val) =>
-                (val && val.length >= 3) ||
-                'El nombre debe tener al menos 3 caracteres',
-            ]"
+            :rules="validationRules.nombre_llenadero"
           />
 
           <q-input
-            v-model="form.capacidad"
+            v-model="formData.capacidad"
             label="Capacidad (litros)"
             outlined
             dense
             type="number"
             step="0.01"
             min="0"
-            :rules="[
-              (val) =>
-                val === null ||
-                val === '' ||
-                val >= 0 ||
-                'La capacidad debe ser mayor o igual a 0',
-            ]"
+            :rules="validationRules.capacidad"
           />
 
           <q-input
-            v-model="form.disponibilidadActual"
+            v-model="formData.disponibilidadActual"
             label="Disponibilidad Actual (litros)"
             outlined
             dense
             type="number"
             step="0.01"
             min="0"
-            :rules="[
-              (val) =>
-                val === null ||
-                val === '' ||
-                val >= 0 ||
-                'La disponibilidad debe ser mayor o igual a 0',
-              (val) =>
-                val === null ||
-                val === '' ||
-                !form.capacidad ||
-                val <= form.capacidad ||
-                'La disponibilidad no puede ser mayor que la capacidad',
-            ]"
+            :rules="validationRules.disponibilidadActual"
           />
 
           <q-select
-            v-model="form.id_combustible"
+            v-model="formData.id_combustible"
             :options="tipoCombustibleOptions"
             option-label="nombre"
             option-value="id_tipo_combustible"
@@ -73,12 +51,12 @@
             dense
             emit-value
             map-options
-            :loading="loadingTiposCombustible"
+            :loading="loadingTipoCombustible"
           />
 
           <q-toggle
             v-if="isEdit"
-            v-model="form.estado"
+            v-model="formData.estado"
             label="Activo"
             true-value="ACTIVO"
             false-value="INACTIVO"
@@ -107,9 +85,8 @@
 </template>
 
 <script setup>
-import { ref, computed, watch, onMounted } from "vue";
-import { useLlenaderoStore } from "../../stores/llenaderoStore";
-import { useTipoCombustibleStore } from "../../stores/tipoCombustibleStore";
+import { computed } from "vue";
+import { useLlenaderoForm } from "./composables/useLlenaderoForm";
 
 const props = defineProps({
   modelValue: Boolean,
@@ -118,83 +95,26 @@ const props = defineProps({
 
 const emit = defineEmits(["update:modelValue"]);
 
-const store = useLlenaderoStore();
-const tipoCombustibleStore = useTipoCombustibleStore();
-const loading = computed(() => store.loading);
-const loadingTiposCombustible = computed(() => tipoCombustibleStore.loading);
+// ============================================
+// COMPOSABLE
+// ============================================
+
+const {
+  formData,
+  loading,
+  loadingTipoCombustible,
+  isEdit,
+  tipoCombustibleOptions,
+  validationRules,
+  handleSave,
+} = useLlenaderoForm(props, emit);
+
+// ============================================
+// COMPUTED
+// ============================================
 
 const visible = computed({
   get: () => props.modelValue,
   set: (val) => emit("update:modelValue", val),
 });
-
-const isEdit = computed(() => !!props.initialData);
-
-const form = ref({
-  nombre_llenadero: "",
-  capacidad: null,
-  disponibilidadActual: null,
-  id_combustible: null,
-  estado: "ACTIVO",
-});
-
-const tipoCombustibleOptions = computed(() => {
-  return tipoCombustibleStore.rows
-    ? tipoCombustibleStore.rows.filter((tc) => tc.activo)
-    : [];
-});
-
-watch(
-  () => props.initialData,
-  (val) => {
-    if (val) {
-      form.value = {
-        nombre_llenadero: val.nombre_llenadero || "",
-        capacidad: val.capacidad || null,
-        disponibilidadActual: val.disponibilidadActual || null,
-        id_combustible: val.id_combustible || null,
-        estado: val.estado || "ACTIVO",
-      };
-    } else {
-      form.value = {
-        nombre_llenadero: "",
-        capacidad: null,
-        disponibilidadActual: null,
-        id_combustible: null,
-        estado: "ACTIVO",
-      };
-    }
-  },
-  { immediate: true },
-);
-
-onMounted(async () => {
-  if (!tipoCombustibleStore.rows || tipoCombustibleStore.rows.length === 0) {
-    await tipoCombustibleStore.fetchTiposCombustible();
-  }
-});
-
-const onSubmit = async () => {
-  let success;
-  if (isEdit.value) {
-    success = await store.updateLlenadero(
-      props.initialData.id_llenadero,
-      form.value,
-    );
-  } else {
-    success = await store.createLlenadero(form.value);
-  }
-
-  if (success) {
-    visible.value = false;
-    // Limpiar el formulario después de crear o editar
-    form.value = {
-      nombre_llenadero: "",
-      capacidad: null,
-      disponibilidadActual: null,
-      id_combustible: null,
-      estado: "ACTIVO",
-    };
-  }
-};
 </script>

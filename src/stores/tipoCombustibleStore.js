@@ -81,22 +81,14 @@ export const useTipoCombustibleStore = defineStore("tipoCombustible", () => {
       const response = await api.delete(`/tipos-combustible/${id}`);
       $q.notify({ type: "positive", message: response.data.msg });
       await fetchTiposCombustible();
+      return true;
     } catch (error) {
         console.error(error);
         $q.notify({ type: "negative", message: error.response?.data?.msg || "Error eliminando registro" });
+        return false;
     } finally {
       loading.value = false;
     }
-  }
-
-  function initSocket() {
-    socket.on("tipo_combustible:creado", () => fetchTiposCombustible());
-    socket.on("tipo_combustible:actualizado", () => fetchTiposCombustible());
-  }
-
-  function cleanupSocket() {
-    socket.off("tipo_combustible:creado");
-    socket.off("tipo_combustible:actualizado");
   }
 
   return {
@@ -108,7 +100,6 @@ export const useTipoCombustibleStore = defineStore("tipoCombustible", () => {
     createTipoCombustible,
     updateTipoCombustible,
     deleteTipoCombustible,
-    initSocket,
-    cleanupSocket,
   };
 });
+

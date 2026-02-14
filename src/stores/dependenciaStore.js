@@ -1,8 +1,8 @@
+// src/stores/dependenciaStore.js
 import { defineStore } from "pinia";
 import { ref } from "vue";
 import { useQuasar } from "quasar";
 import api from "../api/index.js";
-import socket from "../services/socket";
 
 export const useDependenciaStore = defineStore("dependencias", () => {
   const $q = useQuasar();
@@ -34,6 +34,16 @@ export const useDependenciaStore = defineStore("dependencias", () => {
       const response = await api.get("/dependencias", { params });
       rows.value = response.data.data;
       pagination.value.rowsNumber = response.data.pagination.totalItems;
+    } catch (error) {
+      console.error("Error fetching dependencias:", error);
+      const errorMsg =
+        error.response?.data?.msg || "Error al cargar las dependencias";
+      $q.notify({
+        type: "negative",
+        message: errorMsg,
+        icon: "error",
+        position: "top-right",
+      });
     } finally {
       loading.value = false;
     }
@@ -43,10 +53,24 @@ export const useDependenciaStore = defineStore("dependencias", () => {
     loading.value = true;
     try {
       const response = await api.post("/dependencias", data);
-      $q.notify({ type: "positive", message: response.data.msg });
+      $q.notify({
+        type: "positive",
+        message: response.data.msg || "Dependencia creada exitosamente",
+        icon: "check_circle",
+        position: "top-right",
+      });
       await fetchDependencias();
       return true;
     } catch (error) {
+      console.error("Error creating dependencia:", error);
+      const errorMsg =
+        error.response?.data?.msg || "Error al crear la dependencia";
+      $q.notify({
+        type: "negative",
+        message: errorMsg,
+        icon: "error",
+        position: "top-right",
+      });
       return false;
     } finally {
       loading.value = false;
@@ -57,10 +81,24 @@ export const useDependenciaStore = defineStore("dependencias", () => {
     loading.value = true;
     try {
       const response = await api.put(`/dependencias/${id}`, data);
-      $q.notify({ type: "positive", message: response.data.msg });
+      $q.notify({
+        type: "positive",
+        message: response.data.msg || "Dependencia actualizada exitosamente",
+        icon: "check_circle",
+        position: "top-right",
+      });
       await fetchDependencias();
       return true;
     } catch (error) {
+      console.error("Error updating dependencia:", error);
+      const errorMsg =
+        error.response?.data?.msg || "Error al actualizar la dependencia";
+      $q.notify({
+        type: "negative",
+        message: errorMsg,
+        icon: "error",
+        position: "top-right",
+      });
       return false;
     } finally {
       loading.value = false;
@@ -71,26 +109,32 @@ export const useDependenciaStore = defineStore("dependencias", () => {
     loading.value = true;
     try {
       const response = await api.delete(`/dependencias/${id}`);
-      $q.notify({ type: "positive", message: response.data.msg });
+      $q.notify({
+        type: "positive",
+        message: response.data.msg || "Dependencia desactivada exitosamente",
+        icon: "check_circle",
+        position: "top-right",
+      });
       await fetchDependencias();
+      return true;
+    } catch (error) {
+      console.error("Error deleting dependencia:", error);
+      const errorMsg =
+        error.response?.data?.msg || "Error al desactivar la dependencia";
+      $q.notify({
+        type: "negative",
+        message: errorMsg,
+        icon: "error",
+        position: "top-right",
+      });
+      return false;
     } finally {
       loading.value = false;
     }
   }
 
-  function initSocket() {
-    socket.on("dependencia:creado", () => {
-      fetchDependencias();
-    });
-    socket.on("dependencia:actualizado", () => {
-      fetchDependencias();
-    });
-  }
-
-  function cleanupSocket() {
-    socket.off("dependencia:creado");
-    socket.off("dependencia:actualizado");
-  }
+  // Nota: Los socket listeners se han movido a useDependenciaPage composable
+  // para evitar duplicados y tener mejor control del ciclo de vida
 
   return {
     rows,
@@ -101,7 +145,5 @@ export const useDependenciaStore = defineStore("dependencias", () => {
     createDependencia,
     updateDependencia,
     deleteDependencia,
-    initSocket,
-    cleanupSocket,
   };
 });

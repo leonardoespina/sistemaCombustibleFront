@@ -3,9 +3,13 @@
 import axios from "axios";
 import { Notify, Loading } from "quasar";
 
+// Obtenemos la URL base desde las variables de entorno
+// Vite expone las variables con prefijo VITE_ en import.meta.env
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:3000";
+
 // Creamos una instancia de Axios con configuración base
 const api = axios.create({
-  baseURL: "http://10.60.0.90:3000/api", //"http://10.60.6.57:3000/api", // O http://localhost:3000/api
+  baseURL: `${API_BASE_URL}/api`,
 });
 
 // Contador para manejar múltiples peticiones simultáneas

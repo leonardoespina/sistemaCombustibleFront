@@ -1,8 +1,8 @@
+// src/stores/subdependenciaStore.js
 import { defineStore } from "pinia";
 import { ref } from "vue";
 import { useQuasar } from "quasar";
 import api from "../api/index.js";
-import socket from "../services/socket";
 
 export const useSubdependenciaStore = defineStore("subdependencias", () => {
   const $q = useQuasar();
@@ -30,19 +30,43 @@ export const useSubdependenciaStore = defineStore("subdependencias", () => {
       const response = await api.get("/subdependencias", { params });
       rows.value = response.data.data;
       pagination.value.rowsNumber = response.data.pagination.totalItems;
+    } catch (error) {
+      console.error("Error fetching subdependencias:", error);
+      const errorMsg =
+        error.response?.data?.msg || "Error al cargar las subdependencias";
+      $q.notify({
+        type: "negative",
+        message: errorMsg,
+        icon: "error",
+        position: "top-right",
+      });
     } finally {
       loading.value = false;
     }
   }
   
-    async function createSubdependencia(data) {
+  async function createSubdependencia(data) {
     loading.value = true;
     try {
       const response = await api.post("/subdependencias", data);
-      $q.notify({ type: "positive", message: response.data.msg });
+      $q.notify({
+        type: "positive",
+        message: response.data.msg || "Subdependencia creada exitosamente",
+        icon: "check_circle",
+        position: "top-right",
+      });
       await fetchSubdependencias();
       return true;
     } catch (error) {
+      console.error("Error creating subdependencia:", error);
+      const errorMsg =
+        error.response?.data?.msg || "Error al crear la subdependencia";
+      $q.notify({
+        type: "negative",
+        message: errorMsg,
+        icon: "error",
+        position: "top-right",
+      });
       return false;
     } finally {
       loading.value = false;
@@ -53,10 +77,24 @@ export const useSubdependenciaStore = defineStore("subdependencias", () => {
     loading.value = true;
     try {
       const response = await api.put(`/subdependencias/${id}`, data);
-      $q.notify({ type: "positive", message: response.data.msg });
+      $q.notify({
+        type: "positive",
+        message: response.data.msg || "Subdependencia actualizada exitosamente",
+        icon: "check_circle",
+        position: "top-right",
+      });
       await fetchSubdependencias();
       return true;
     } catch (error) {
+      console.error("Error updating subdependencia:", error);
+      const errorMsg =
+        error.response?.data?.msg || "Error al actualizar la subdependencia";
+      $q.notify({
+        type: "negative",
+        message: errorMsg,
+        icon: "error",
+        position: "top-right",
+      });
       return false;
     } finally {
       loading.value = false;
@@ -67,8 +105,25 @@ export const useSubdependenciaStore = defineStore("subdependencias", () => {
     loading.value = true;
     try {
       const response = await api.delete(`/subdependencias/${id}`);
-      $q.notify({ type: "positive", message: response.data.msg });
+      $q.notify({
+        type: "positive",
+        message: response.data.msg || "Subdependencia desactivada exitosamente",
+        icon: "check_circle",
+        position: "top-right",
+      });
       await fetchSubdependencias();
+      return true;
+    } catch (error) {
+      console.error("Error deleting subdependencia:", error);
+      const errorMsg =
+        error.response?.data?.msg || "Error al desactivar la subdependencia";
+      $q.notify({
+        type: "negative",
+        message: errorMsg,
+        icon: "error",
+        position: "top-right",
+      });
+      return false;
     } finally {
       loading.value = false;
     }
@@ -76,23 +131,24 @@ export const useSubdependenciaStore = defineStore("subdependencias", () => {
 
   async function fetchSubdependenciasByDependencia(id_dependencia) {
     try {
-      const response = await api.get("/subdependencias", { params: { id_dependencia } });
+      const response = await api.get("/subdependencias", {
+        params: { id_dependencia },
+      });
       return response.data.data || response.data;
     } catch (error) {
-      console.error(error);
+      console.error("Error fetching subdependencias by dependencia:", error);
+      $q.notify({
+        type: "negative",
+        message: "Error al cargar subdependencias",
+        icon: "error",
+        position: "top-right",
+      });
       return [];
     }
   }
 
-  function initSocket() {
-    socket.on("subdependencia:creado", fetchSubdependencias);
-    socket.on("subdependencia:actualizado", fetchSubdependencias);
-  }
-
-  function cleanupSocket() {
-    socket.off("subdependencia:creado");
-    socket.off("subdependencia:actualizado");
-  }
+  // Nota: Los socket listeners se han movido a useSubdependenciaPage composable
+  // para evitar duplicados y tener mejor control del ciclo de vida
 
   return {
     rows,
@@ -104,7 +160,5 @@ export const useSubdependenciaStore = defineStore("subdependencias", () => {
     updateSubdependencia,
     deleteSubdependencia,
     fetchSubdependenciasByDependencia,
-    initSocket,
-    cleanupSocket,
   };
 });

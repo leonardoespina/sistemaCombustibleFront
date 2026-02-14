@@ -99,97 +99,21 @@
 </template>
 
 <script setup>
-import { ref, onMounted, onUnmounted } from "vue";
-import { useMovimientoLlenaderoStore } from "../../stores/movimientoLlenaderoStore";
+import { useMovimientosLlenaderoPage } from "../../components/llenaderos/composables/useMovimientosLlenaderoPage";
 import MovimientoLlenaderoDialog from "../../components/llenaderos/MovimientoLlenaderoDialog.vue";
 import MovimientoDetailDialog from "../../components/llenaderos/MovimientoDetailDialog.vue";
-import { date } from "quasar";
 
-const store = useMovimientoLlenaderoStore();
-const showDialog = ref(false);
-const showDetailDialog = ref(false);
-const selectedMovement = ref(null);
+// ============================================
+// COMPOSABLE
+// ============================================
 
-const columns = [
-  {
-    name: "fecha_movimiento",
-    label: "Fecha",
-    field: "fecha_movimiento",
-    align: "left",
-    sortable: true,
-    format: (val) => date.formatDate(val, "DD/MM/YYYY HH:mm"),
-  },
-  {
-    name: "llenadero",
-    label: "Llenadero",
-    field: (row) => row.Llenadero?.nombre_llenadero || "N/A",
-    align: "left",
-    sortable: false, 
-  },
-  {
-    name: "cantidad",
-    label: "Recibido",
-    field: "cantidad",
-    align: "right",
-    sortable: true,
-  },
-  {
-    name: "porcentaje_anterior",
-    label: "% Ant.",
-    field: "porcentaje_anterior",
-    align: "center",
-    sortable: true,
-  },
-  {
-    name: "saldo_nuevo",
-    label: "Saldo Final",
-    field: "saldo_nuevo",
-    align: "right",
-    sortable: true,
-  },
-  {
-    name: "porcentaje_nuevo",
-    label: "% Final",
-    field: "porcentaje_nuevo",
-    align: "center",
-    sortable: true,
-  },
-  {
-    name: "observacion",
-    label: "Observación",
-    field: "observacion",
-    align: "left",
-  },
-  {
-    name: "usuario",
-    label: "Registrado Por",
-    field: "id_usuario",
-    align: "left",
-  },
-  {
-    name: "actions",
-    label: "Acciones",
-    field: "actions",
-    align: "center",
-  },
-];
-
-onMounted(() => {
-  store.fetchMovimientos();
-  store.initSocket();
-});
-
-onUnmounted(() => {
-  store.cleanupSocket();
-});
-
-function onRequest(props) {
-  store.pagination = props.pagination;
-  store.fetchMovimientos();
-}
-
-function openDetail(row) {
-  selectedMovement.value = row;
-  showDetailDialog.value = true;
-}
+const {
+  store,
+  showDialog,
+  showDetailDialog,
+  selectedMovement,
+  columns,
+  onRequest,
+  openDetail,
+} = useMovimientosLlenaderoPage();
 </script>

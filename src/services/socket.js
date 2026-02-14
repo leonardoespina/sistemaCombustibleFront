@@ -1,9 +1,10 @@
 import { io } from "socket.io-client";
 
-// URL del backend (debe coincidir con donde corre tu servidor Express)
-const URL = "http://10.60.0.90:3000"; 
+// Obtenemos la URL desde las variables de entorno
+// Vite expone las variables con prefijo VITE_ en import.meta.env
+const SOCKET_URL = import.meta.env.VITE_SOCKET_URL || "http://localhost:3000";
 
-const socket = io(URL, {
+const socket = io(SOCKET_URL, {
   autoConnect: true,
   withCredentials: true,
   transports: ["websocket", "polling"],

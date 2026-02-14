@@ -1,3 +1,4 @@
+<!-- src/pages/subdependencias/SubdependenciasPage.vue -->
 <template>
   <q-page class="q-pa-md">
     <div class="q-gutter-y-md">
@@ -74,7 +75,7 @@
           <q-avatar icon="warning" color="negative" text-color="white" />
           <span class="q-ml-sm"
             >¿Seguro que deseas desactivar la subdependencia
-            <strong>{{ editingItem?.nombre }}</strong
+            <strong>{{ editingItem?.nombre }}</strong>
             >?</span
           >
         </q-card-section>
@@ -97,14 +98,25 @@
 import { ref, onMounted, onUnmounted } from "vue";
 import { storeToRefs } from "pinia";
 import { useSubdependenciaStore } from "../../stores/subdependenciaStore.js";
+import { useSubdependenciaPage } from "./composables/useSubdependenciaPage.js";
 import SubdependenciaFormDialog from "../../components/subdependencias/SubdependenciaFormDialog.vue";
 
 const subdependenciaStore = useSubdependenciaStore();
 const { rows, loading, filter, pagination } = storeToRefs(subdependenciaStore);
 
-const isFormDialogVisible = ref(false);
-const isDeleteDialogVisible = ref(false);
-const editingItem = ref(null);
+// Composable de la página
+const {
+  isFormDialogVisible,
+  isDeleteDialogVisible,
+  editingItem,
+  openAddDialog,
+  openEditDialog,
+  openDeleteDialog,
+  onFormSave,
+  confirmDelete,
+  setupSocketListeners,
+  cleanupSocketListeners,
+} = useSubdependenciaPage(subdependenciaStore);
 
 const columns = ref([
   {
@@ -138,50 +150,12 @@ function handleRequest(props) {
   subdependenciaStore.fetchSubdependencias();
 }
 
-function openAddDialog() {
-  editingItem.value = null;
-  isFormDialogVisible.value = true;
-}
-
-function openEditDialog(item) {
-  editingItem.value = { ...item };
-  isFormDialogVisible.value = true;
-}
-
-function openDeleteDialog(item) {
-  editingItem.value = item;
-  isDeleteDialogVisible.value = true;
-}
-
-async function onFormSave(formData) {
-  let success = false;
-  if (editingItem.value) {
-    success = await subdependenciaStore.updateSubdependencia(
-      editingItem.value.id_subdependencia,
-      formData,
-    );
-  } else {
-    success = await subdependenciaStore.createSubdependencia(formData);
-  }
-  if (success) {
-    isFormDialogVisible.value = false;
-  }
-}
-
-async function confirmDelete() {
-  await subdependenciaStore.deleteSubdependencia(
-    editingItem.value.id_subdependencia,
-  );
-  isDeleteDialogVisible.value = false;
-}
-
 onMounted(() => {
   subdependenciaStore.fetchSubdependencias();
-  subdependenciaStore.initSocket();
+  setupSocketListeners();
 });
 
 onUnmounted(() => {
-  subdependenciaStore.cleanupSocket();
   subdependenciaStore.filter = "";
   subdependenciaStore.pagination = {
     page: 1,
@@ -190,5 +164,6 @@ onUnmounted(() => {
     descending: false,
     rowsNumber: 0,
   };
+  cleanupSocketListeners();
 });
 </script>

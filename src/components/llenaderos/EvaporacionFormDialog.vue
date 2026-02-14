@@ -158,88 +158,58 @@
 </template>
 
 <script setup>
-import { ref, computed, watch } from "vue";
-import { useQuasar, date } from "quasar";
+import { watch } from "vue";
 import { useEvaporacionStore } from "../../stores/evaporacionStore";
+import { useMovimientoForm } from "./composables/useMovimientoForm";
 
 const props = defineProps({ modelValue: Boolean });
 const emit = defineEmits(["update:modelValue", "save"]);
 
-const $q = useQuasar();
+// ============================================
+// STORE
+// ============================================
+
 const store = useEvaporacionStore();
 
-const formData = ref({
-  id_llenadero: null,
-  cantidad: "",
-  observacion: "",
-  fecha_movimiento: date.formatDate(new Date(), "YYYY/MM/DD HH:mm")
-});
+// ============================================
+// COMPOSABLE - EVAPORACIÓN
+// ============================================
 
-const selectedLlenaderoObj = computed(() => {
-  return store.llenaderoOptions.find(l => l.id_llenadero === formData.value.id_llenadero);
-});
+const {
+  formData,
+  selectedLlenaderoObj,
+  currentStock,
+  currentPercentage,
+  capacity,
+  newStock,
+  percentage,
+  isValid,
+  resetForm,
+  submit
+} = useMovimientoForm(emit, "EVAPORACIÓN", store);
 
-const currentStock = computed(() => {
-  return selectedLlenaderoObj.value ? parseFloat(selectedLlenaderoObj.value.disponibilidadActual || 0) : 0;
-});
+// ============================================
+// MÉTODOS LOCALES
+// ============================================
 
-const capacity = computed(() => {
-  return selectedLlenaderoObj.value ? parseFloat(selectedLlenaderoObj.value.capacidad || 0) : 0;
-});
-
-const currentPercentage = computed(() => {
-  if (capacity.value === 0) return 0;
-  return (currentStock.value / capacity.value) * 100;
-});
-
-const newStock = computed(() => {
-  const val = parseFloat(formData.value.cantidad || 0);
-  return currentStock.value - val;
-});
-
-const percentage = computed(() => {
-  if (capacity.value === 0) return 0;
-  return (newStock.value / capacity.value) * 100;
-});
-
+/**
+ * Verifica si un llenadero usa gasolina (para el filtro visual)
+ */
 function isGasolina(opt) {
   return opt.TipoCombustible?.nombre?.toUpperCase().includes("GASOLINA");
 }
 
-async function submit() {
-  $q.dialog({
-    title: "Confirmar Evaporación",
-    message: `<div class="text-center">
-                ¿Registrar evaporación de <b>${formData.value.cantidad} Lts</b>?<br/>
-                <b>Nuevo Stock: ${newStock.value} Lts</b><br/><br/>
-                <span class="text-negative text-weight-bold">ADVERTENCIA: Una vez almacenado, el registro no podrá ser modificado.</span>
-              </div>`,
-    html: true,
-    cancel: true,
-    persistent: true
-  }).onOk(async () => {
-    const success = await store.registrarEvaporacion(formData.value);
-    if (success) {
-      emit("save");
-      emit("update:modelValue", false);
-      reset();
-    }
-  });
-}
+// ============================================
+// WATCHERS
+// ============================================
 
-function reset() {
-  formData.value = { 
-    id_llenadero: null, 
-    cantidad: "", 
-    observacion: "",
-    fecha_movimiento: date.formatDate(new Date(), "YYYY/MM/DD HH:mm")
-  };
-}
-
+/**
+ * Al abrir el diálogo, cargar lista de llenaderos y resetear formulario
+ */
 watch(() => props.modelValue, (val) => {
   if (val) {
     store.fetchLlenaderosList();
-    reset();
+    resetForm();
   }
 });
 </script>

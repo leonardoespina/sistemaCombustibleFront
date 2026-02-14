@@ -70,7 +70,7 @@
           <q-avatar icon="warning" color="negative" text-color="white" />
           <span class="q-ml-sm"
             >¿Seguro que deseas desactivar la categoría
-            <strong>{{ editingItem?.nombre }}</strong
+            <strong>{{ editingItem?.nombre }}</strong>
             >?</span
           >
         </q-card-section>
@@ -90,17 +90,28 @@
 </template>
 
 <script setup>
-import { ref, onMounted, onUnmounted, computed } from "vue";
+import { ref, onMounted, onUnmounted } from "vue";
 import { storeToRefs } from "pinia";
 import { useCategoriaStore } from "../../stores/categoriaStore.js";
+import { useCategoriaPage } from "./composables/useCategoriaPage.js";
 import CategoriaFormDialog from "../../components/categoria/CategoriaFormDialog.vue";
 
 const categoriaStore = useCategoriaStore();
 const { rows, loading, filter, pagination } = storeToRefs(categoriaStore);
 
-const isFormDialogVisible = ref(false);
-const isDeleteDialogVisible = ref(false);
-const editingItem = ref(null);
+// Composable de la página
+const {
+  isFormDialogVisible,
+  isDeleteDialogVisible,
+  editingItem,
+  openAddDialog,
+  openEditDialog,
+  openDeleteDialog,
+  onFormSave,
+  confirmDelete,
+  setupSocketListeners,
+  cleanupSocketListeners,
+} = useCategoriaPage(categoriaStore);
 
 const columns = ref([
   {
@@ -126,43 +137,9 @@ function handleRequest(props) {
   categoriaStore.fetchCategorias();
 }
 
-function openAddDialog() {
-  editingItem.value = null;
-  isFormDialogVisible.value = true;
-}
-
-function openEditDialog(item) {
-  editingItem.value = { ...item };
-  isFormDialogVisible.value = true;
-}
-
-function openDeleteDialog(item) {
-  editingItem.value = item;
-  isDeleteDialogVisible.value = true;
-}
-
-async function onFormSave(formData) {
-  let success = false;
-  if (editingItem.value) {
-    success = await categoriaStore.updateCategoria(
-      editingItem.value.id_categoria,
-      formData
-    );
-  } else {
-    success = await categoriaStore.createCategoria(formData);
-  }
-  if (success) {
-    isFormDialogVisible.value = false;
-  }
-}
-
-async function confirmDelete() {
-  await categoriaStore.deleteCategoria(editingItem.value.id_categoria);
-  isDeleteDialogVisible.value = false;
-}
-
 onMounted(() => {
   categoriaStore.fetchCategorias();
+  setupSocketListeners();
 });
 
 onUnmounted(() => {
@@ -174,5 +151,6 @@ onUnmounted(() => {
     descending: false,
     rowsNumber: 0,
   };
+  cleanupSocketListeners();
 });
 </script>

@@ -3,7 +3,6 @@ import { defineStore } from "pinia";
 import { ref } from "vue";
 import { useQuasar } from "quasar";
 import api from "../api/index.js";
-import socket from "../services/socket";
 
 export const useLlenaderoStore = defineStore("llenaderos", () => {
   const $q = useQuasar();
@@ -89,15 +88,6 @@ export const useLlenaderoStore = defineStore("llenaderos", () => {
     }
   }
 
-  function initSocket() {
-    socket.on("llenadero:creado", () => fetchLlenaderos());
-    socket.on("llenadero:actualizado", () => fetchLlenaderos());
-  }
-
-  function cleanupSocket() {
-    socket.off("llenadero:creado");
-    socket.off("llenadero:actualizado");
-  }
 
   return {
     rows,
@@ -108,7 +98,5 @@ export const useLlenaderoStore = defineStore("llenaderos", () => {
     createLlenadero,
     updateLlenadero,
     deleteLlenadero,
-    initSocket,
-    cleanupSocket,
   };
 });

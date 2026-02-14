@@ -1,131 +1,122 @@
+<!-- src/components/combustibles/TipoCombustibleFormDialog.vue -->
 <template>
-  <q-dialog v-model="visible" persistent>
-    <q-card style="min-width: 400px">
-      <q-card-section class="row items-center">
-        <div class="text-h6">
-          {{ isEdit ? "Editar Tipo de Combustible" : "Nuevo Tipo de Combustible" }}
-        </div>
-        <q-space />
-        <q-btn icon="close" flat round dense v-close-popup />
-      </q-card-section>
-
+  <q-dialog
+    :model-value="modelValue"
+    @update:model-value="(val) => emit('update:modelValue', val)"
+    persistent
+  >
+    <q-card style="width: 600px; max-width: 80vw">
       <q-card-section>
-        <q-form @submit="onSubmit" class="q-gutter-md">
-          <q-input
-            v-model="form.nombre"
-            label="Nombre *"
-            outlined
-            dense
-            :rules="[(val) => (val && val.length > 0) || 'El nombre es requerido']"
-          />
-
-          <q-input
-            v-model="form.descripcion"
-            label="Descripción"
-            outlined
-            dense
-            type="textarea"
-          />
-
-          <q-toggle
-            v-if="isEdit"
-            v-model="form.activo"
-            label="Activo"
-            dense
-          />
-
-          <div class="row justify-end q-mt-md">
-            <q-btn
-              label="Cancelar"
-              color="negative"
-              flat
-              v-close-popup
-              class="q-mr-sm"
-            />
-            <q-btn
-              :label="isEdit ? 'Actualizar' : 'Guardar'"
-              type="submit"
-              color="primary"
-              :loading="loading"
-            />
-          </div>
-        </q-form>
+        <div class="text-h6">
+          {{ isEditing ? "Editar Tipo de Combustible" : "Nuevo Tipo de Combustible" }}
+        </div>
       </q-card-section>
+
+      <q-form @submit.prevent="handleSave" class="q-gutter-md">
+        <q-card-section>
+          <div class="row q-col-gutter-md">
+            <div class="col-12">
+              <q-input
+                dense
+                v-model="formData.nombre"
+                label="Nombre del Tipo de Combustible"
+                :rules="validationRules.nombre"
+                counter
+                maxlength="100"
+                hint="Solo letras, números, espacios y guiones"
+              />
+            </div>
+            <div class="col-12">
+              <q-input
+                dense
+                v-model="formData.descripcion"
+                label="Descripción (opcional)"
+                type="textarea"
+                rows="3"
+                :rules="validationRules.descripcion"
+                counter
+                maxlength="500"
+                hint="Descripción detallada del tipo de combustible"
+              />
+            </div>
+            <div class="col-12" v-if="isEditing">
+              <q-toggle
+                v-model="formData.activo"
+                label="Activo"
+                color="positive"
+              />
+            </div>
+          </div>
+        </q-card-section>
+
+        <q-card-actions align="right">
+          <q-btn flat label="Cancelar" v-close-popup />
+          <q-btn flat label="Guardar" type="submit" color="primary" />
+        </q-card-actions>
+      </q-form>
     </q-card>
   </q-dialog>
 </template>
 
 <script setup>
-import { ref, computed, watch } from "vue";
-import { useTipoCombustibleStore } from "../../stores/tipoCombustibleStore";
+import { onMounted, onUnmounted } from "vue";
+import { useQuasar } from "quasar";
+import socket from "../../services/socket.js";
+import { useTipoCombustibleStore } from "../../stores/tipoCombustibleStore.js";
+import { useTipoCombustibleForm } from "./composables/useTipoCombustibleForm.js";
 
 const props = defineProps({
   modelValue: Boolean,
   initialData: Object,
+  isEditing: Boolean,
 });
 
-const emit = defineEmits(["update:modelValue"]);
-
+const emit = defineEmits(["update:modelValue", "dataUpdated"]);
+const $q = useQuasar();
 const store = useTipoCombustibleStore();
-const loading = computed(() => store.loading);
 
-const visible = computed({
-  get: () => props.modelValue,
-  set: (val) => emit("update:modelValue", val),
-});
+// Composable del formulario
+const { formData, validationRules, handleSave } = useTipoCombustibleForm(
+  props,
+  emit,
+  store
+);
 
-const isEdit = computed(() => !!props.initialData);
+// Listeners de Socket.io para sincronización en tiempo real
+onMounted(() => {
+  socket.on("tipo_combustible:creado", (data) => {
+    emit("dataUpdated", data);
+  });
 
-const form = ref({
-  nombre: "",
-  descripcion: "",
-  activo: true,
-});
-
-const resetForm = () => {
-  if (props.initialData) {
-    form.value = { ...props.initialData };
-  } else {
-    form.value = {
-      nombre: "",
-      descripcion: "",
-      activo: true,
-    };
-  }
-};
-
-// Resetear el formulario cada vez que el diálogo se abre
-watch(
-  () => props.modelValue,
-  (val) => {
-    if (val) {
-      resetForm();
+  socket.on("tipo_combustible:actualizado", (data) => {
+    // Notificación de edición concurrente
+    if (
+      props.isEditing &&
+      props.initialData?.id_tipo_combustible === data.id_tipo_combustible
+    ) {
+      $q.notify({
+        type: "warning",
+        message: "⚠️ Este tipo de combustible fue actualizado por otro usuario",
+        icon: "warning",
+        position: "top",
+        timeout: 4000,
+        actions: [
+          {
+            label: "Recargar",
+            color: "white",
+            handler: () => {
+              emit("dataUpdated", data);
+            },
+          },
+        ],
+      });
     }
-  }
-);
+    emit("dataUpdated", data);
+  });
+});
 
-// También observar cambios en initialData por si cambian mientras el diálogo está abierto
-watch(
-  () => props.initialData,
-  () => {
-    resetForm();
-  },
-  { immediate: true }
-);
-
-const onSubmit = async () => {
-  let success;
-  if (isEdit.value) {
-    success = await store.updateTipoCombustible(
-      props.initialData.id_tipo_combustible,
-      form.value
-    );
-  } else {
-    success = await store.createTipoCombustible(form.value);
-  }
-
-  if (success) {
-    visible.value = false;
-  }
-};
+onUnmounted(() => {
+  socket.off("tipo_combustible:creado");
+  socket.off("tipo_combustible:actualizado");
+});
 </script>

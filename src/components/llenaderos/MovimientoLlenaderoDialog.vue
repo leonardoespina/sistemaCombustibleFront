@@ -174,21 +174,30 @@
 </template>
 
 <script setup>
-import { onMounted, watch } from "vue";
+import { watch } from "vue";
 import { useMovimientoLlenaderoStore } from "../../stores/movimientoLlenaderoStore";
 import { useMovimientoForm } from "./composables/useMovimientoForm";
 
-// Props y Emits
+// ============================================
+// PROPS & EMITS
+// ============================================
+
 const props = defineProps({
   modelValue: Boolean
 });
 
 const emit = defineEmits(["update:modelValue", "save"]);
 
-// Store
+// ============================================
+// STORE
+// ============================================
+
 const store = useMovimientoLlenaderoStore();
 
-// Composable
+// ============================================
+// COMPOSABLE - CARGA
+// ============================================
+
 const {
   formData,
   selectedLlenaderoObj,
@@ -200,25 +209,19 @@ const {
   isValid,
   resetForm,
   submit
-} = useMovimientoForm(emit);
+} = useMovimientoForm(emit, "CARGA", store);
 
-// Asegurar que el tipo sea siempre CARGA
-watch(() => formData.value.tipo_movimiento, (val) => {
-  if (val !== 'CARGA') formData.value.tipo_movimiento = 'CARGA';
-}, { immediate: true });
+// ============================================
+// WATCHERS
+// ============================================
 
-// Cargar lista al montar o abrir
+/**
+ * Al abrir el diálogo, cargar lista de llenaderos y resetear formulario
+ */
 watch(() => props.modelValue, (val) => {
   if (val) {
     store.fetchLlenaderosList();
     resetForm();
-    formData.value.tipo_movimiento = 'CARGA'; // Force
-  }
-});
-
-onMounted(() => {
-  if (props.modelValue) {
-    store.fetchLlenaderosList();
   }
 });
 </script>
