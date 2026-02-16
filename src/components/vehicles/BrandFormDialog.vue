@@ -12,18 +12,20 @@
         </div>
       </q-card-section>
 
-      <q-form @submit.prevent="onSave">
+      <q-form @submit.prevent="handleSave">
         <q-card-section class="q-gutter-md">
           <q-input
             dense
+            outlined
             v-model="formData.nombre"
             label="Nombre de la Marca"
             autofocus
-            :rules="[(val) => !!val || 'El nombre es requerido']"
+            :rules="validationRules.nombre"
           />
           <q-select
             v-if="isEditing"
             dense
+            outlined
             v-model="formData.estado"
             :options="['ACTIVO', 'INACTIVO']"
             label="Estado"
@@ -40,8 +42,7 @@
 </template>
 
 <script setup>
-import { ref, watch, onMounted, onUnmounted } from "vue";
-import socket from "../../services/socket.js";
+import { useBrandForm } from "./composables/useBrandForm.js";
 
 const props = defineProps({
   modelValue: Boolean,
@@ -51,38 +52,6 @@ const props = defineProps({
 
 const emit = defineEmits(["update:modelValue", "save", "dataUpdated"]);
 
-const formData = ref({});
-
-// Listeners de Socket.io
-onMounted(() => {
-  socket.on("marca:creado", (data) => {
-    emit("dataUpdated", data);
-  });
-
-  socket.on("marca:actualizado", (data) => {
-    emit("dataUpdated", data);
-  });
-});
-
-onUnmounted(() => {
-  socket.off("marca:creado");
-  socket.off("marca:actualizado");
-});
-
-watch(
-  () => props.modelValue,
-  (isNowOpen) => {
-    if (isNowOpen) {
-      // Renombramos 'nombre' a 'nombre_marca' para ser consistentes
-      formData.value = {
-        nombre: props.initialData?.nombre || "",
-        estado: props.initialData?.estado || "ACTIVO",
-      };
-    }
-  }
-);
-
-function onSave() {
-  emit("save", formData.value);
-}
+// Delegamos toda la lógica al composable dedicado
+const { formData, validationRules, handleSave } = useBrandForm(props, emit);
 </script>

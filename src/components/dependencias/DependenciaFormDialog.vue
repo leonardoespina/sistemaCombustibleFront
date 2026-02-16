@@ -48,7 +48,9 @@
                 counter
                 maxlength="20"
                 hint="Mayúsculas, números y guiones (opcional)"
-                @update:model-value="(val) => formData.codigo = val?.toUpperCase()"
+                @update:model-value="
+                  (val) => (formData.codigo = val?.toUpperCase())
+                "
               />
             </div>
             <div class="col-12 col-md-6">
@@ -58,6 +60,15 @@
                 :options="['INSTITUCIONAL', 'VENTA', 'AMBOS']"
                 label="Tipo de Solicitud"
                 :rules="validationRules.tipo_venta"
+              />
+            </div>
+            <div class="col-12 col-md-6">
+              <q-select
+                dense
+                v-model="formData.tipo_acceso_menu"
+                :options="['ESTANDAR', 'SEGURIDAD', 'ALMACEN', 'OPERACIONES']"
+                label="Tipo de Acceso Menú"
+                hint="Define qué módulos ve esta dependencia"
               />
             </div>
             <div class="col-12 col-md-6" v-if="isEditing">
@@ -104,7 +115,7 @@ const { rows: categoriaOptions } = storeToRefs(categoriaStore);
 // Composable del formulario
 const { formData, validationRules, handleSave } = useDependenciaForm(
   props,
-  emit
+  emit,
 );
 
 // Cargar categorías al montar

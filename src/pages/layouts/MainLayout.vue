@@ -1,15 +1,8 @@
 <template>
   <q-layout view="lHh Lpr lFf">
-    <!-- ================================== -->
-    <!--          BARRA SUPERIOR (HEADER)   -->
-    <!-- ================================== -->
+    <!-- BARRA SUPERIOR (HEADER) -->
     <q-header elevated class="bg-primary text-white">
       <q-toolbar>
-        <!-- 
-          --- CAMBIO CLAVE AQUÍ ---
-          - Se elimina la clase 'lt-md'. Ahora el botón es siempre visible.
-          - @click llama a 'toggleLeftDrawer' para abrir/cerrar el menú.
-        -->
         <q-btn
           flat
           dense
@@ -19,463 +12,120 @@
           @click="toggleLeftDrawer"
         />
 
-        <q-toolbar-title>SIRECC</q-toolbar-title>
+        <q-toolbar-title class="text-weight-bold">SIRECC</q-toolbar-title>
 
         <q-space />
 
-        <q-btn flat round dense icon="logout" @click="handleLogout">
-          <q-tooltip class="bg-primary text-body2">Cerrar Sesión</q-tooltip>
-        </q-btn>
+        <!-- MENÚ DE USUARIO DESPLEGABLE -->
+        <q-btn-dropdown
+          flat
+          no-caps
+          stretch
+          icon="account_circle"
+          :label="userName"
+          class="text-weight-bold"
+        >
+          <q-list style="min-width: 280px">
+            <q-item class="q-pa-md bg-grey-1">
+              <q-item-section avatar>
+                <q-avatar color="primary" text-color="white" icon="person" />
+              </q-item-section>
+              <q-item-section>
+                <q-item-label class="text-weight-bold text-primary text-h6">
+                  {{ userName }}
+                </q-item-label>
+                <q-item-label caption class="text-grey-9 text-weight-medium">
+                  {{ userDependency }}
+                </q-item-label>
+                <q-chip
+                  dense
+                  color="blue-1"
+                  text-color="primary"
+                  class="text-weight-bold q-mt-xs"
+                  style="width: fit-content"
+                >
+                  {{ userRole }}
+                </q-chip>
+              </q-item-section>
+            </q-item>
+
+            <q-separator />
+
+            <q-item clickable v-ripple @click="showChangePassword = true">
+              <q-item-section avatar>
+                <q-icon name="vpn_key" color="grey-7" />
+              </q-item-section>
+              <q-item-section>Cambiar Contraseña</q-item-section>
+            </q-item>
+
+            <q-item
+              clickable
+              v-ripple
+              @click="handleLogout"
+              class="text-negative"
+            >
+              <q-item-section avatar>
+                <q-icon name="logout" color="negative" />
+              </q-item-section>
+              <q-item-section>Cerrar Sesión</q-item-section>
+            </q-item>
+          </q-list>
+        </q-btn-dropdown>
       </q-toolbar>
     </q-header>
 
-    <!-- ================================== -->
-    <!--          MENÚ LATERAL (DRAWER)     -->
-    <!-- ================================== -->
-    <!--
-      --- CAMBIOS CLAVE AQUÍ ---
-      - Se elimina 'show-if-above', ':mini', '@mouseover', '@mouseout'.
-      - El drawer ahora es un menú 'overlay' simple, controlado solo por 'v-model'.
-    -->
-    <q-drawer v-model="leftDrawerOpen" bordered :width="250" class="bg-grey-2">
-      <q-list>
-        <q-item-label header class="text-grey-8"> Navegación </q-item-label>
-
-        <!-- El @click para cerrar el menú ahora funciona en todos los tamaños -->
-        <q-item clickable v-ripple to="/">
-          <q-item-section avatar><q-icon name="dashboard" /></q-item-section>
-          <q-item-section>Dashboard</q-item-section>
-        </q-item>
-
-        <!-- ================================== -->
-        <!--          CONFIGURACIÓN             -->
-        <!-- ================================== -->
-        <q-expansion-item
-          v-if="isAdmin"
-          expand-separator
-          icon="settings"
-          label="Configuración"
-          class="text-grey-8"
-        >
-          <q-expansion-item
-            expand-separator
-            icon="category"
-            label="Gerencias y Entes"
-            class="text-grey-8"
-          >
-            <q-list class="q-pl-md"
-              ><q-item clickable v-ripple to="/categorias">
-                <q-item-section avatar
-                  ><q-icon name="business_center"
-                /></q-item-section>
-                <q-item-section>Categorías</q-item-section>
-              </q-item>
-              <q-item clickable v-ripple to="/dependencias">
-                <q-item-section avatar><q-icon name="domain" /></q-item-section>
-                <q-item-section>Dependencias</q-item-section>
-              </q-item>
-              <q-item
-                clickable
-                v-ripple
-                to="/subdependencias"
-               
-              >
-                <q-item-section avatar><q-icon name="list" /></q-item-section>
-                <q-item-section>Subdependencias</q-item-section>
-              </q-item>
-            </q-list>
-          </q-expansion-item>
-          <q-expansion-item
-            expand-separator
-            icon="directions_car"
-            label="Vehículos"
-            class="text-grey-8"
-          >
-            <q-list class="q-pl-md">
-              <q-item
-                clickable
-                v-ripple
-                to="/vehiculos/lista"
-               
-              >
-                <q-item-section avatar>
-                  <q-icon name="list" size="xs" />
-                </q-item-section>
-                <q-item-section>
-                  <q-item-label>Gestion Vehicular</q-item-label>
-                </q-item-section>
-              </q-item>
-
-              <q-item
-                clickable
-                v-ripple
-                to="/vehiculos/marcas"
-               
-              >
-                <q-item-section avatar>
-                  <q-icon name="branding_watermark" size="xs" />
-                </q-item-section>
-                <q-item-section>
-                  <q-item-label>Marcas</q-item-label>
-                  <q-item-label caption>Gestionar marcas</q-item-label>
-                </q-item-section>
-              </q-item>
-
-              <q-item
-                clickable
-                v-ripple
-                to="/vehiculos/modelos"
-               
-              >
-                <q-item-section avatar>
-                  <q-icon name="model_training" size="xs" />
-                </q-item-section>
-                <q-item-section>
-                  <q-item-label>Modelos</q-item-label>
-                  <q-item-label caption>Gestionar modelos</q-item-label>
-                </q-item-section>
-              </q-item>
-            </q-list>
-          </q-expansion-item>
-          <q-list class="q-pl-md">
-            <q-item
-              clickable
-              v-ripple
-              to="/usuarios"
-             
-            >
-              <q-item-section avatar><q-icon name="group" /></q-item-section>
-              <q-item-section>Usuarios</q-item-section>
-            </q-item>
-
-            <q-item
-              clickable
-              v-ripple
-              to="/tipos-combustible"
-             
-            >
-              <q-item-section avatar><q-icon name="category" /></q-item-section>
-              <q-item-section>Tipos de Combustible</q-item-section>
-            </q-item>
-
-            <q-item
-              clickable
-              v-ripple
-              to="/cupos"
-             
-            >
-              <q-item-section avatar
-                ><q-icon name="assignment"
-              /></q-item-section>
-              <q-item-section>Gestión de Cupos</q-item-section>
-            </q-item>
-
-            <q-item
-              clickable
-              v-ripple
-              to="/precios"
-             
-            >
-              <q-item-section avatar><q-icon name="payments" /></q-item-section>
-              <q-item-section>Relación de Precios</q-item-section>
-            </q-item>
-
-            <q-item
-              clickable
-              v-ripple
-              to="/llenaderos"
-             
-            >
-              <q-item-section avatar
-                ><q-icon name="ev_station"
-              /></q-item-section>
-              <q-item-section>Llenaderos</q-item-section>
-            </q-item>
-
-            <!-- Huella -->
-            <q-item
-              clickable
-              v-ripple
-              to="/huella"
-             
-            >
-              <q-item-section avatar
-                ><q-icon name="fingerprint"
-              /></q-item-section>
-              <q-item-section>Huella</q-item-section>
-            </q-item>
-
-            <q-item
-              clickable
-              v-ripple
-              to="/tanques"
-             
-            >
-              <q-item-section avatar
-                ><q-icon name="oil_barrel"
-              /></q-item-section>
-              <q-item-section>Gestión de Tanques</q-item-section>
-            </q-item>
-          </q-list>
-        </q-expansion-item>
-
-        <!-- ================================== -->
-        <!--          GESTIÓN DE CUPOS          -->
-        <!-- ================================== -->
-      </q-list>
-      <q-item
-        clickable
-        v-ripple
-        to="/solicitudes"
-       
-      >
-        <q-item-section avatar
-          ><q-icon name="local_gas_station"
-        /></q-item-section>
-        <q-item-section>Solicitudes</q-item-section>
-      </q-item>
-
-      <q-item clickable v-ripple to="/despacho">
-        <q-item-section avatar><q-icon name="print" /></q-item-section>
-        <q-item-section>Despacho</q-item-section>
-      </q-item>
-      <!-- ================================== -->
-      <!--          INVENTARIO                -->
-      <!-- ================================== -->
-
-      <q-expansion-item
-        expand-separator
-        icon="inventory"
-        label="Inventario"
-        class="text-grey-8"
-      >
-        <q-list class="q-pl-md">
-          <q-item
-            clickable
-            v-ripple
-            to="/movimientos-llenadero"
-           
-          >
-            <q-item-section avatar>
-              <q-icon name="compare_arrows" size="xs" />
-            </q-item-section>
-            <q-item-section>
-              <q-item-label>Movimiento de Inventario</q-item-label>
-            </q-item-section>
-          </q-item>
-
-          <q-item
-            clickable
-            v-ripple
-            to="/evaporaciones"
-           
-          >
-            <q-item-section avatar>
-              <q-icon name="opacity" size="xs" />
-            </q-item-section>
-            <q-item-section>
-              <q-item-label>Gestión de Evaporización</q-item-label>
-            </q-item-section>
-          </q-item>
-        </q-list>
-      </q-expansion-item>
-
-      <q-item
-        clickable
-        v-ripple
-        to="/validacion"
-       
-      >
-        <q-item-section avatar><q-icon name="fact_check" /></q-item-section>
-        <q-item-section>Validación (Cierre)</q-item-section>
-      </q-item>
-
-      <!-- ================================== -->
-      <!--      OPERACIONES TANQUES           -->
-      <!-- ================================== -->
-
-      <q-expansion-item
-        expand-separator
-        icon="oil_barrel"
-        label="Operaciones de Tanques"
-        class="text-grey-8"
-      >
-        <q-list class="q-pl-md">
-          <q-item
-            clickable
-            v-ripple
-            to="/measurements"
-           
-          >
-            <q-item-section avatar>
-              <q-icon name="straighten" size="xs" />
-            </q-item-section>
-            <q-item-section>
-              <q-item-label>Medición de Tanques</q-item-label>
-              <q-item-label caption>Varillaje y Auditoría</q-item-label>
-            </q-item-section>
-          </q-item>
-
-          <q-item
-            clickable
-            v-ripple
-            to="/loads"
-           
-          >
-            <q-item-section avatar>
-              <q-icon name="local_shipping" size="xs" />
-            </q-item-section>
-            <q-item-section>
-              <q-item-label>Recepción de Cisternas</q-item-label>
-              <q-item-label caption>Ingreso de combustible</q-item-label>
-            </q-item-section>
-          </q-item>
-
-          <q-item
-            clickable
-            v-ripple
-            to="/internal-transfers"
-           
-          >
-            <q-item-section avatar>
-              <q-icon name="swap_horiz" size="xs" />
-            </q-item-section>
-            <q-item-section>
-              <q-item-label>Transferencias Internas</q-item-label>
-              <q-item-label caption>Movimientos entre tanques</q-item-label>
-            </q-item-section>
-          </q-item>
-        </q-list>
-      </q-expansion-item>
-      <!-- ================================== -->
-      <!--          REPORTES                  -->
-      <!-- ================================== -->
-      <q-expansion-item
-        expand-separator
-        icon="analytics"
-        label="Reportes"
-        class="text-grey-8"
-      >
-        <q-list class="q-pl-md">
-          <q-item
-            clickable
-            v-ripple
-            to="/reportes/diario"
-           
-          >
-            <q-item-section avatar>
-              <q-icon name="today" size="xs" />
-            </q-item-section>
-            <q-item-section>
-              <q-item-label>Reporte Diario</q-item-label>
-              <q-item-label caption>Resumen de solicitudes</q-item-label>
-            </q-item-section>
-          </q-item>
-
-          <q-item
-            clickable
-            v-ripple
-            to="/reportes/despachos"
-           
-          >
-            <q-item-section avatar>
-              <q-icon name="list_alt" size="xs" />
-            </q-item-section>
-            <q-item-section>
-              <q-item-label>Reporte de Despachos</q-item-label>
-              <q-item-label caption>Detalle por dependencia</q-item-label>
-            </q-item-section>
-          </q-item>
-
-          <q-item
-            clickable
-            v-ripple
-            to="/reportes/consumo-dependencia"
-           
-          >
-            <q-item-section avatar>
-              <q-icon name="bar_chart" size="xs" />
-            </q-item-section>
-            <q-item-section>
-              <q-item-label>Consumo por Dependencia</q-item-label>
-              <q-item-label caption>Estadísticas agregadas</q-item-label>
-            </q-item-section>
-          </q-item>
-        </q-list>
-      </q-expansion-item>
+    <!-- MENÚ LATERAL (DRAWER) -->
+    <q-drawer v-model="leftDrawerOpen" bordered :width="260" class="bg-grey-2">
+      <!-- COMPONENTE DE NAVEGACIÓN MODULAR -->
+      <SidebarMenu :is-admin="isAdmin" :can-access="canAccess" />
     </q-drawer>
 
-    <!-- ================================== -->
-    <!--       CONTENEDOR DE LA PÁGINA      -->
-    <!-- ================================== -->
+    <!-- CONTENEDOR DE LA PÁGINA -->
     <q-page-container>
-      <!-- El <router-view> no necesita cambios -->
-      <router-view />
+      <router-view v-slot="{ Component }">
+        <transition
+          appear
+          enter-active-class="animated fadeIn"
+          leave-active-class="animated fadeOut"
+          mode="out-in"
+        >
+          <component :is="Component" />
+        </transition>
+      </router-view>
     </q-page-container>
+
+    <!-- DIALOGOS GLOBALES -->
+    <ChangePasswordDialog
+      v-model="showChangePassword"
+      @logout="handleLogoutLocal"
+    />
   </q-layout>
 </template>
 
 <script setup>
-import { ref, computed, onMounted, watch } from "vue";
-import { useQuasar } from "quasar";
-import { useRouter, useRoute } from "vue-router";
+import { useMainLayout } from "./composables/useMainLayout.js";
+import SidebarMenu from "./components/SidebarMenu.vue";
+import ChangePasswordDialog from "../../components/users/ChangePasswordDialog.vue";
 
-const $q = useQuasar();
-const router = useRouter();
-const route = useRoute();
-
-// El único estado que necesitamos para el drawer
-const leftDrawerOpen = ref(false);
-const userData = ref(null);
-
-// Cerrar el drawer automáticamente al cambiar de ruta
-watch(route, () => {
-  leftDrawerOpen.value = false;
-});
-
-onMounted(() => {
-  const storedUser = localStorage.getItem("user");
-  if (storedUser) {
-    userData.value = JSON.parse(storedUser);
-  }
-});
-
-const isAdmin = computed(() => {
-  return userData.value?.tipo_usuario === "ADMIN";
-});
-
-// La única función que necesitamos para controlar el drawer
-const toggleLeftDrawer = () => {
-  leftDrawerOpen.value = !leftDrawerOpen.value;
-};
-
-const handleLogout = () => {
-  $q.notify({
-    message: "Has cerrado sesión.",
-    color: "info",
-    icon: "info",
-    position: "top",
-    timeout: 2000,
-  });
-  localStorage.removeItem("token");
-  localStorage.removeItem("user");
-  router.replace("/login");
-};
+// Extraemos toda la lógica al composable (Sockets, Inactividad, Auth, Menú)
+const {
+  leftDrawerOpen,
+  showChangePassword,
+  isAdmin,
+  userName,
+  userDependency,
+  userRole,
+  toggleLeftDrawer,
+  handleLogout,
+  handleLogoutLocal,
+  canAccess,
+} = useMainLayout();
 </script>
 
 <style scoped>
-/* El estilo para el ítem activo sigue siendo útil */
+/* Estilos mínimos usando clases nativas de Quasar */
 :deep(.q-drawer .q-item--active) {
   background-color: var(--q-primary);
   color: white;
-}
-
-/* Estilo para los ítems de la sub-lista */
-:deep(.q-expansion-item__content .q-item) {
-  min-height: 48px;
-}
-
-:deep(.q-expansion-item__content .q-item__section--avatar) {
-  min-width: 40px;
 }
 </style>

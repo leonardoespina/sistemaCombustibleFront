@@ -12,10 +12,12 @@
         v-model:filter="filter"
         @request="handleRequest"
         binary-state-sort
+        flat
+        bordered
       >
         <template v-slot:top>
           <q-input
-            borderless
+            outlined
             dense
             debounce="500"
             v-model="filter"
@@ -30,10 +32,10 @@
             icon="add"
             label="Nuevo Registro"
             @click="openAddDialog"
+            unelevated
           />
         </template>
 
-        <!-- COLUMNA PERSONALIZADA: PLACA/CÓDIGO -->
         <template v-slot:body-cell-placa="props">
           <q-td :props="props">
             <div class="row items-center no-wrap">
@@ -76,7 +78,6 @@
       </q-table>
     </div>
 
-    <!-- Diálogo de Formulario -->
     <VehicleFormDialog
       :key="editingVehicle?.id_vehiculo || 'new'"
       v-model="isFormDialogVisible"
@@ -89,7 +90,6 @@
       @brand-changed="handleBrandChange"
     />
 
-    <!-- Diálogo de Confirmación de Borrado -->
     <q-dialog v-model="isDeleteDialogVisible" persistent>
       <q-card>
         <q-card-section class="row items-center">
@@ -116,12 +116,9 @@
 </template>
 
 <script setup>
-import { ref, onMounted, onUnmounted } from "vue";
-import { storeToRefs } from "pinia";
-import { useVehicleStore } from "../../stores/vehicleStore.js";
+import { useVehicleListPage } from "./composables/useVehicleListPage.js";
 import VehicleFormDialog from "../../components/vehicles/VehicleFormDialog.vue";
 
-const vehicleStore = useVehicleStore();
 const {
   rows,
   loading,
@@ -130,13 +127,19 @@ const {
   allBrands,
   modelsForSelectedBrand,
   loadingModels,
-} = storeToRefs(vehicleStore);
+  isFormDialogVisible,
+  isDeleteDialogVisible,
+  editingVehicle,
+  handleRequest,
+  openAddDialog,
+  openEditDialog,
+  openDeleteDialog,
+  onFormSave,
+  confirmDelete,
+  handleBrandChange,
+} = useVehicleListPage();
 
-const isFormDialogVisible = ref(false);
-const isDeleteDialogVisible = ref(false);
-const editingVehicle = ref(null);
-
-const columns = ref([
+const columns = [
   { name: "id_vehiculo", label: "ID", field: "id_vehiculo", sortable: true },
   {
     name: "placa",
@@ -178,69 +181,5 @@ const columns = ref([
   { name: "anio", label: "Año", field: "anio", sortable: true },
   { name: "estado", label: "Estado", field: "estado" },
   { name: "actions", label: "Acciones", align: "right" },
-]);
-
-function handleRequest(props) {
-  pagination.value = props.pagination;
-  filter.value = props.filter;
-  vehicleStore.fetchVehicles();
-}
-
-  function openAddDialog() {
-  editingVehicle.value = null;
-  isFormDialogVisible.value = true;
-}
-
-function openEditDialog(vehicle) {
-  // Copia profunda para asegurar que las relaciones anidadas se pasen correctamente
-  editingVehicle.value = JSON.parse(JSON.stringify(vehicle));
-  isFormDialogVisible.value = true;
-}
-
-function openDeleteDialog(vehicle) {
-  editingVehicle.value = vehicle;
-  isDeleteDialogVisible.value = true;
-}
-
-async function onFormSave(formData) {
-  let success = false;
-  if (editingVehicle.value) {
-    success = await vehicleStore.updateVehicle(
-      editingVehicle.value.id_vehiculo,
-      formData
-    );
-  } else {
-    success = await vehicleStore.createVehicle(formData);
-  }
-  if (success) {
-    isFormDialogVisible.value = false;
-  }
-}
-
-async function confirmDelete() {
-  await vehicleStore.deleteVehicle(editingVehicle.value.id_vehiculo);
-  isDeleteDialogVisible.value = false;
-}
-
-function handleBrandChange(brandId) {
-  vehicleStore.fetchModelsByBrand(brandId);
-}
-
-onMounted(() => {
-  vehicleStore.initSocket();
-  vehicleStore.fetchVehicles();
-  vehicleStore.fetchAllBrands();
-});
-
-onUnmounted(() => {
-  vehicleStore.cleanupSocket();
-  vehicleStore.filter = "";
-  vehicleStore.pagination = {
-    page: 1,
-    rowsPerPage: 10,
-    sortBy: "id_vehiculo",
-    descending: false,
-    rowsNumber: 0,
-  };
-});
+];
 </script>

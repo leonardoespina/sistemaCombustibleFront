@@ -12,7 +12,7 @@
         </div>
       </q-card-section>
 
-      <q-form @submit.prevent="onSave">
+      <q-form @submit.prevent="handleSave">
         <q-card-section class="q-gutter-md">
           <!-- === SELECT DE MARCA CON LÓGICA DE FILTRADO === -->
           <q-select
@@ -23,31 +23,33 @@
             label="Marca del Vehículo"
             :options="filteredBrandOptions"
             @filter="filterBrandFn"
-            :rules="[(val) => !!val || 'Debe seleccionar una marca']"
+            :rules="validationRules.id_marca"
             option-value="id_marca"
             option-label="nombre"
             emit-value
             map-options
           >
             <template v-slot:no-option>
-              <q-item
-                ><q-item-section class="text-grey"
-                  >No hay resultados</q-item-section
-                ></q-item
-              >
+              <q-item>
+                <q-item-section class="text-grey">
+                  No hay resultados
+                </q-item-section>
+              </q-item>
             </template>
           </q-select>
 
           <q-input
             dense
+            outlined
             v-model="formData.nombre"
             label="Nombre del Modelo"
-            :rules="[(val) => !!val || 'El nombre es requerido']"
+            :rules="validationRules.nombre"
           />
 
           <q-select
             v-if="isEditing"
             dense
+            outlined
             v-model="formData.estado"
             :options="['ACTIVO', 'INACTIVO']"
             label="Estado"
@@ -64,8 +66,7 @@
 </template>
 
 <script setup>
-import { ref, watch, toRefs, onMounted, onUnmounted } from "vue";
-import socket from "../../services/socket.js";
+import { useModelForm } from "./composables/useModelForm.js";
 
 const props = defineProps({
   modelValue: Boolean,
@@ -75,61 +76,12 @@ const props = defineProps({
 });
 
 const emit = defineEmits(["update:modelValue", "save", "dataUpdated"]);
-const { brands } = toRefs(props);
-const formData = ref({});
-const filteredBrandOptions = ref([]); // Array local para las opciones filtradas
 
-// Listeners de Socket.io
-onMounted(() => {
-  socket.on("modelo:creado", (data) => {
-    emit("dataUpdated", data);
-  });
-
-  socket.on("modelo:actualizado", (data) => {
-    emit("dataUpdated", data);
-  });
-});
-
-onUnmounted(() => {
-  socket.off("modelo:creado");
-  socket.off("modelo:actualizado");
-});
-
-// --- Lógica de inicialización ---
-watch(
-  () => props.modelValue,
-  (isNowOpen) => {
-    if (isNowOpen) {
-      formData.value = {
-        nombre: props.initialData?.nombre || "",
-        id_marca: props.initialData?.id_marca || null,
-        estado: props.initialData?.estado || "ACTIVO",
-      };
-      // Al abrir, las opciones filtradas son todas las marcas
-      filteredBrandOptions.value = brands.value;
-    }
-  }
-);
-
-// --- ¡NUEVA FUNCIÓN DE FILTRADO PARA MARCAS! ---
-function filterBrandFn(val, update) {
-  if (val === "") {
-    update(() => {
-      filteredBrandOptions.value = brands.value;
-    });
-    return;
-  }
-  update(() => {
-    const needle = val.toLowerCase();
-    if (Array.isArray(brands.value)) {
-      filteredBrandOptions.value = brands.value.filter(
-        (v) => v && v.nombre && v.nombre.toLowerCase().indexOf(needle) > -1
-      );
-    }
-  });
-}
-
-function onSave() {
-  emit("save", formData.value);
-}
+const {
+  formData,
+  validationRules,
+  filteredBrandOptions,
+  filterBrandFn,
+  handleSave,
+} = useModelForm(props, emit);
 </script>

@@ -5,7 +5,8 @@ import { Notify, Loading } from "quasar";
 
 // Obtenemos la URL base desde las variables de entorno
 // Vite expone las variables con prefijo VITE_ en import.meta.env
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:3000";
+const API_BASE_URL =
+  import.meta.env.VITE_API_BASE_URL || "http://localhost:3000";
 
 // Creamos una instancia de Axios con configuración base
 const api = axios.create({
@@ -18,7 +19,7 @@ let pendingRequests = 0;
 const showLoading = () => {
   pendingRequests++;
   Loading.show({
-    message: 'Procesando...',
+    message: "Procesando...",
     // spinner: QSpinnerGears // Opcional
   });
 };
@@ -52,7 +53,7 @@ api.interceptors.request.use(
     hideLoading();
     // Manejar errores de configuración de la petición
     return Promise.reject(error);
-  }
+  },
 );
 
 // --- INTERCEPTOR DE RESPUESTAS (YA LO TENÍAS) ---
@@ -66,20 +67,24 @@ api.interceptors.response.use(
     hideLoading();
     const message = error.response?.data?.msg || "Ocurrió un error inesperado.";
 
-    Notify.create({
-      type: "negative",
-      message: message,
-      position: "top",
-      timeout: 3000,
-    });
+    // No mostrar notificación de error para 409 (Sesión activa) ya que se maneja con diálogo interactivo
+    if (error.response?.status !== 409) {
+      Notify.create({
+        type: "negative",
+        message: message,
+        position: "top",
+        timeout: 3000,
+      });
+    }
 
     // Si el error es 401 (Token no válido/expirado), podríamos redirigir al login
-    // EXCEPCIÓN: Si el error viene de /biometria/verificar o /despacho/validar-firma con status 401, NO redirigir 
+    // EXCEPCIÓN: Si el error viene de /biometria/verificar o /despacho/validar-firma con status 401, NO redirigir
     // ya que el backend usa 401 para "huella no coincide" en modo 1:1.
     if (error.response && error.response.status === 401) {
-      const isBiometricVerify = error.config.url.includes('/biometria/verificar') ||
-        error.config.url.includes('/despacho/validar-firma') ||
-        error.config.url.includes('/despacho/imprimir');
+      const isBiometricVerify =
+        error.config.url.includes("/biometria/verificar") ||
+        error.config.url.includes("/despacho/validar-firma") ||
+        error.config.url.includes("/despacho/imprimir");
 
       if (!isBiometricVerify) {
         localStorage.removeItem("token");
@@ -94,7 +99,7 @@ api.interceptors.response.use(
     }
 
     return Promise.reject(error);
-  }
+  },
 );
 
 // Exportamos la instancia configurada para usarla en los componentes

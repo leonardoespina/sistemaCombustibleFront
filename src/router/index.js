@@ -35,7 +35,8 @@ const routes = [
         path: "subdependencias",
         name: "subdependencias",
         meta: { requiresAdmin: true },
-        component: () => import("../pages/subdependencias/SubdependenciasPage.vue"),
+        component: () =>
+          import("../pages/subdependencias/SubdependenciasPage.vue"),
       },
       {
         path: "usuarios", // Coincide con la ruta '/usuarios'
@@ -101,19 +102,21 @@ const routes = [
         meta: {
           allowedRoles: ["ADMIN", "GERENTE", "JEFE DIVISION", "ALMACENISTA"],
         },
-        component: () => import("../pages/internal-transfers/InternalTransferPage.vue"),
+        component: () =>
+          import("../pages/internal-transfers/InternalTransferPage.vue"),
       },
       {
         path: "dispensadores",
         name: "dispenser-list",
         component: () => import("../pages/dispensers/DispenserPage.vue"),
       },
-      
+
       {
         path: "tipos-combustible",
         name: "tipo-combustible-list",
         meta: { requiresAdmin: true },
-        component: () => import("../pages/combustibles/TipoCombustiblePage.vue"),
+        component: () =>
+          import("../pages/combustibles/TipoCombustiblePage.vue"),
       },
       {
         path: "cupos",
@@ -137,27 +140,19 @@ const routes = [
         path: "movimientos-llenadero",
         name: "movimiento-llenadero-list",
         meta: {
-          allowedRoles: [
-            "ADMIN",
-            "GERENTE",
-            "JEFE DIVISION",
-            "ALMACENISTA",
-          ],
+          allowedRoles: ["ADMIN", "GERENTE", "JEFE DIVISION", "ALMACENISTA"],
         },
-        component: () => import("../pages/llenaderos/MovimientosLlenaderoPage.vue"),
+        component: () =>
+          import("../pages/llenaderos/MovimientosLlenaderoPage.vue"),
       },
       {
         path: "evaporaciones",
         name: "evaporacion-list",
         meta: {
-          allowedRoles: [
-            "ADMIN",
-            "GERENTE",
-            "JEFE DIVISION",
-            "ALMACENISTA",
-          ],
+          allowedRoles: ["ADMIN", "GERENTE", "JEFE DIVISION", "ALMACENISTA"],
         },
-        component: () => import("../pages/llenaderos/GestionEvaporacionPage.vue"),
+        component: () =>
+          import("../pages/llenaderos/GestionEvaporacionPage.vue"),
       },
       {
         path: "solicitudes",
@@ -196,7 +191,14 @@ const routes = [
         meta: {
           allowedRoles: ["ADMIN", "GERENTE", "JEFE DIVISION"],
         },
-        component: () => import("../pages/reports/DependenciaConsumptionPage.vue"),
+        component: () =>
+          import("../pages/reports/DependenciaConsumptionPage.vue"),
+      },
+      {
+        path: "reportes/mis-cupos",
+        name: "reporte-mis-cupos",
+        // Sin restricciones de rol, accesible para cualquier usuario autenticado
+        component: () => import("../pages/reports/MisCuposPage.vue"),
       },
 
       // Aquí puedes seguir añadiendo más rutas protegidas, como /vehiculos, etc.

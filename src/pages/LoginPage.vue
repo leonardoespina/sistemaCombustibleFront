@@ -84,13 +84,14 @@ const loading = ref(false);
 const router = useRouter();
 const $q = useQuasar();
 
-const handleLogin = async () => {
+const handleLogin = async (forzar = false) => {
   try {
     loading.value = true;
 
     const response = await api.post("/usuarios/login", {
       cedula: cedula.value,
       password: password.value,
+      forzar,
     });
 
     // Desestructuramos la respuesta del backend
@@ -112,6 +113,32 @@ const handleLogin = async () => {
     router.push("/");
   } catch (error) {
     console.error("Error en el login:", error);
+
+    // Manejar error de sesión activa (Status 409 Conflict)
+    if (
+      error.response &&
+      error.response.status === 409 &&
+      error.response.data.sesion_activa
+    ) {
+      $q.dialog({
+        title: "Sesión activa",
+        message:
+          "Ya existe una sesión abierta para esta cuenta. ¿Desea cerrar la sesión en el otro dispositivo?",
+        ok: {
+          label: "SÍ",
+          color: "primary",
+          unelevated: true,
+        },
+        cancel: {
+          label: "NO",
+          color: "grey-7",
+          flat: true,
+        },
+        persistent: true,
+      }).onOk(() => {
+        handleLogin(true); // Reintentar forzando la sesión
+      });
+    }
   } finally {
     loading.value = false;
   }

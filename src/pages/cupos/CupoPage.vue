@@ -90,8 +90,14 @@
                   <div class="column q-gutter-xs" style="min-width: 150px">
                     <div class="row items-center justify-between no-wrap">
                       <span class="text-weight-bold"
-                        >{{ props.row.cantidad_disponible }} /
-                        {{ props.row.cantidad_asignada }} L</span
+                        >{{
+                          parseFloat(props.row.cantidad_disponible).toFixed(0)
+                        }}
+                        /
+                        {{
+                          parseFloat(props.row.cantidad_asignada).toFixed(0)
+                        }}
+                        L</span
                       >
                       <span class="text-caption text-grey-8"
                         >{{
@@ -220,7 +226,10 @@
       :initial-data="editingCupo"
       :is-editing="!!editingCupo"
       :loading="loading"
-      @dataUpdated="cupoStore.fetchCuposBase(); cupoStore.fetchCuposActuales()"
+      @dataUpdated="
+        cupoStore.fetchCuposBase();
+        cupoStore.fetchCuposActuales();
+      "
     />
 
     <RecargaCupoDialog
@@ -255,12 +264,12 @@ const userStore = useUserStore();
 // Refs del store de cupos (estado reactivo de las 2 tablas)
 const {
   loading,
-  cuposActuales,      // Tabla 1: Saldos del mes actual
-  paginationActual,   // Paginación tabla 1
-  filterActual,       // Filtro de búsqueda tabla 1
-  cuposBase,          // Tabla 2: Configuraciones base mensuales
-  paginationBase,     // Paginación tabla 2
-  filterBase,         // Filtro de búsqueda tabla 2
+  cuposActuales, // Tabla 1: Saldos del mes actual
+  paginationActual, // Paginación tabla 1
+  filterActual, // Filtro de búsqueda tabla 1
+  cuposBase, // Tabla 2: Configuraciones base mensuales
+  paginationBase, // Paginación tabla 2
+  filterBase, // Filtro de búsqueda tabla 2
 } = storeToRefs(cupoStore);
 
 // Composable de la página (maneja diálogos, Socket.IO, helpers visuales)
@@ -295,7 +304,7 @@ const tab = ref("actual");
  * Se muestra en el header para indicar el mes en curso
  */
 const periodoActual = computed(() =>
-  date.formatDate(Date.now(), "MMMM YYYY").toUpperCase()
+  date.formatDate(Date.now(), "MMMM YYYY").toUpperCase(),
 );
 
 /**
@@ -347,13 +356,13 @@ const columnsActual = [
   {
     name: "consumido",
     label: "Consumido",
-    field: (row) => `${row.cantidad_consumida} L`,
+    field: (row) => `${parseFloat(row.cantidad_consumida).toFixed(0)} L`,
     align: "center",
   },
   {
     name: "recargado",
     label: "Recargado Extra",
-    field: (row) => `${row.cantidad_recargada} L`,
+    field: (row) => `${parseFloat(row.cantidad_recargada).toFixed(0)} L`,
     align: "center",
   },
   { name: "estado", label: "Estado", field: "estado", align: "center" },
@@ -387,7 +396,7 @@ const columnsBase = [
   {
     name: "mensual",
     label: "Asignación Mensual",
-    field: (row) => `${row.cantidad_mensual} L`,
+    field: (row) => `${parseFloat(row.cantidad_mensual).toFixed(0)} L`,
     align: "center",
   },
   { name: "activo", label: "Activo", field: "activo", align: "center" },
@@ -431,7 +440,7 @@ onMounted(() => {
   // Cargar ambas tablas en paralelo
   cupoStore.fetchCuposActuales();
   cupoStore.fetchCuposBase();
-  
+
   // Configurar sincronización en tiempo real
   setupSocketListeners();
 });
@@ -466,4 +475,3 @@ onUnmounted(() => {
   };
 });
 </script>
-

@@ -71,8 +71,7 @@ export const useUserStore = defineStore("users", () => {
       return true;
     } catch (error) {
       console.error("Error creating usuario:", error);
-      const errorMsg =
-        error.response?.data?.msg || "Error al crear el usuario";
+      const errorMsg = error.response?.data?.msg || "Error al crear el usuario";
       $q.notify({
         type: "negative",
         message: errorMsg,
@@ -150,6 +149,33 @@ export const useUserStore = defineStore("users", () => {
     }
   }
 
+  /**
+   * Cambia la contraseña del usuario actual.
+   * @param {string} passwordActual
+   * @param {string} nuevaPassword
+   */
+  async function changePassword(passwordActual, nuevaPassword) {
+    loading.value = true;
+    try {
+      const response = await api.put("/usuarios/cambiar-password", {
+        passwordActual,
+        nuevaPassword,
+      });
+      $q.notify({
+        type: "positive",
+        message: response.data.msg,
+        position: "top",
+      });
+      return true;
+    } catch (error) {
+      console.error("Error changing password:", error);
+      // El error ya es manejado por el interceptor global
+      return false;
+    } finally {
+      loading.value = false;
+    }
+  }
+
   // Nota: Los socket listeners se han movido a useUserPage composable
   // para evitar duplicados y tener mejor control del ciclo de vida
 
@@ -162,5 +188,6 @@ export const useUserStore = defineStore("users", () => {
     createUser,
     updateUser,
     deleteUser,
+    changePassword,
   };
 });
