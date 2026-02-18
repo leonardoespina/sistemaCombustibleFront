@@ -115,28 +115,25 @@ const handleLogin = async (forzar = false) => {
     console.error("Error en el login:", error);
 
     // Manejar error de sesión activa (Status 409 Conflict)
-    if (
-      error.response &&
-      error.response.status === 409 &&
-      error.response.data.sesion_activa
-    ) {
+    if (error.response && error.response.status === 409) {
       $q.dialog({
         title: "Sesión activa",
         message:
-          "Ya existe una sesión abierta para esta cuenta. ¿Desea cerrar la sesión en el otro dispositivo?",
+          error.response.data.msg ||
+          "Esta cuenta ya tiene una sesión abierta en otro dispositivo.",
         ok: {
-          label: "SÍ",
+          label: "ENTENDIDO",
           color: "primary",
           unelevated: true,
         },
-        cancel: {
-          label: "NO",
-          color: "grey-7",
-          flat: true,
-        },
         persistent: true,
-      }).onOk(() => {
-        handleLogin(true); // Reintentar forzando la sesión
+      });
+    } else {
+      // Otros errores de login
+      $q.notify({
+        type: "negative",
+        message: error.response?.data?.msg || "Error en el servidor",
+        position: "top",
       });
     }
   } finally {

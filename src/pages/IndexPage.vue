@@ -39,10 +39,13 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from "vue";
+import { ref, onMounted, onUnmounted } from "vue";
 import api from "../api/index";
 import LiquidLlenadero from "../components/LiquidLlenadero.vue";
+import socket from "../services/socket.js";
+import { useQuasar } from "quasar";
 
+const $q = useQuasar();
 const loading = ref(false);
 const stats = ref({
   llenaderos: [],
@@ -55,13 +58,59 @@ async function fetchStats() {
     stats.value = res.data;
   } catch (error) {
     console.error("Error Dashboard Stats:", error);
+    $q.notify({
+      type: "negative",
+      message: "Error al cargar estadísticas del dashboard",
+      position: "top-right",
+    });
   } finally {
     loading.value = false;
   }
 }
 
+/**
+ * Configura los listeners de Socket.io para actualización en tiempo real
+ */
+function setupSocketListeners() {
+  // Cuando se actualiza un llenadero (movimientos, evaporación)
+  socket.on("llenadero:actualizado", (data) => {
+    console.log("Socket: llenadero:actualizado", data);
+    fetchStats();
+  });
+
+  // Cuando se crea un nuevo llenadero
+  socket.on("llenadero:creado", () => {
+    fetchStats();
+  });
+
+  // Cuando se procesa una carga de cisterna
+  socket.on("carga:creada", () => {
+    fetchStats();
+  });
+
+  // Cuando se despacha una solicitud (se resta inventario)
+  socket.on("solicitud:despachada", () => {
+    fetchStats();
+  });
+}
+
+/**
+ * Limpia los listeners al desmontar el componente
+ */
+function cleanupSocketListeners() {
+  socket.off("llenadero:actualizado");
+  socket.off("llenadero:creado");
+  socket.off("carga:creada");
+  socket.off("solicitud:despachada");
+}
+
 onMounted(() => {
   fetchStats();
+  setupSocketListeners();
+});
+
+onUnmounted(() => {
+  cleanupSocketListeners();
 });
 </script>
 
