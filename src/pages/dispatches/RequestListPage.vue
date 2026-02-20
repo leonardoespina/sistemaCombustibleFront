@@ -38,7 +38,7 @@
         <template v-slot:body-cell-estatus="props">
           <q-td :props="props">
             <q-badge :color="getStatusColor(props.value)" class="q-pa-xs">
-              {{ props.value.replace('_', ' ') }}
+              {{ props.value.replace("_", " ") }}
             </q-badge>
           </q-td>
         </template>
@@ -46,8 +46,13 @@
         <!-- Celda Litros -->
         <template v-slot:body-cell-litros="props">
           <q-td :props="props">
-            <div class="text-weight-bold">{{ props.row.cantidad_litros }} L</div>
-            <div v-if="props.row.cantidad_despachada > 0" class="text-caption text-grey">
+            <div class="text-weight-bold">
+              {{ props.row.cantidad_litros }} L
+            </div>
+            <div
+              v-if="props.row.cantidad_despachada > 0"
+              class="text-caption text-grey"
+            >
               Surtido: {{ props.row.cantidad_despachada }} L
             </div>
           </q-td>
@@ -81,9 +86,6 @@
               <q-tooltip>Aprobar Solicitud</q-tooltip>
             </q-btn>
 
-
-
-
             <!-- Rechazar (Solo si no está despachado/vencido) -->
             <q-btn
               v-if="['PENDIENTE', 'APROBADA'].includes(props.row.estado)"
@@ -102,10 +104,7 @@
     </div>
 
     <!-- Diálogo de Formulario -->
-    <RequestFormDialog
-      v-model="isFormDialogVisible"
-      @save="onFormSave"
-    />
+    <RequestFormDialog v-model="isFormDialogVisible" @save="onFormSave" />
 
     <!-- ¡NUEVO! Diálogo de Detalles de Solicitud -->
     <RequestDetailsDialog
@@ -116,7 +115,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted, onUnmounted, defineAsyncComponent } from "vue";
+import { ref, onMounted, onUnmounted } from "vue";
 import { storeToRefs } from "pinia";
 import { useRequestStore } from "../../stores/requestStore.js";
 import RequestFormDialog from "../../components/dispatches/RequestFormDialog.vue";
@@ -134,15 +133,58 @@ const isDetailsVisible = ref(false);
 //const selectedTicket = ref(null);
 const selectedRequest = ref(null);
 
-
 const columns = [
-  { name: "id_solicitud", label: "ID", field: "id_solicitud", sortable: true, align: "left" },
-  { name: "ticket", label: "Ticket", field: "codigo_ticket", sortable: true, align: "left" },
-  { name: "fecha", label: "Fecha/Hora", field: row => row.fecha_solicitud ? new Date(row.fecha_solicitud).toLocaleString() : 'N/A', align: "left" },
-  { name: "placa", label: "Vehículo", field: "placa", sortable: true, align: "left" },
-  { name: "solicitante", label: "Solicitante", field: row => row.Solicitante ? `${row.Solicitante.nombre} ${row.Solicitante.apellido}` : 'N/A', align: "left" },
-  { name: "subdependencia", label: "Subdependencia", field: row => row.Subdependencia ? row.Subdependencia.nombre : 'N/A', align: "left" },
-  { name: "litros", label: "Cantidad", field: "cantidad_litros", align: "right" },
+  {
+    name: "id_solicitud",
+    label: "ID",
+    field: "id_solicitud",
+    sortable: true,
+    align: "left",
+  },
+  {
+    name: "ticket",
+    label: "Ticket",
+    field: "codigo_ticket",
+    sortable: true,
+    align: "left",
+  },
+  {
+    name: "fecha",
+    label: "Fecha/Hora",
+    field: (row) =>
+      row.fecha_solicitud
+        ? new Date(row.fecha_solicitud).toLocaleString()
+        : "N/A",
+    align: "left",
+  },
+  {
+    name: "placa",
+    label: "Vehículo",
+    field: "placa",
+    sortable: true,
+    align: "left",
+  },
+  {
+    name: "solicitante",
+    label: "Solicitante",
+    field: (row) =>
+      row.Solicitante
+        ? `${row.Solicitante.nombre} ${row.Solicitante.apellido}`
+        : "N/A",
+    align: "left",
+  },
+  {
+    name: "subdependencia",
+    label: "Subdependencia",
+    field: (row) => (row.Subdependencia ? row.Subdependencia.nombre : "N/A"),
+    align: "left",
+  },
+  {
+    name: "litros",
+    label: "Cantidad",
+    field: "cantidad_litros",
+    align: "right",
+  },
   { name: "estatus", label: "Estatus", field: "estado", align: "center" },
   { name: "actions", label: "Acciones", align: "right" },
 ];
@@ -162,17 +204,18 @@ function onFormSave(response) {
   if (response && response.data) {
     // Cerrar el formulario inmediatamente
     isFormDialogVisible.value = false;
-    
+
     // Extraer datos para el resumen
-    const ticket = response.ticket || response.data.codigo_ticket || 'PENDIENTE';
-    const status = response.data.estado || 'PENDIENTE';
-    const placa = response.data.placa || 'N/A';
-    const litros = response.data.cantidad_litros || '0';
-    const solicitante = response.data.solicitante || 'Usuario';
-    
+    const ticket =
+      response.ticket || response.data.codigo_ticket || "PENDIENTE";
+    const status = response.data.estado || "PENDIENTE";
+    const placa = response.data.placa || "N/A";
+    const litros = response.data.cantidad_litros || "0";
+    const solicitante = response.data.solicitante || "Usuario";
+
     // Mostrar diálogo con resumen detallado
     $q.dialog({
-      title: '✅ ¡Solicitud Creada con Éxito!',
+      title: "✅ ¡Solicitud Creada con Éxito!",
       message: `
         <div class="q-pa-sm">
           <div class="text-subtitle1 text-center q-mb-md">La solicitud ha sido registrada en el sistema.</div>
@@ -209,61 +252,66 @@ function onFormSave(response) {
       `,
       html: true,
       ok: {
-        label: 'Aceptar y Cerrar',
-        color: 'primary',
+        label: "Aceptar y Cerrar",
+        color: "primary",
         push: true,
-        size: 'md'
+        size: "md",
       },
-      persistent: true
+      persistent: true,
     });
   }
 }
 
 function onApprove(row) {
   $q.dialog({
-    title: 'Confirmar Aprobación',
+    title: "Confirmar Aprobación",
     message: `¿Desea aprobar la solicitud del vehículo ${row.placa} por ${row.cantidad_litros}L?`,
     cancel: true,
-    persistent: true
+    persistent: true,
   }).onOk(async () => {
     await requestStore.approveRequest(row.id_solicitud);
   });
 }
-
 
 function onShowDetails(row) {
   selectedRequest.value = row;
   isDetailsVisible.value = true;
 }
 
-
-
 function onReject(row) {
   $q.dialog({
-    title: 'Rechazar Solicitud',
+    title: "Rechazar Solicitud",
     message: `¿Desea rechazar la solicitud del vehículo ${row.placa}? Ingrese el motivo:`,
     prompt: {
-      model: '',
-      type: 'text',
-      isValid: val => val.length > 3
+      model: "",
+      type: "text",
+      isValid: (val) => val.length > 3,
     },
     cancel: true,
-    persistent: true
+    persistent: true,
   }).onOk(async (motivo) => {
-     await requestStore.rejectRequest(row.id_solicitud, motivo);
+    await requestStore.rejectRequest(row.id_solicitud, motivo);
   });
 }
 
 function getStatusColor(status) {
   switch (status) {
-    case 'PENDIENTE': return 'orange';
-    case 'APROBADA': return 'blue';
-    case 'IMPRESA': return 'indigo';
-    case 'DESPACHADA': return 'green';
-    case 'RECHAZADA': return 'red';
-    case 'VENCIDA': return 'grey-8';
-    case 'CANCELADA': return 'grey-6';
-    default: return 'black';
+    case "PENDIENTE":
+      return "orange";
+    case "APROBADA":
+      return "blue";
+    case "IMPRESA":
+      return "indigo";
+    case "DESPACHADA":
+      return "green";
+    case "RECHAZADA":
+      return "red";
+    case "VENCIDA":
+      return "grey-8";
+    case "CANCELADA":
+      return "grey-6";
+    default:
+      return "black";
   }
 }
 

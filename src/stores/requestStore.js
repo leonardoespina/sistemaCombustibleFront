@@ -59,7 +59,7 @@ export const useRequestStore = defineStore("requests", () => {
       console.log("=== DEBUG requestStore.createRequest ===");
       console.log("requestData recibido:", requestData);
       console.log("requestData.placa:", requestData.placa);
-      
+
       const response = await api.post("/solicitudes", requestData);
       $q.notify({ type: "positive", message: response.data.msg });
       await fetchRequests();
@@ -85,7 +85,8 @@ export const useRequestStore = defineStore("requests", () => {
       await fetchRequests();
       return true;
     } catch (error) {
-      const errorMsg = error.response?.data?.msg || "Error al aprobar solicitud";
+      const errorMsg =
+        error.response?.data?.msg || "Error al aprobar solicitud";
       $q.notify({ type: "negative", message: errorMsg });
       return false;
     } finally {
@@ -99,7 +100,10 @@ export const useRequestStore = defineStore("requests", () => {
   async function printTicket(requestId, huellas) {
     loading.value = true;
     try {
-      const response = await api.post(`/despacho/imprimir/${requestId}`, huellas);
+      const response = await api.post(
+        `/despacho/imprimir/${requestId}`,
+        huellas,
+      );
       $q.notify({ type: "positive", message: response.data.msg });
       await fetchRequests();
       return response.data; // Retorna datos del ticket para imprimir
@@ -122,7 +126,8 @@ export const useRequestStore = defineStore("requests", () => {
       $q.notify({ type: "positive", message: response.data.msg });
       return response.data;
     } catch (error) {
-      const errorMsg = error.response?.data?.msg || "Error al reimprimir ticket";
+      const errorMsg =
+        error.response?.data?.msg || "Error al reimprimir ticket";
       $q.notify({ type: "negative", message: errorMsg });
       return null;
     } finally {
@@ -141,7 +146,8 @@ export const useRequestStore = defineStore("requests", () => {
       await fetchRequests();
       return true;
     } catch (error) {
-      const errorMsg = error.response?.data?.msg || "Error al despachar solicitud";
+      const errorMsg =
+        error.response?.data?.msg || "Error al despachar solicitud";
       $q.notify({ type: "negative", message: errorMsg });
       return false;
     } finally {
@@ -155,12 +161,15 @@ export const useRequestStore = defineStore("requests", () => {
   async function rejectRequest(requestId, motivo) {
     loading.value = true;
     try {
-      const response = await api.put(`/solicitudes/${requestId}/rechazar`, { motivo });
+      const response = await api.put(`/solicitudes/${requestId}/rechazar`, {
+        motivo,
+      });
       $q.notify({ type: "positive", message: response.data.msg });
       await fetchRequests();
       return true;
     } catch (error) {
-      const errorMsg = error.response?.data?.msg || "Error al rechazar solicitud";
+      const errorMsg =
+        error.response?.data?.msg || "Error al rechazar solicitud";
       $q.notify({ type: "negative", message: errorMsg });
       return false;
     } finally {
@@ -174,12 +183,17 @@ export const useRequestStore = defineStore("requests", () => {
   async function fetchSubdependenciasAutorizadas() {
     loadingAuxiliar.value = true;
     try {
-      const response = await api.get("/solicitudes/subdependencias-autorizadas");
+      const response = await api.get(
+        "/solicitudes/subdependencias-autorizadas",
+      );
       subdependenciasAutorizadas.value = response.data;
       return response.data;
     } catch (error) {
       console.error("Error al obtener subdependencias autorizadas:", error);
-      $q.notify({ type: "negative", message: "Error cargando subdependencias autorizadas" });
+      $q.notify({
+        type: "negative",
+        message: "Error cargando subdependencias autorizadas",
+      });
       return [];
     } finally {
       loadingAuxiliar.value = false;
@@ -194,12 +208,15 @@ export const useRequestStore = defineStore("requests", () => {
       llenaderosPorCombustible.value = [];
       return [];
     }
-    
+
     loadingAuxiliar.value = true;
     try {
-      const response = await api.get("/solicitudes/llenaderos-por-combustible", {
-        params: { id_tipo_combustible: idTipoCombustible }
-      });
+      const response = await api.get(
+        "/solicitudes/llenaderos-por-combustible",
+        {
+          params: { id_tipo_combustible: idTipoCombustible },
+        },
+      );
       llenaderosPorCombustible.value = response.data;
       return response.data;
     } catch (error) {
@@ -218,12 +235,16 @@ export const useRequestStore = defineStore("requests", () => {
     socket.on("solicitud:creada", () => fetchRequests());
     socket.on("solicitud:actualizada", () => fetchRequests());
     socket.on("solicitud:despachada", () => fetchRequests());
+    socket.on("solicitud:rechazada", () => fetchRequests());
+
+    //solicitud: rechazada;
   }
 
   function cleanupSocket() {
     socket.off("solicitud:creada");
     socket.off("solicitud:actualizada");
     socket.off("solicitud:despachada");
+    socket.off("solicitud:rechazada");
   }
 
   return {
