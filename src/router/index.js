@@ -189,7 +189,7 @@ const routes = [
         path: "reportes/consumo-dependencia",
         name: "reporte-consumo-dependencia",
         meta: {
-          allowedRoles: ["ADMIN", "GERENTE", "JEFE DIVISION"],
+          allowedRoles: ["ADMIN", "GERENTE", "JEFE DIVISION","ALMACENISTA"],
         },
         component: () =>
           import("../pages/reports/DependenciaConsumptionPage.vue"),
@@ -200,6 +200,8 @@ const routes = [
         // Sin restricciones de rol, accesible para cualquier usuario autenticado
         component: () => import("../pages/reports/MisCuposPage.vue"),
       },
+
+ 
 
       // Aquí puedes seguir añadiendo más rutas protegidas, como /vehiculos, etc.
     ],

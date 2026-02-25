@@ -50,6 +50,7 @@
                 :selected-vehicle="selectedVehicle"
                 :filter-placa="filterPlaca"
                 :get-fuel-color="getFuelColor"
+                :is-bidon="vehicleDisabled"
                 @select:vehicle="selectedVehicle = $event"
                 @update:filter-placa="handleFilterPlaca"
               />
@@ -81,7 +82,7 @@
                 @update:cantidad-litros="formData.cantidad_litros = $event"
                 @update:tipo-solicitud="onTipoSolicitudChange"
                 @update:precio-obj="selectedPrecioObj = $event"
-                @update:tipo-suministro="formData.tipo_suministro = $event"
+                @update:tipo-suministro="onTipoSuministroChange"
               />
 
               <!-- Cupo Mensual -->
@@ -186,6 +187,7 @@ const {
   solicitanteName,
   currentDate,
   currentTime,
+  vehicleDisabled,
   availableModalities,
   calculatedTotal,
   canSubmit,
@@ -367,6 +369,14 @@ function handleReset() {
   resetFilters();
   llenaderoOptions.value = [];
   precioOptions.value = [];
+}
+
+function onTipoSuministroChange(val) {
+  formData.value.tipo_suministro = val;
+  // Limpiar vehículo solo si queda en modo BIDÓN + VENTA
+  if (vehicleDisabled.value) {
+    selectedVehicle.value = null;
+  }
 }
 
 function saveNote() {

@@ -1,10 +1,12 @@
 <!-- src/components/dispatches/request-sections/RequestVehicleSection.vue -->
 <template>
-  <q-card flat bordered class="bg-white col">
+  <q-card flat bordered class="bg-white col" :class="{ 'bidon-disabled': isBidon }">
     <q-card-section class="q-py-xs bg-grey-3 row items-center">
       <div class="text-subtitle2 text-weight-bolder text-grey-9">
         Vehículo a Despachar
       </div>
+      <!-- Badge informativo cuando es BIDÓN -->
+      <q-badge v-if="isBidon" color="orange" label="No aplica para BIDÓN" class="q-ml-sm" />
       <q-space />
       <q-input
         :model-value="filterPlaca"
@@ -16,6 +18,7 @@
         bg-color="white"
         class="q-my-xs"
         style="width: 200px"
+        :disable="isBidon"
       >
         <template v-slot:append>
           <q-icon name="search" size="xs" color="primary" />
@@ -23,7 +26,7 @@
       </q-input>
     </q-card-section>
     <q-separator />
-    <q-card-section class="q-pa-none overflow-hidden">
+    <q-card-section class="q-pa-none overflow-hidden" style="position: relative">
       <q-markup-table
         dense
         flat
@@ -43,13 +46,15 @@
           <tr
             v-for="(v, index) in vehicleOptions"
             :key="v.id_vehiculo"
-            @click="$emit('select:vehicle', v)"
-            class="cursor-pointer transition-all"
-            :class="
-              selectedVehicle?.id_vehiculo === v.id_vehiculo
+            @click="!isBidon && $emit('select:vehicle', v)"
+            :class="[
+              isBidon
+                ? 'cursor-not-allowed text-grey-5'
+                : 'cursor-pointer transition-all',
+              !isBidon && selectedVehicle?.id_vehiculo === v.id_vehiculo
                 ? 'bg-blue-1 text-primary text-weight-bolder'
-                : 'hover-bg-grey-1'
-            "
+                : !isBidon ? 'hover-bg-grey-1' : ''
+            ]"
           >
             <td class="text-caption text-grey-6 text-center">
               #{{ index + 1 }}
@@ -85,6 +90,13 @@
           </tr>
         </tbody>
       </q-markup-table>
+
+      <!-- Overlay BIDÓN -->
+      <div v-if="isBidon" class="bidon-overlay">
+        <q-icon name="inventory_2" size="2rem" color="orange-7" />
+        <div class="text-weight-bold text-grey-8 q-mt-xs">Suministro BIDÓN</div>
+        <div class="text-caption text-grey-6">Vehículo no requerido</div>
+      </div>
     </q-card-section>
   </q-card>
 </template>
@@ -107,6 +119,10 @@ defineProps({
     type: Function,
     required: true,
   },
+  isBidon: {
+    type: Boolean,
+    default: false,
+  },
 });
 
 defineEmits(["select:vehicle", "update:filterPlaca"]);
@@ -115,5 +131,18 @@ defineEmits(["select:vehicle", "update:filterPlaca"]);
 <style scoped>
 .hover-bg-grey-1:hover {
   background-color: #f5f5f5;
+}
+.bidon-disabled {
+  opacity: 0.7;
+}
+.bidon-overlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(255, 255, 255, 0.82);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
 }
 </style>

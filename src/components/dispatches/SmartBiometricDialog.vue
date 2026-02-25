@@ -304,7 +304,8 @@ const validarFase1 = async (huellaBase64) => {
             cedula: cedulaInput.value,
             huella: huellaBase64,
             id_solicitud: props.requestData.id_solicitud,
-            id_subdependencia: props.requestData.id_subdependencia
+            id_subdependencia: props.requestData.id_subdependencia,
+            validar_pertenencia: true
         });
 
         usuarioIdentificado.value = res.data.usuario;

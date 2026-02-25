@@ -14,7 +14,7 @@ export function useRequestForm(emit, requestStore) {
   const selectedVehicle = ref(null);
   const selectedSubdependencia = ref(null);
   const selectedPrecioObj = ref(null);
-  
+
   const solicitanteName = ref("");
   const currentDate = ref(date.formatDate(Date.now(), "DD/MM/YYYY"));
   const currentTime = ref(date.formatDate(Date.now(), "HH:mm:ss"));
@@ -40,7 +40,7 @@ export function useRequestForm(emit, requestStore) {
    */
   const availableModalities = computed(() => {
     const options = ["INSTITUCIONAL"];
-    
+
     if (!selectedSubdependencia.value || !requestStore.subdependenciasAutorizadas) {
       return options;
     }
@@ -66,7 +66,7 @@ export function useRequestForm(emit, requestStore) {
    */
   const calculatedTotal = computed(() => {
     if (!selectedPrecioObj.value || !formData.value.cantidad_litros) return "0";
-    
+
     const total =
       parseFloat(selectedPrecioObj.value.precio) *
       parseFloat(formData.value.cantidad_litros);
@@ -80,13 +80,23 @@ export function useRequestForm(emit, requestStore) {
   /**
    * Validar si se puede enviar el formulario
    */
+  // Vehículo deshabilitado SOLO cuando BIDÓN + VENTA
+  const vehicleDisabled = computed(
+    () =>
+      formData.value.tipo_suministro === "BIDON" &&
+      formData.value.tipo_solicitud === "VENTA",
+  );
+
   const canSubmit = computed(() => {
-    return Boolean(
+    const baseOk =
       formData.value.id_llenadero &&
       formData.value.cantidad_litros > 0 &&
-      selectedVehicle.value &&
-      selectedCombustible.value
-    );
+      selectedCombustible.value;
+
+    // BIDÓN+VENTA no requiere vehículo seleccionado
+    if (vehicleDisabled.value) return Boolean(baseOk);
+
+    return Boolean(baseOk && selectedVehicle.value);
   });
 
   // --- METHODS ---
@@ -131,6 +141,7 @@ export function useRequestForm(emit, requestStore) {
    * Manejar cambio de tipo de solicitud
    */
   function onTipoSolicitudChange(val) {
+    formData.value.tipo_solicitud = val; // ← actualizar el valor en formData
     if (val !== "VENTA") {
       selectedPrecioObj.value = null;
       formData.value.id_precio = null;
@@ -146,21 +157,15 @@ export function useRequestForm(emit, requestStore) {
       return;
     }
 
-    // Debug: Verificar datos antes de enviar
-    console.log("=== DEBUG onSave ===");
-    console.log("selectedVehicle:", selectedVehicle.value);
-    console.log("selectedCombustible:", selectedCombustible.value);
-    console.log("selectedSubdependencia:", selectedSubdependencia.value);
-
-    loading.value = true;
 
     const payload = {
       ...formData.value,
-      id_vehiculo: selectedVehicle.value?.id_vehiculo,
-      placa: selectedVehicle.value?.placa,
-      marca: selectedVehicle.value?.Marca?.nombre || "",
-      modelo: selectedVehicle.value?.Modelo?.nombre || "",
-      flota: selectedVehicle.value?.flota || "GENERAL",
+      // Datos de vehículo: null solo para BIDÓN + VENTA
+      id_vehiculo: vehicleDisabled.value ? null : selectedVehicle.value?.id_vehiculo,
+      placa: vehicleDisabled.value ? null : selectedVehicle.value?.placa,
+      marca: vehicleDisabled.value ? null : (selectedVehicle.value?.Marca?.nombre || ""),
+      modelo: vehicleDisabled.value ? null : (selectedVehicle.value?.Modelo?.nombre || ""),
+      flota: vehicleDisabled.value ? null : (selectedVehicle.value?.flota || "GENERAL"),
       id_tipo_combustible: selectedCombustible.value,
       id_subdependencia: selectedSubdependencia.value,
       id_precio: selectedPrecioObj.value?.id_precio || null,
@@ -176,7 +181,7 @@ export function useRequestForm(emit, requestStore) {
 
     try {
       const result = await requestStore.createRequest(payload);
-      
+
       if (result) {
         // NO resetear aquí - se hace en el componente padre después de cerrar
         emit("save", result);
@@ -200,6 +205,7 @@ export function useRequestForm(emit, requestStore) {
     currentDate,
     currentTime,
     // Computed
+    vehicleDisabled,
     availableModalities,
     calculatedTotal,
     canSubmit,
