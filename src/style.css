@@ -1,0 +1,6 @@
+/* 
+  src/style.css
+  Este archivo contenía estilos por defecto de Vite que entraban en conflicto con Quasar.
+  Se ha vaciado para evitar problemas de visualización (fondo oscuro, layout roto).
+  Los estilos de Quasar se importan en src/main.js ("quasar/src/css/index.sass").
+*/
