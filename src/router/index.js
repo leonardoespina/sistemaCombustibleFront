@@ -140,7 +140,7 @@ const routes = [
         path: "movimientos-llenadero",
         name: "movimiento-llenadero-list",
         meta: {
-          allowedRoles: ["ADMIN", "GERENTE", "JEFE DIVISION", "ALMACENISTA"],
+          allowedRoles: ["ADMIN", "GERENTE", "JEFE DIVISION", "ALMACENISTA",'COORDINADOR'],
         },
         component: () =>
           import("../pages/llenaderos/MovimientosLlenaderoPage.vue"),
@@ -149,7 +149,7 @@ const routes = [
         path: "evaporaciones",
         name: "evaporacion-list",
         meta: {
-          allowedRoles: ["ADMIN", "GERENTE", "JEFE DIVISION", "ALMACENISTA"],
+          allowedRoles: ["ADMIN", "GERENTE", "JEFE DIVISION", "ALMACENISTA","COORDINADOR"],
         },
         component: () =>
           import("../pages/llenaderos/GestionEvaporacionPage.vue"),
@@ -173,7 +173,7 @@ const routes = [
         path: "reportes/diario",
         name: "reporte-diario",
         meta: {
-          allowedRoles: ["ADMIN", "GERENTE", "JEFE DIVISION", "ALMACENISTA"],
+          allowedRoles: ["ADMIN", "GERENTE", "JEFE DIVISION", "ALMACENISTA", "ESTANDAR",'COORDINADOR'],
         },
         component: () => import("../pages/reports/ReporteDiarioPage.vue"),
       },
@@ -181,7 +181,7 @@ const routes = [
         path: "reportes/despachos",
         name: "reporte-despachos",
         meta: {
-          allowedRoles: ["ADMIN", "GERENTE", "JEFE DIVISION", "ALMACENISTA"],
+          allowedRoles: ["ADMIN", "GERENTE", "JEFE DIVISION", "ALMACENISTA",'COORDINADOR'],
         },
         component: () => import("../pages/reports/ReporteDespachosPage.vue"),
       },
@@ -189,7 +189,7 @@ const routes = [
         path: "reportes/consumo-dependencia",
         name: "reporte-consumo-dependencia",
         meta: {
-          allowedRoles: ["ADMIN", "GERENTE", "JEFE DIVISION","ALMACENISTA"],
+          allowedRoles: ["ADMIN", "GERENTE", "JEFE DIVISION", "ALMACENISTA",'COORDINADOR'],
         },
         component: () =>
           import("../pages/reports/DependenciaConsumptionPage.vue"),
@@ -197,11 +197,16 @@ const routes = [
       {
         path: "reportes/mis-cupos",
         name: "reporte-mis-cupos",
-        // Sin restricciones de rol, accesible para cualquier usuario autenticado
         component: () => import("../pages/reports/MisCuposPage.vue"),
       },
+      {
+        path: "reportes/mis-despachos",
+        name: "reporte-mis-despachos",
+        // Sin restricción de rol — la dependencia la aporta el token del servidor
+        component: () => import("../pages/reports/MisDespachosPage.vue"),
+      },
 
- 
+
 
       // Aquí puedes seguir añadiendo más rutas protegidas, como /vehiculos, etc.
     ],

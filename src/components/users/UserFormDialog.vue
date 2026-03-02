@@ -58,8 +58,8 @@
               'ADMIN',
               'GERENTE',
               'JEFE DIVISION',
-              'SUPERVISOR',
               'COORDINADOR',
+              'SUPERVISOR',
               'INSPECTOR',
               'ALMACENISTA',
             ]"

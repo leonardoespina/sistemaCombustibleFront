@@ -124,6 +124,7 @@ const handleSearch = async () => {
 };
 
 onMounted(() => {
+  store.resetFilters();
   store.initSocket();
 });
 

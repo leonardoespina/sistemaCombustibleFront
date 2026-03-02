@@ -13,14 +13,21 @@
         </q-btn>
         <q-toolbar-title>Resultados del Reporte de Despachos</q-toolbar-title>
         <q-space />
-        <q-btn
+        <ExportExcelBtn
+          :rows="data"
+          :columns="columns"
+          :filename="`Despachos_${filters.fechaDesde}_${filters.fechaHasta}`"
+          sheet-name="Despachos"
+          :meta="[
+            'REPORTE DE DESPACHOS',
+            `Desde: ${formatDate(filters.fechaDesde)} - Hasta: ${formatDate(filters.fechaHasta)}`,
+          ]"
+          label="Exportar Excel"
+          color="positive"
           flat
-          label="Exportar CSV"
-          icon="table_view"
-          @click="exportToCsv"
           class="q-mr-sm"
         />
-        <q-btn flat label="Imprimir PDF" icon="print" @click="printReport" />
+        <q-btn flat label="Imprimir" icon="print" @click="printReport" />
       </q-toolbar>
 
       <q-card-section class="q-pa-lg scroll" style="height: calc(100vh - 50px)">
@@ -88,7 +95,8 @@
 
 <script setup>
 import { computed } from "vue";
-import { date, exportFile, useQuasar } from "quasar";
+import { date } from "quasar";
+import ExportExcelBtn from '../common/ExportExcelBtn.vue';
 
 const props = defineProps({
   modelValue: Boolean,
@@ -120,107 +128,28 @@ const props = defineProps({
 
 const emit = defineEmits(["update:modelValue", "request"]);
 
-const $q = useQuasar();
-
 const isOpen = computed({
   get: () => props.modelValue,
   set: (val) => emit("update:modelValue", val),
 });
 
 const columns = [
-  {
-    name: "fecha",
-    label: "Fecha",
-    field: "fecha",
-    align: "left",
-    format: (val) => date.formatDate(val, "DD/MM/YYYY"),
-  },
-  {
-    name: "hora",
-    label: "Hora",
-    field: "hora",
-    align: "center",
-  },
-  {
-    name: "codigo_ticket",
-    label: "Ticket #",
-    field: "codigo_ticket",
-    align: "center",
-  },
-  {
-    name: "solicitante",
-    label: "Solicitante",
-    field: "solicitante",
-    align: "left",
-  },
-  {
-    name: "vehiculo",
-    label: "Nombre del Vehículo",
-    field: "vehiculo",
-    align: "left",
-  },
-  { name: "placa", label: "Placa", field: "placa", align: "left" },
-
-  {
-    name: "cantidad_aprobada",
-    label: "Cant. Aprobada",
-    field: "cantidad_aprobada",
-    align: "right",
-    format: (val) => (val ? parseFloat(val).toFixed(2) : "0.00"),
-  },
-  {
-    name: "cantidad_despachada",
-    label: "Cant. Despachada",
-    field: "cantidad_despachada",
-    align: "right",
-    format: (val) => (val ? parseFloat(val).toFixed(2) : "0.00"),
-  },
+  { name: "fecha",               label: "Fecha",            field: "fecha",               align: "left",  format: (val) => date.formatDate(val, "DD/MM/YYYY") },
+  { name: "hora",                label: "Hora",             field: "hora",               align: "center" },
+  { name: "codigo_ticket",       label: "Ticket #",         field: "codigo_ticket",       align: "center" },
+  { name: "solicitante",         label: "Solicitante",      field: "solicitante",         align: "left" },
+  { name: "vehiculo",            label: "Vehículo",         field: "vehiculo",            align: "left" },
+  { name: "placa",               label: "Placa",            field: "placa",               align: "left" },
+  { name: "cantidad_aprobada",   label: "Cant. Aprobada",   field: "cantidad_aprobada",   align: "right", format: (val) => val ? parseFloat(val).toFixed(2) : "0.00" },
+  { name: "cantidad_despachada", label: "Cant. Despachada", field: "cantidad_despachada", align: "right", format: (val) => val ? parseFloat(val).toFixed(2) : "0.00" },
 ];
 
 function formatDate(fechaStr) {
   if (!fechaStr) return "";
-  // Ajuste para evitar desfase por zona horaria al formatear strings YYYY-MM-DD
-  const fixedDate = fechaStr.replace(/-/g, "/");
-  return date.formatDate(fixedDate, "DD/MM/YYYY");
+  return date.formatDate(fechaStr.replace(/-/g, "/"), "DD/MM/YYYY");
 }
 
-function wrapCsvValue(val, formatFn) {
-  let formatted = formatFn !== void 0 ? formatFn(val) : val;
-  formatted =
-    formatted === void 0 || formatted === null ? "" : String(formatted);
-  formatted = formatted.split('"').join('""');
-  return `"${formatted}"`;
-}
-
-function exportToCsv() {
-  if (props.data.length === 0) return;
-
-  let content = "REPORTE DE DESPACHOS\n";
-  content += `Desde: ${formatDate(props.filters.fechaDesde)} - Hasta: ${formatDate(props.filters.fechaHasta)}\n\n`;
-
-  content += columns.map((c) => wrapCsvValue(c.label)).join(",") + "\n";
-
-  props.data.forEach((row) => {
-    content +=
-      columns.map((c) => wrapCsvValue(row[c.field], c.format)).join(",") + "\n";
-  });
-
-  content += `,,,,,,,TOTAL GENERAL,${props.total}\n`;
-
-  const status = exportFile(
-    `Despachos_${props.filters.fechaDesde}_${props.filters.fechaHasta}.csv`,
-    content,
-    "text/csv",
-  );
-
-  if (status !== true) {
-    $q.notify({ message: "Navegador denegó la descarga", color: "negative" });
-  }
-}
-
-function printReport() {
-  window.print();
-}
+function printReport() { window.print(); }
 </script>
 
 <style scoped>

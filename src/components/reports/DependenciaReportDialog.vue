@@ -13,19 +13,20 @@
         </q-btn>
         <q-toolbar-title>Consumo Agregado por Dependencia</q-toolbar-title>
         <q-space />
-        <q-btn
+        <ExportExcelBtn
+          :rows="data"
+          :columns="columns"
+          :filename="`Consumo_Dependencia_${filters.fechaDesde}`"
+          sheet-name="Consumo"
+          :meta="[
+            'REPORTE DE CONSUMO POR DEPENDENCIA',
+            `Periodo: ${formatDate(filters.fechaDesde)} - ${formatDate(filters.fechaHasta)}`,
+          ]"
+          label="Exportar Excel"
           flat
-          label="Exportar CSV"
-          icon="table_view"
-          @click="exportToCsv"
           class="q-mr-sm"
         />
-        <q-btn
-          flat
-          label="Imprimir PDF"
-          icon="print"
-          @click="printReport"
-        />
+        <q-btn flat label="Imprimir PDF" icon="print" @click="printReport" />
       </q-toolbar>
 
       <q-card-section class="q-pa-lg scroll" style="height: calc(100vh - 50px)">
@@ -94,8 +95,9 @@
 
 <script setup>
 import { ref, computed, watch, nextTick, onMounted, onBeforeUnmount } from 'vue';
-import { date, exportFile, useQuasar } from 'quasar';
+import { date } from 'quasar';
 import * as echarts from 'echarts';
+import ExportExcelBtn from '../common/ExportExcelBtn.vue';
 
 const props = defineProps({
   modelValue: Boolean,
@@ -111,7 +113,6 @@ const props = defineProps({
 
 const emit = defineEmits(['update:modelValue']);
 
-const $q = useQuasar();
 const chartRef = ref(null);
 let myChart = null;
 
@@ -184,37 +185,12 @@ function formatDate(fechaStr) {
   return date.formatDate(fechaStr.replace(/-/g, '/'), "DD/MM/YYYY");
 }
 
-function exportToCsv() {
-  if (props.data.length === 0) return;
-
-  let content = "REPORTE DE CONSUMO POR DEPENDENCIA\n";
-  content += `Periodo: ${formatDate(props.filters.fechaDesde)} - ${formatDate(props.filters.fechaHasta)}\n\n`;
-
-  content += columns.map(c => `"${c.label}"`).join(",") + "\n";
-
-  props.data.forEach(row => {
-    content += `"${row.dependencia}","${row.tipo_combustible}","${row.total_litros}"\n`;
-  });
-
-  const status = exportFile(
-    `Consumo_Dependencia_${props.filters.fechaDesde}.csv`,
-    content,
-    "text/csv",
-  );
-
-  if (status !== true) {
-    $q.notify({ message: "Error al descargar el archivo", color: "negative" });
-  }
-}
-
-function printReport() {
-  window.print();
-}
+function printReport() { window.print(); }
 
 const resizeHandler = () => { if (myChart) myChart.resize(); };
 
 onMounted(() => { window.addEventListener('resize', resizeHandler); });
-onBeforeUnmount(() => { 
+onBeforeUnmount(() => {
   window.removeEventListener('resize', resizeHandler);
   if (myChart) myChart.dispose();
 });

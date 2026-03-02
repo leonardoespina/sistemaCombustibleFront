@@ -18,6 +18,10 @@ export function useMainLayout() {
   // --- COMPUTED ---
   const isAdmin = computed(() => userData.value?.tipo_usuario === "ADMIN");
 
+  const userTipoMenu = computed(() => {
+    return userData.value?.Dependencia?.tipo_acceso_menu || "ESTANDAR";
+  });
+
   const userName = computed(() => {
     if (!userData.value) return "Usuario";
     return `${userData.value.nombre} ${userData.value.apellido || ""}`;
@@ -66,10 +70,10 @@ export function useMainLayout() {
       userData.value?.Dependencia?.tipo_acceso_menu || "ESTANDAR";
 
     const rules = {
-      OPERATIVO: ["OPERACIONES", "ALMACEN"],
+      OPERATIVO: ["ALMACEN", "SEGURIDAD", "PRESIDENCIA"],
       SEGURIDAD: ["SEGURIDAD"],
-      INVENTARIO: ["ALMACEN", "OPERACIONES"],
-      CONFIG: ["OPERACIONES", "ALMACEN", "SEGURIDAD"],
+      INVENTARIO: ["ALMACEN", "PRESIDENCIA"],
+      CONFIG: ["ALMACEN", "SEGURIDAD"],
     };
 
     if (!rules[moduleName]) return true;
@@ -113,6 +117,7 @@ export function useMainLayout() {
     showChangePassword,
     // Computed
     isAdmin,
+    userTipoMenu,
     userName,
     userDependency,
     userRole,

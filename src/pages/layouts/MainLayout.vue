@@ -77,7 +77,7 @@
     <!-- MENÚ LATERAL (DRAWER) -->
     <q-drawer v-model="leftDrawerOpen" bordered :width="260" class="bg-grey-2">
       <!-- COMPONENTE DE NAVEGACIÓN MODULAR -->
-      <SidebarMenu :is-admin="isAdmin" :can-access="canAccess" />
+      <SidebarMenu :is-admin="isAdmin" :can-access="canAccess" :user-tipo-menu="userTipoMenu" />
     </q-drawer>
 
     <!-- CONTENEDOR DE LA PÁGINA -->
@@ -112,6 +112,7 @@ const {
   leftDrawerOpen,
   showChangePassword,
   isAdmin,
+  userTipoMenu,
   userName,
   userDependency,
   userRole,

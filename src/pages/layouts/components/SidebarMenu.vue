@@ -116,7 +116,14 @@
       <q-item-section>Solicitudes</q-item-section>
     </q-item>
 
-    <q-item clickable v-ripple to="/despacho">
+    <q-item
+      v-if="
+        isAdmin || (userTipoMenu !== 'ESTANDAR' && userTipoMenu !== 'SEGURIDAD')
+      "
+      clickable
+      v-ripple
+      to="/despacho"
+    >
       <q-item-section avatar><q-icon name="print" /></q-item-section>
       <q-item-section>Despacho</q-item-section>
     </q-item>
@@ -148,7 +155,14 @@
       </q-list>
     </q-expansion-item>
 
-    <q-item clickable v-ripple to="/validacion">
+    <q-item
+      v-if="
+        isAdmin || (userTipoMenu !== 'ESTANDAR' && userTipoMenu !== 'ALMACEN')
+      "
+      clickable
+      v-ripple
+      to="/validacion"
+    >
       <q-item-section avatar><q-icon name="fact_check" /></q-item-section>
       <q-item-section>Validación (Cierre)</q-item-section>
     </q-item>
@@ -204,6 +218,13 @@
           <q-item-section>Mis Cupos</q-item-section>
         </q-item>
 
+        <q-item clickable v-ripple to="/reportes/mis-despachos">
+          <q-item-section avatar
+            ><q-icon name="receipt_long" size="xs"
+          /></q-item-section>
+          <q-item-section>Mis Despachos</q-item-section>
+        </q-item>
+
         <q-item clickable v-ripple to="/reportes/diario">
           <q-item-section avatar
             ><q-icon name="today" size="xs"
@@ -211,14 +232,24 @@
           <q-item-section>Reporte Diario</q-item-section>
         </q-item>
 
-        <q-item clickable v-ripple to="/reportes/despachos">
+        <q-item
+          v-if="isAdmin || userTipoMenu !== 'ESTANDAR'"
+          clickable
+          v-ripple
+          to="/reportes/despachos"
+        >
           <q-item-section avatar
             ><q-icon name="list_alt" size="xs"
           /></q-item-section>
           <q-item-section>Reporte de Despachos</q-item-section>
         </q-item>
 
-        <q-item clickable v-ripple to="/reportes/consumo-dependencia">
+        <q-item
+          v-if="isAdmin || userTipoMenu !== 'ESTANDAR'"
+          clickable
+          v-ripple
+          to="/reportes/consumo-dependencia"
+        >
           <q-item-section avatar
             ><q-icon name="bar_chart" size="xs"
           /></q-item-section>
@@ -233,5 +264,9 @@
 defineProps({
   isAdmin: Boolean,
   canAccess: Function,
+  userTipoMenu: {
+    type: String,
+    default: "ESTANDAR",
+  },
 });
 </script>

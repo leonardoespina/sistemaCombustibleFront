@@ -28,6 +28,7 @@
               <div class="col-12 col-md-4 border-right-md">
                 <OrganizationalHierarchy
                   v-if="!isInitializing"
+                  :key="mountKey"
                   v-model:categoryId="store.filters.categoryId"
                   v-model:dependencyId="store.filters.dependencyId"
                   v-model:subdependencyId="store.filters.subdependencyId"
@@ -136,6 +137,9 @@ const $q = useQuasar();
 const showResultsDialog = ref(false);
 const fuelTypeOptions = ref([]);
 
+// Key que cambia en cada visita para forzar re-montaje limpio del OrganizationalHierarchy
+const mountKey = ref(0);
+
 // Flag de inicialización para evitar efectos secundarios en la jerarquía
 const isInitializing = ref(false);
 
@@ -171,6 +175,11 @@ const onRequest = async (props) => {
 };
 
 onMounted(async () => {
+  // Limpiar filtros y datos al entrar: el store persiste entre navegaciones
+  store.resetFilters();
+  store.clearReportData();
+  mountKey.value++; // fuerza re-montaje limpio del OrganizationalHierarchy
+
   isInitializing.value = true;
   store.initSocket();
   await loadFuelTypes();

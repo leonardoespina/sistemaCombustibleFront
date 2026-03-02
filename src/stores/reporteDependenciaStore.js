@@ -3,15 +3,17 @@ import { ref } from 'vue';
 import api from '../api';
 import { date } from 'quasar';
 import socket from '../services/socket';
+import { todayStr, firstOfMonthStr } from '../utils/dateUtils';
+
 
 export const useReporteDependenciaStore = defineStore('reporteDependencia', () => {
   // State
   const loading = ref(false);
   const reportData = ref([]);
-  
+
   const filters = ref({
-    fechaDesde: date.formatDate(new Date(), 'YYYY-MM-01'),
-    fechaHasta: date.formatDate(new Date(), 'YYYY-MM-DD')
+    fechaDesde: firstOfMonthStr(),
+    fechaHasta: todayStr()
   });
 
   // Actions
@@ -25,7 +27,7 @@ export const useReporteDependenciaStore = defineStore('reporteDependencia', () =
 
       const { data } = await api.get('/reportes/consumo-dependencia', { params });
       reportData.value = data;
-      
+
     } catch (error) {
       console.error('Error fetching dependency consumption report:', error);
       throw error;

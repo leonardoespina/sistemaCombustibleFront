@@ -4,6 +4,12 @@ import api from '../api';
 import { date } from 'quasar';
 import socket from '../services/socket';
 
+/** Fecha local correcta sin desfase UTC */
+const todayLocal = () => {
+  const now = new Date();
+  return new Date(now.getTime() - now.getTimezoneOffset() * 60000);
+};
+
 export const useReporteDespachoStore = defineStore('reporteDespacho', () => {
   // State
   const loading = ref(false);
@@ -16,14 +22,14 @@ export const useReporteDespachoStore = defineStore('reporteDespacho', () => {
     rowsPerPage: 10,
     rowsNumber: 0
   });
-  
+
   const filters = ref({
     categoryId: null,
     dependencyId: null,
     subdependencyId: null,
     fuelTypeId: null,
-    fechaDesde: date.formatDate(new Date(), 'YYYY-MM-01'),
-    fechaHasta: date.formatDate(new Date(), 'YYYY-MM-DD')
+    fechaDesde: date.formatDate(todayLocal(), 'YYYY-MM-01'),
+    fechaHasta: date.formatDate(todayLocal(), 'YYYY-MM-DD')
   });
 
   // Actions
@@ -41,17 +47,17 @@ export const useReporteDespachoStore = defineStore('reporteDespacho', () => {
       };
 
       const { data } = await api.get('/reportes/despachos', { params });
-      
+
       reportData.value = data.data;
       totalGeneral.value = data.total_general;
-      
+
       // Update pagination state
       if (data.pagination) {
         pagination.value.page = data.pagination.currentPage;
         pagination.value.rowsPerPage = data.pagination.limit;
         pagination.value.rowsNumber = data.pagination.totalItems;
       }
-      
+
     } catch (error) {
       console.error('Error fetching report:', error);
       throw error;
@@ -65,8 +71,8 @@ export const useReporteDespachoStore = defineStore('reporteDespacho', () => {
     filters.value.dependencyId = null;
     filters.value.subdependencyId = null;
     filters.value.fuelTypeId = null;
-    filters.value.fechaDesde = date.formatDate(new Date(), 'YYYY-MM-01');
-    filters.value.fechaHasta = date.formatDate(new Date(), 'YYYY-MM-DD');
+    filters.value.fechaDesde = date.formatDate(todayLocal(), 'YYYY-MM-01');
+    filters.value.fechaHasta = date.formatDate(todayLocal(), 'YYYY-MM-DD');
     // NO limpiar reportData aquí para que el diálogo pueda mostrar los resultados
   };
 
@@ -80,7 +86,7 @@ export const useReporteDespachoStore = defineStore('reporteDespacho', () => {
     socket.on('solicitud:finalizada', () => {
       // Si hay un reporte cargado, refrescar los datos
       if (reportData.value.length > 0) {
-        fetchReport(); 
+        fetchReport();
       }
     });
   };

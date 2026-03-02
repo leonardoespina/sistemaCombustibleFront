@@ -40,23 +40,32 @@
           </q-td>
         </template>
 
+        <template v-slot:body-cell-estatus="props">
+          <q-td :props="props" class="text-center">
+            <q-chip
+              dense
+              :color="props.row.estatus === 'ACTIVO' ? 'positive' : 'grey-5'"
+              text-color="white"
+              :icon="props.row.estatus === 'ACTIVO' ? 'check_circle' : 'cancel'"
+            >
+              {{ props.row.estatus }}
+            </q-chip>
+          </q-td>
+        </template>
+
         <template v-slot:body-cell-actions="props">
           <q-td :props="props">
+            <q-btn dense round flat icon="edit" @click="openEditDialog(props.row)" />
             <q-btn
-              dense
-              round
-              flat
-              icon="edit"
-              @click="openEditDialog(props.row)"
-            />
-            <q-btn
-              dense
-              round
-              flat
-              color="negative"
-              icon="delete"
+              dense round flat
+              :color="props.row.estatus === 'ACTIVO' ? 'negative' : 'positive'"
+              :icon="props.row.estatus === 'ACTIVO' ? 'toggle_off' : 'toggle_on'"
               @click="openDeleteDialog(props.row)"
-            />
+            >
+              <q-tooltip>
+                {{ props.row.estatus === 'ACTIVO' ? 'Desactivar' : 'Activar' }}
+              </q-tooltip>
+            </q-btn>
           </q-td>
         </template>
       </q-table>
@@ -72,19 +81,24 @@
     <q-dialog v-model="isDeleteDialogVisible" persistent>
       <q-card>
         <q-card-section class="row items-center">
-          <q-avatar icon="warning" color="negative" text-color="white" />
-          <span class="q-ml-sm"
-            >¿Seguro que deseas desactivar la subdependencia
-            <strong>{{ editingItem?.nombre }}</strong>
-            >?</span
-          >
+          <q-avatar
+            :icon="editingItem?.estatus === 'ACTIVO' ? 'toggle_off' : 'toggle_on'"
+            :color="editingItem?.estatus === 'ACTIVO' ? 'negative' : 'positive'"
+            text-color="white"
+          />
+          <span class="q-ml-sm">
+            ¿Seguro que deseas
+            <strong>{{ editingItem?.estatus === 'ACTIVO' ? 'desactivar' : 'activar' }}</strong>
+            la subdependencia
+            <strong>{{ editingItem?.nombre }}</strong>?
+          </span>
         </q-card-section>
         <q-card-actions align="right">
           <q-btn flat label="Cancelar" v-close-popup />
           <q-btn
             flat
-            label="Desactivar"
-            color="negative"
+            :label="editingItem?.estatus === 'ACTIVO' ? 'Desactivar' : 'Activar'"
+            :color="editingItem?.estatus === 'ACTIVO' ? 'negative' : 'positive'"
             @click="confirmDelete"
             :loading="loading"
           />

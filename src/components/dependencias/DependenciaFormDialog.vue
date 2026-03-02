@@ -66,7 +66,7 @@
               <q-select
                 dense
                 v-model="formData.tipo_acceso_menu"
-                :options="['ESTANDAR', 'SEGURIDAD', 'ALMACEN', 'OPERACIONES']"
+                :options="['ESTANDAR', 'SEGURIDAD', 'ALMACEN','PRESIDENCIA']"
                 label="Tipo de Acceso Menú"
                 hint="Define qué módulos ve esta dependencia"
               />

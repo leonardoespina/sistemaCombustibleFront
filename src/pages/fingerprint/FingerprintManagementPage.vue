@@ -45,8 +45,21 @@
 
       <template v-slot:body-cell-rol="props">
         <q-td :props="props">
-          <q-chip dense color="blue-2" text-color="blue-9" label="">
+          <q-chip dense color="blue-2" text-color="blue-9">
             {{ props.row.rol }}
+          </q-chip>
+        </q-td>
+      </template>
+
+      <template v-slot:body-cell-estado="props">
+        <q-td :props="props" class="text-center">
+          <q-chip
+            dense
+            :color="props.row.estado === 'ACTIVO' ? 'positive' : 'grey-5'"
+            text-color="white"
+            :icon="props.row.estado === 'ACTIVO' ? 'check_circle' : 'cancel'"
+          >
+            {{ props.row.estado }}
           </q-chip>
         </q-td>
       </template>
@@ -54,9 +67,7 @@
       <template v-slot:body-cell-actions="props">
         <q-td :props="props" class="q-gutter-sm">
           <q-btn
-            dense
-            round
-            flat
+            dense round flat
             color="primary"
             icon="edit"
             @click="editBiometry(props.row)"
@@ -64,14 +75,14 @@
             <q-tooltip>Editar Registro</q-tooltip>
           </q-btn>
           <q-btn
-            dense
-            round
-            flat
-            color="negative"
-            icon="delete"
-            @click="confirmDelete(props.row)"
+            dense round flat
+            :color="props.row.estado === 'ACTIVO' ? 'negative' : 'positive'"
+            :icon="props.row.estado === 'ACTIVO' ? 'person_off' : 'person'"
+            @click="confirmToggle(props.row)"
           >
-            <q-tooltip>Eliminar Registro</q-tooltip>
+            <q-tooltip>
+              {{ props.row.estado === 'ACTIVO' ? 'Desactivar' : 'Activar' }} Registro
+            </q-tooltip>
           </q-btn>
         </q-td>
       </template>
@@ -98,25 +109,30 @@
       </q-card>
     </q-dialog>
 
-    <!-- Diálogo de Confirmación Borrado -->
-    <q-dialog v-model="isDeleteDialogVisible" persistent>
+    <!-- Diálogo de Confirmación Toggle -->
+    <q-dialog v-model="isToggleDialogVisible" persistent>
       <q-card>
         <q-card-section class="row items-center">
-          <q-avatar icon="warning" color="negative" text-color="white" />
+          <q-avatar
+            :icon="selectedRecord?.estado === 'ACTIVO' ? 'person_off' : 'person'"
+            :color="selectedRecord?.estado === 'ACTIVO' ? 'negative' : 'positive'"
+            text-color="white"
+          />
           <span class="q-ml-sm">
-            ¿Seguro que deseas eliminar el registro biométrico de
-            <strong>{{ selectedRecord?.nombre }}</strong
-            >?
+            ¿Seguro que deseas
+            <strong>{{ selectedRecord?.estado === 'ACTIVO' ? 'desactivar' : 'activar' }}</strong>
+            el registro biométrico de
+            <strong>{{ selectedRecord?.nombre }}</strong>?
           </span>
         </q-card-section>
         <q-card-actions align="right">
           <q-btn flat label="Cancelar" v-close-popup />
           <q-btn
             flat
-            label="Eliminar"
-            color="negative"
-            @click="doDelete"
-            :loading="deleting"
+            :label="selectedRecord?.estado === 'ACTIVO' ? 'Desactivar' : 'Activar'"
+            :color="selectedRecord?.estado === 'ACTIVO' ? 'negative' : 'positive'"
+            @click="doToggle"
+            :loading="toggling"
           />
         </q-card-actions>
       </q-card>
@@ -137,10 +153,10 @@ const rows = ref([]);
 const loading = ref(false);
 const filter = ref("");
 const isCaptureDialogVisible = ref(false);
-const isDeleteDialogVisible = ref(false);
+const isToggleDialogVisible = ref(false);
 const selectedRecord = ref(null);
 const editingId = ref(null);
-const deleting = ref(false);
+const toggling = ref(false);
 
 const pagination = ref({
   sortBy: "fecha_registro",
@@ -151,21 +167,9 @@ const pagination = ref({
 });
 
 const columns = [
-  {
-    name: "cedula",
-    label: "Cédula",
-    field: "cedula",
-    align: "left",
-    sortable: true,
-  },
-  {
-    name: "nombre",
-    label: "Nombre",
-    field: "nombre",
-    align: "left",
-    sortable: true,
-  },
-  { name: "rol", label: "Rol", field: "rol", align: "center" },
+  { name: "cedula",   label: "Cédula",      field: "cedula",   align: "left",   sortable: true },
+  { name: "nombre",   label: "Nombre",      field: "nombre",   align: "left",   sortable: true },
+  { name: "rol",      label: "Rol",         field: "rol",      align: "center" },
   {
     name: "categoria",
     label: "Categoría",
@@ -185,22 +189,16 @@ const columns = [
     align: "center",
     sortable: true,
   },
-  { name: "actions", label: "Acciones", align: "center" },
+  { name: "estado",   label: "Estado",      field: "estado",   align: "center" },
+  { name: "actions",  label: "Acciones",    align: "center" },
 ];
 
-// Función para formatear fechas
 const formatDateTime = (isoString) => {
   if (!isoString) return "N/A";
-  const date = new Date(isoString);
   return new Intl.DateTimeFormat("es-ES", {
-    year: "numeric",
-    month: "2-digit",
-    day: "2-digit",
-    hour: "2-digit",
-    minute: "2-digit",
-    second: "2-digit",
-    hour12: false,
-  }).format(date);
+    year: "numeric", month: "2-digit", day: "2-digit",
+    hour: "2-digit", minute: "2-digit", second: "2-digit", hour12: false,
+  }).format(new Date(isoString));
 };
 
 const fetchRecords = async () => {
@@ -242,23 +240,26 @@ const editBiometry = (record) => {
   isCaptureDialogVisible.value = true;
 };
 
-const confirmDelete = (record) => {
+const confirmToggle = (record) => {
   selectedRecord.value = record;
-  isDeleteDialogVisible.value = true;
+  isToggleDialogVisible.value = true;
 };
 
-const doDelete = async () => {
-  deleting.value = true;
+const doToggle = async () => {
+  toggling.value = true;
   try {
-    await api.delete(`/biometria/${selectedRecord.value.id_biometria}`);
-    $q.notify({ type: "positive", message: "Registro eliminado" });
+    const { data } = await api.delete(`/biometria/${selectedRecord.value.id_biometria}`);
+    $q.notify({
+      type: data.estado === "ACTIVO" ? "positive" : "warning",
+      message: data.msg,
+    });
     fetchRecords();
-    isDeleteDialogVisible.value = false;
+    isToggleDialogVisible.value = false;
   } catch (error) {
     console.error(error);
-    $q.notify({ type: "negative", message: "Error al eliminar" });
+    $q.notify({ type: "negative", message: "Error al cambiar estado" });
   } finally {
-    deleting.value = false;
+    toggling.value = false;
   }
 };
 

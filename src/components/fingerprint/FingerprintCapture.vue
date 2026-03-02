@@ -62,6 +62,18 @@
                   />
                 </div>
               </div>
+
+              <!-- Toggle de estado solo en modo edición -->
+              <div v-if="isEditing" class="row items-center q-mt-sm q-gutter-sm">
+                <span class="text-caption text-grey-7">Estado del registro:</span>
+                <q-toggle
+                  v-model="estadoActivo"
+                  :label="estadoActivo ? 'ACTIVO' : 'INACTIVO'"
+                  :color="estadoActivo ? 'positive' : 'negative'"
+                  checked-icon="check_circle"
+                  unchecked-icon="cancel"
+                />
+              </div>
             </q-card-section>
           </q-card>
 
@@ -292,6 +304,13 @@ const form = reactive({
   categoria: null,
   dependencia: null,
   subdependencia: null,
+  estado: "ACTIVO",
+});
+
+// Toggle booleano para el q-toggle (true = ACTIVO, false = INACTIVO)
+const estadoActivo = computed({
+  get: () => form.estado === "ACTIVO",
+  set: (val) => { form.estado = val ? "ACTIVO" : "INACTIVO"; },
 });
 
 // Mapeo manual de objetos iniciales para OrganizationalHierarchy
@@ -557,6 +576,8 @@ const onSubmit = async () => {
       id_dependencia: form.dependencia,
       id_subdependencia: form.subdependencia,
       huellas: samples.value.length > 0 ? samples.value.map((s) => s.data) : null,
+      // Solo enviar estado cuando se está editando
+      ...(isEditing.value && { estado: form.estado }),
     };
     await api.post("/biometria/registrar", payload);
     $q.notify({
@@ -579,6 +600,7 @@ const loadInitialData = () => {
   if (props.initialData) {
     Object.assign(form, props.initialData);
     form.id_biometria = props.initialData.id_biometria;
+    form.estado = props.initialData.estado || "ACTIVO";
     if (props.initialData.id_categoria)
       form.categoria = props.initialData.id_categoria;
     if (props.initialData.id_dependencia)

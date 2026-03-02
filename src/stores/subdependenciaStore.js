@@ -44,7 +44,7 @@ export const useSubdependenciaStore = defineStore("subdependencias", () => {
       loading.value = false;
     }
   }
-  
+
   async function createSubdependencia(data) {
     loading.value = true;
     try {
@@ -105,10 +105,11 @@ export const useSubdependenciaStore = defineStore("subdependencias", () => {
     loading.value = true;
     try {
       const response = await api.delete(`/subdependencias/${id}`);
+      const nuevoEstatus = response.data.estatus;
       $q.notify({
-        type: "positive",
-        message: response.data.msg || "Subdependencia desactivada exitosamente",
-        icon: "check_circle",
+        type: nuevoEstatus === "INACTIVO" ? "warning" : "positive",
+        message: response.data.msg || "Operación exitosa",
+        icon: nuevoEstatus === "INACTIVO" ? "toggle_off" : "toggle_on",
         position: "top-right",
       });
       await fetchSubdependencias();
@@ -116,7 +117,7 @@ export const useSubdependenciaStore = defineStore("subdependencias", () => {
     } catch (error) {
       console.error("Error deleting subdependencia:", error);
       const errorMsg =
-        error.response?.data?.msg || "Error al desactivar la subdependencia";
+        error.response?.data?.msg || "Error al cambiar estado de la subdependencia";
       $q.notify({
         type: "negative",
         message: errorMsg,
