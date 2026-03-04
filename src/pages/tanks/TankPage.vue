@@ -68,6 +68,19 @@
             </q-chip>
           </q-td>
         </template>
+        
+        <!-- Celda: Despacho Activo -->
+        <template v-slot:body-cell-activo_para_despacho="props">
+          <q-td :props="props" align="center">
+            <q-icon
+              :name="props.row.activo_para_despacho ? 'check_circle' : 'cancel'"
+              :color="props.row.activo_para_despacho ? 'positive' : 'grey-5'"
+              size="sm"
+            >
+              <q-tooltip>{{ props.row.activo_para_despacho ? 'Sí' : 'No' }}</q-tooltip>
+            </q-icon>
+          </q-td>
+        </template>
 
         <!-- Celda: Acciones -->
         <template v-slot:body-cell-actions="props">
@@ -154,6 +167,7 @@ const columns = [
   { name: "combustible", label: "Combustible", field: (row) => row.TipoCombustible?.nombre, align: "left" },
   { name: "tipo", label: "Tipo", field: "tipo_tanque", align: "center" },
   { name: "nivel", label: "Ocupación", align: "center" },
+  { name: "activo_para_despacho", label: "Habilitado Despecho", field: "activo_para_despacho", align: "center" },
   { name: "estado", label: "Estado", field: "estado", align: "center" },
   { name: "actions", label: "Acciones", align: "right" },
 ];

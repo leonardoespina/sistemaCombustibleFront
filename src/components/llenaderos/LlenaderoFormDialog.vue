@@ -19,40 +19,7 @@
             :rules="validationRules.nombre_llenadero"
           />
 
-          <q-input
-            v-model="formData.capacidad"
-            label="Capacidad (litros)"
-            outlined
-            dense
-            type="number"
-            step="0.01"
-            min="0"
-            :rules="validationRules.capacidad"
-          />
-
-          <q-input
-            v-model="formData.disponibilidadActual"
-            label="Disponibilidad Actual (litros)"
-            outlined
-            dense
-            type="number"
-            step="0.01"
-            min="0"
-            :rules="validationRules.disponibilidadActual"
-          />
-
-          <q-select
-            v-model="formData.id_combustible"
-            :options="tipoCombustibleOptions"
-            option-label="nombre"
-            option-value="id_tipo_combustible"
-            label="Tipo de Combustible"
-            outlined
-            dense
-            emit-value
-            map-options
-            :loading="loadingTipoCombustible"
-          />
+          <!-- Capacidad y Combustible eliminados (ahora se gestionan vía Tanques) -->
 
           <q-toggle
             v-if="isEdit"

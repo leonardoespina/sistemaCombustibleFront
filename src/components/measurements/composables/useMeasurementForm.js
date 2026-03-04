@@ -1,56 +1,75 @@
-import { ref, reactive, computed, nextTick } from "vue";
+import { ref, watch, nextTick, reactive, computed } from "vue";
 import { date } from "quasar";
 import { calcularVolumenTanque } from "../formula.js";
 
+/**
+ * Composable para gestión del formulario de mediciones físicas
+ * 
+ * Este composable maneja la lógica para el registro de mediciones,
+ * incluyendo múltiples modos (teórico, fórmula matemática y tabla de aforo),
+ * además de lidiar con las conversiones de unidades.
+ * 
+ * @param {Object} props - Props del componente
+ * @param {Function} emit - Función emit del componente
+ * @returns {Object} Estado y métodos del formulario
+ */
 export function useMeasurementForm(props, emit) {
+  // ============================================
+  // ESTADO DEL FORMULARIO Y VARIABLES LOCALES
+  // ============================================
+
   const formData = ref({});
   const autoEvaporacion = ref(false);
 
-  // Estados de edición y valores para cálculos
+  // Referencias a inputs para enfocar al editar
+  const inputReal = ref(null);
+  const inputDiferencia = ref(null);
+
+  // Estados de edición UI
   const editing = reactive({
     real: false,
     diferencia: false,
-    inicial: false,
-    final: false,
   });
 
+  // Flag persistente de si la edición fue manual por el usuario
   const manualEdit = reactive({
     real: false,
     diferencia: false,
-    inicial: false,
-    final: false,
   });
 
+  // Valores originales para rollback en cancelación
   const originalValues = reactive({
     real: 0,
     diferencia: 0,
-    inicial: 0,
-    final: 0,
   });
 
+  // Contenedor principal de cálculos de volumen
   const liters = reactive({
     real: 0,
     diferencia: 0,
-    inicial: 0,
-    final: 0,
   });
 
-  // --- COMPUTED PROPERTIES ---
+  // ============================================
+  // COMPUTED PROPERTIES
+  // ============================================
+
+  // Detecta si el tanque es de gasolina para la regla de evaporación automática
   const isGasolina = computed(() => {
     return props.currentTankDetail?.tipo_combustible === "GASOLINA";
   });
 
-  const tieneAforo = computed(() => {
-    const t = props.currentTankDetail;
-    if (!t) return false;
-    const aforoData = t.aforo || t.tabla_aforo;
-    return Array.isArray(aforoData) ? aforoData.length > 0 : (aforoData && Object.keys(aforoData).length > 0);
-  });
-
+  // Determinar si aplica cálculo por fórmula matemática
   const isFormulaMode = computed(() => {
     const t = props.currentTankDetail;
     if (!t) return false;
-    if (tieneAforo.value) return false;
+
+    const aforoData = t.aforo || t.tabla_aforo;
+    const hasAforo = Array.isArray(aforoData)
+      ? aforoData.length > 0
+      : aforoData && Object.keys(aforoData).length > 0;
+
+    if (hasAforo) return false;
+
     if (t.tipo_tanque === "RECTANGULAR" || t.tipo_tanque === "CUADRADO") {
       return t.largo > 0 && t.ancho > 0 && t.alto > 0;
     } else {
@@ -58,88 +77,98 @@ export function useMeasurementForm(props, emit) {
     }
   });
 
+  // Determinar si es modo 100% manual (sin tabla ni dimensiones matemáticas)
   const isManualMode = computed(() => {
     if (!props.currentTankDetail) return false;
-    if (tieneAforo.value || isFormulaMode.value) return false;
+    const t = props.currentTankDetail;
+
+    const aforoData = t.aforo || t.tabla_aforo;
+    const hasAforo = Array.isArray(aforoData)
+      ? aforoData.length > 0
+      : aforoData && Object.keys(aforoData).length > 0;
+
+    if (hasAforo) return false;
+    if (isFormulaMode.value) return false;
     return true;
   });
 
-  // --- MÉTODOS DE CÁLCULO ---
-  function calculate() {
-    if (!props.currentTankDetail) return;
+  // ============================================
+  // INICIALIZACIÓN
+  // ============================================
 
-    const sistema = parseFloat(props.currentTankDetail.nivel_actual || 0);
-    const t = props.currentTankDetail;
-    const aforoData = t.aforo || t.tabla_aforo || [];
-    const unidad = (t.unidad_medida || "CM").toUpperCase();
+  function initializeForm() {
+    const now = new Date();
+    const init = props.initialData || {};
 
-    const getVol = (medida) => {
-      const m = parseFloat(medida);
-      if (isNaN(m)) return 0;
-      
-      if (tieneAforo.value) {
-        if (Array.isArray(aforoData)) {
-          const entry = aforoData.find((e) => parseFloat(e.altura) === m);
-          return entry ? parseFloat(entry.volumen) : 0;
-        } else {
-          return parseFloat(aforoData[String(m)]) || 0;
-        }
-      } else if (isFormulaMode.value) {
-        let h_m = unidad === "PULGADAS" ? m * 0.0254 : m / 100;
-        return calcularVolumenTanque(
-          h_m,
-          parseFloat(t.largo),
-          t.tipo_tanque === 'CILINDRICO' ? parseFloat(t.radio) : parseFloat(t.ancho),
-          t.tipo_tanque,
-          parseFloat(t.alto)
-        );
-      }
-      return m; // Manual
+    formData.value = {
+      fecha: init.fecha_medicion || date.formatDate(now, "YYYY-MM-DD"),
+      hora: init.hora_medicion || date.formatDate(now, "HH:mm"),
+      id_llenadero: init.Tanque?.id_llenadero || null,
+      id_tanque: init.id_tanque || null,
+      medida_vara: init.medida_vara || null,
+      litros_manuales_ingresados: null,
+      litros_evaporacion: init.merma_evaporacion || 0,
+      observacion: init.observaciones || "",
     };
 
-    // Calcular volúmenes si no son manuales
-    if (!manualEdit.inicial) liters.inicial = parseFloat(getVol(formData.value.medida_inicial).toFixed(2));
-    if (!manualEdit.final) liters.final = parseFloat(getVol(formData.value.medida_final).toFixed(2));
-
-    // El volumen REAL de la medición es el final
-    if (!manualEdit.real) {
-      if (isManualMode.value) {
-        const manual = parseFloat(formData.value.litros_manuales_ingresados);
-        liters.real = isNaN(manual) ? 0 : manual;
-      } else {
-        liters.real = liters.final;
-      }
+    if (props.isEditing || props.isReadOnly) {
+      liters.real = parseFloat(init.volumen_real || 0);
+      liters.diferencia = parseFloat(init.diferencia || 0);
+      manualEdit.real = true;
+      manualEdit.diferencia = true;
+    } else {
+      resetCalculos();
     }
 
-    if (isGasolina.value && autoEvaporacion.value) {
-      const evapCalc = (0.25 * liters.real) / 100;
-      formData.value.litros_evaporacion = parseFloat(evapCalc.toFixed(2));
-    }
-
-    if (!manualEdit.diferencia) {
-      const evap = parseFloat(formData.value.litros_evaporacion || 0);
-      const esperado = sistema - evap;
-      liters.diferencia = parseFloat((esperado - liters.real).toFixed(2));
-    }
+    autoEvaporacion.value = false;
+    editing.real = false;
+    editing.diferencia = false;
   }
 
-  // --- MÉTODOS DE EDICIÓN INLINE ---
-  function startEdit(field) {
+  function resetCalculos() {
+    liters.real = 0;
+    liters.diferencia = 0;
+    manualEdit.real = false;
+    manualEdit.diferencia = false;
+  }
+
+  // ============================================
+  // METODOS INTERFAZ DE USUARIO INLINE (EDIT / CANCEL)
+  // ============================================
+
+  async function startEdit(field) {
     originalValues[field] = liters[field];
     editing[field] = true;
+
+    await nextTick();
+
+    if (field === "real" && inputReal.value) {
+      inputReal.value.focus();
+      inputReal.value.select();
+    } else if (field === "diferencia" && inputDiferencia.value) {
+      inputDiferencia.value.focus();
+      inputDiferencia.value.select();
+    }
   }
 
   function finishEdit(field) {
     editing[field] = false;
+
     if (liters[field] === null || liters[field] === "" || isNaN(liters[field])) {
       liters[field] = 0;
     }
+
     const finalVal = parseFloat(parseFloat(liters[field]).toFixed(2));
     liters[field] = finalVal;
+
+    // Si se confirmó la edición, se marca como operación manual del usuario
     manualEdit[field] = true;
-    if ((field === "real" || field === "final") && !manualEdit.diferencia) {
-        if (field === 'final') liters.real = liters.final;
+
+    // Recalcular diferencia estática si solo se editó los litros reales
+    if (field === "real") {
+      if (!manualEdit.diferencia) {
         recalculateDiferencia();
+      }
     }
   }
 
@@ -155,76 +184,173 @@ export function useMeasurementForm(props, emit) {
     liters.diferencia = parseFloat((esperado - liters.real).toFixed(2));
   }
 
-  // --- GESTIÓN DE FORMULARIO ---
-  function resetCalculos() {
-    liters.real = 0;
-    liters.diferencia = 0;
-    liters.inicial = 0;
-    liters.final = 0;
-    manualEdit.real = false;
-    manualEdit.diferencia = false;
-    manualEdit.inicial = false;
-    manualEdit.final = false;
-  }
+  // ============================================
+  // CÁLCULO CORE DE VOLUMETRÍA 
+  // ============================================
 
-  function initializeForm() {
-    const now = new Date();
-    const init = props.initialData || {};
+  function calculate() {
+    if (!props.currentTankDetail) return;
 
-    formData.value = {
-      fecha: init.fecha_medicion || date.formatDate(now, "YYYY-MM-DD"),
-      hora: init.hora_medicion || date.formatDate(now, "HH:mm"),
-      id_llenadero: init.Tanque?.id_llenadero || null,
-      id_tanque: init.id_tanque || null,
-      medida_inicial: init.medida_inicial || null,
-      medida_final: init.medida_final || null,
-      medida_vara: init.medida_vara || null,
-      litros_manuales_ingresados: null,
-      litros_evaporacion: init.merma_evaporacion || 0,
-      observacion: init.observaciones || "",
-    };
+    const sistema = parseFloat(props.currentTankDetail.nivel_actual || 0);
+    let volReal = liters.real;
 
-    if (props.isEditing || props.isReadOnly) {
-      liters.real = parseFloat(init.volumen_real || 0);
-      liters.diferencia = parseFloat(init.diferencia || 0);
-      liters.inicial = parseFloat(init.litros_iniciales || 0); // Asumiendo que el modelo los tiene o se guardan
-      liters.final = parseFloat(init.volumen_real || 0);
-      manualEdit.real = true;
-      manualEdit.diferencia = true;
-      manualEdit.inicial = true;
-      manualEdit.final = true;
+    if (!manualEdit.real) {
+      if (isManualMode.value) {
+        const litrosManuales = parseFloat(formData.value.litros_manuales_ingresados);
+        volReal = isNaN(litrosManuales) ? 0 : litrosManuales;
+      } else if (isFormulaMode.value) {
+        const medida = parseFloat(formData.value.medida_vara);
+        if (!isNaN(medida)) {
+          const t = props.currentTankDetail;
+          const unidad = (t.unidad_medida || "CM").toUpperCase();
+          let scale = 1;
+
+          if (unidad === "PULGADAS" || unidad === "PULG") {
+            scale = 0.0254;
+          } else if (unidad === "M" || unidad === "METROS" || unidad === "MTS") {
+            scale = 1;
+          } else if (unidad === "MM") {
+            scale = 0.001;
+          } else {
+            scale = 0.01;
+          }
+
+          // La medida de la vara escala acordemente
+          const h_m = medida * scale;
+
+          if (t.tipo_tanque === "RECTANGULAR" || t.tipo_tanque === "CUADRADO") {
+            const largo_m = parseFloat(t.largo) * scale;
+            const ancho_m = parseFloat(t.ancho) * scale;
+            const alto_m = parseFloat(t.alto) * scale;
+
+            const calc = calcularVolumenTanque(h_m, largo_m, ancho_m, t.tipo_tanque, alto_m);
+            volReal = parseFloat(calc.toFixed(2));
+          } else {
+            // CILÍNDRICOS
+            const largo_m = parseFloat(t.largo) * scale;
+            const radio_m = parseFloat(t.radio) * scale;
+
+            const calc = calcularVolumenTanque(h_m, largo_m, radio_m, "CILINDRICO");
+            volReal = parseFloat(calc.toFixed(2));
+          }
+        } else {
+          volReal = 0;
+        }
+      } else {
+        // Modo por Tabla de Aforo Array
+        const aforoData = props.currentTankDetail.aforo || props.currentTankDetail.tabla_aforo || [];
+        const medida = parseFloat(formData.value.medida_vara);
+
+        if (Array.isArray(aforoData)) {
+          const entry = aforoData.find((e) => parseFloat(e.altura) === medida);
+          volReal = entry ? parseFloat(entry.volumen) : 0;
+        } else {
+          volReal = aforoData[String(medida)] || 0;
+        }
+      }
+      liters.real = volReal;
     } else {
-      resetCalculos();
+      volReal = liters.real;
     }
 
-    autoEvaporacion.value = false;
-    Object.keys(editing).forEach(k => editing[k] = false);
+    // 2. Automático de Evaporación
+    if (isGasolina.value && autoEvaporacion.value) {
+      const evapCalc = (0.25 * volReal) / 100;
+      formData.value.litros_evaporacion = parseFloat(evapCalc.toFixed(2));
+    }
+
+    // 3. Diferencia entre Sistema vs Físico
+    if (!manualEdit.diferencia) {
+      const evap = parseFloat(formData.value.litros_evaporacion || 0);
+      const esperado = sistema - evap;
+      liters.diferencia = parseFloat((esperado - volReal).toFixed(2));
+    }
   }
 
-  async function handleSave() {
+  // ============================================
+  // EVENTOS DEL FORMULARIO
+  // ============================================
+
+  function onLlenaderoSelect(llenaderoId) {
+    formData.value.id_tanque = null;
+    emit("llenadero-changed", llenaderoId);
+    resetCalculos();
+  }
+
+  function onTankSelect(tankId) {
+    emit("tank-changed", tankId);
+    formData.value.medida_vara = null;
+    formData.value.litros_manuales_ingresados = null;
+    formData.value.litros_evaporacion = 0;
+    autoEvaporacion.value = false;
+    resetCalculos();
+  }
+
+  async function onSave() {
     await nextTick();
+
     const payload = {
       id_medicion: props.initialData?.id_medicion,
       id_tanque: formData.value.id_tanque,
       fecha_medicion: formData.value.fecha,
       hora_medicion: formData.value.hora,
-      medida_inicial: formData.value.medida_inicial,
-      medida_final: formData.value.medida_final,
-      medida_vara: formData.value.medida_final, // Vara final es la referencia
+      medida_vara: formData.value.medida_vara,
       volumen_real: liters.real,
       merma_evaporacion: formData.value.litros_evaporacion,
       observaciones: formData.value.observacion,
     };
 
     if (isManualMode.value) {
-      payload.litros_manuales_ingresados = parseFloat(formData.value.litros_manuales_ingresados);
+      payload.litros_manuales_ingresados = parseFloat(payload.litros_manuales_ingresados);
+      if (payload.medida_vara !== null && payload.medida_vara !== "") {
+        payload.medida_vara = parseFloat(payload.medida_vara);
+      }
+    } else {
+      payload.medida_vara = parseFloat(payload.medida_vara);
+      delete payload.litros_manuales_ingresados;
     }
+
+    payload.litros_evaporacion = parseFloat(payload.litros_evaporacion || 0);
+
     emit("save", payload);
   }
 
+  // ============================================
+  // WATCHERS Y LIFECYCLE
+  // ============================================
+
+  watch(
+    () => props.modelValue,
+    (isNowOpen) => {
+      if (isNowOpen) {
+        initializeForm();
+      }
+    }
+  );
+
   return {
-    formData, autoEvaporacion, editing, manualEdit, liters,
-    isGasolina, tieneAforo, isFormulaMode, isManualMode,
-    calculate, startEdit, finishEdit, cancelEdit, initializeForm, handleSave, resetCalculos,
+    // Estado y variables expuestas
+    formData,
+    autoEvaporacion,
+    editing,
+    liters,
+
+    // UI Refs
+    inputReal,
+    inputDiferencia,
+
+    // Computeds  
+    isGasolina,
+    isFormulaMode,
+    isManualMode,
+
+    // Métodos core
+    calculate,
+    startEdit,
+    finishEdit,
+    cancelEdit,
+    onLlenaderoSelect,
+    onTankSelect,
+    onSave,
   };
 }

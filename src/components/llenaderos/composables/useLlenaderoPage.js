@@ -15,29 +15,29 @@ export function useLlenaderoPage() {
   // ============================================
   // STORE Y QUASAR
   // ============================================
-  
+
   const $q = useQuasar();
   const store = useLlenaderoStore();
 
   // ============================================
   // ESTADO LOCAL
   // ============================================
-  
+
   const showDialog = ref(false);
   const selectedItem = ref(null);
 
   // ============================================
   // COMPUTADOS
   // ============================================
-  
+
   const rows = computed(() => store.rows);
   const loading = computed(() => store.loading);
-  
+
   const filter = computed({
     get: () => store.filter,
     set: (val) => (store.filter = val),
   });
-  
+
   const pagination = computed({
     get: () => store.pagination,
     set: (val) => (store.pagination = val),
@@ -46,7 +46,7 @@ export function useLlenaderoPage() {
   // ============================================
   // DEFINICIÓN DE COLUMNAS
   // ============================================
-  
+
   const columns = [
     {
       name: "id_llenadero",
@@ -63,27 +63,10 @@ export function useLlenaderoPage() {
       align: "left",
     },
     {
-      name: "capacidad",
-      label: "Capacidad (litros)",
-      field: "capacidad",
-      sortable: true,
-      align: "right",
-      format: (val) => val ? `${val} L` : 'No especificado'
-    },
-    {
-      name: "disponibilidadActual",
-      label: "Disponibilidad Actual (litros)",
-      field: "disponibilidadActual",
-      sortable: true,
-      align: "right",
-      format: (val) => val ? `${val} L` : 'No especificado'
-    },
-    {
-      name: "tipo_combustible",
-      label: "Tipo de Combustible",
-      field: (row) => row.TipoCombustible?.nombre || 'No especificado',
-      sortable: true,
-      align: "left",
+      name: "estadisticas",
+      label: "Capacidad y Disponibilidad (Por Combustible)",
+      field: "estadisticas",
+      align: "center",
     },
     {
       name: "estado",
@@ -98,7 +81,7 @@ export function useLlenaderoPage() {
   // ============================================
   // MÉTODOS
   // ============================================
-  
+
   /**
    * Handler para paginación/ordenamiento de la tabla
    */
@@ -141,7 +124,7 @@ export function useLlenaderoPage() {
   // ============================================
   // SOCKET.IO LISTENERS
   // ============================================
-  
+
   /**
    * Inicializa listeners de Socket.IO para actualizaciones en tiempo real
    */
@@ -161,7 +144,7 @@ export function useLlenaderoPage() {
   // ============================================
   // LIFECYCLE
   // ============================================
-  
+
   onMounted(() => {
     store.fetchLlenaderos();
     initSocket();
@@ -183,7 +166,7 @@ export function useLlenaderoPage() {
   // ============================================
   // RETORNO
   // ============================================
-  
+
   return {
     // Estado
     showDialog,
@@ -192,10 +175,10 @@ export function useLlenaderoPage() {
     loading,
     filter,
     pagination,
-    
+
     // Columnas
     columns,
-    
+
     // Métodos
     onRequest,
     openCreateDialog,

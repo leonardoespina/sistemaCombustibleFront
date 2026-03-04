@@ -92,6 +92,7 @@
                 v-model="formData.unidad_medida"
                 :options="[
                   { label: 'CM', value: 'CM' },
+                  { label: 'M (Metros)', value: 'M' },
                   { label: 'PULG', value: 'PULGADAS' },
                   { label: 'MM', value: 'MM' }
                 ]"
@@ -200,6 +201,15 @@
                 :options="['ACTIVO', 'INACTIVO', 'MANTENIMIENTO', 'CONTAMINADO']"
                 label="Estado"
               />
+            </div>
+            
+            <div class="col-12 col-md-4">
+               <q-toggle 
+                 v-model="formData.activo_para_despacho" 
+                 label="Activo para Despacho" 
+                 color="positive"
+               />
+               <q-tooltip>Indica si el sistema debe descontar litros de este tanque al despachar este tipo de combustible</q-tooltip>
             </div>
 
             <!-- Opción de Aforo -->
@@ -380,6 +390,7 @@ async function initializeForm() {
         largo: data.largo ? Number(data.largo) : null,
         ancho: data.ancho ? Number(data.ancho) : null,
         estado: data.estado || "ACTIVO",
+        activo_para_despacho: !!data.activo_para_despacho,
         con_aforo: !!data.con_aforo,
         aforo: Array.isArray(data.aforo) ? [...data.aforo] : [],
         unidad_medida: data.unidad_medida || "CM"

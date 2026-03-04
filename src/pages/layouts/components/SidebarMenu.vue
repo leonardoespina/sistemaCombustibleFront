@@ -198,6 +198,13 @@
           /></q-item-section>
           <q-item-section>Transferencias Internas</q-item-section>
         </q-item>
+
+        <q-item clickable v-ripple to="/cierre-turno">
+          <q-item-section avatar
+            ><q-icon name="lock_clock" size="xs"
+          /></q-item-section>
+          <q-item-section>Cierre de Turno</q-item-section>
+        </q-item>
       </q-list>
     </q-expansion-item>
 

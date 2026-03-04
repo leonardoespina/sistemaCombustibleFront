@@ -140,7 +140,7 @@ const routes = [
         path: "movimientos-llenadero",
         name: "movimiento-llenadero-list",
         meta: {
-          allowedRoles: ["ADMIN", "GERENTE", "JEFE DIVISION", "ALMACENISTA",'COORDINADOR'],
+          allowedRoles: ["ADMIN", "GERENTE", "JEFE DIVISION", "ALMACENISTA", 'COORDINADOR'],
         },
         component: () =>
           import("../pages/llenaderos/MovimientosLlenaderoPage.vue"),
@@ -149,7 +149,7 @@ const routes = [
         path: "evaporaciones",
         name: "evaporacion-list",
         meta: {
-          allowedRoles: ["ADMIN", "GERENTE", "JEFE DIVISION", "ALMACENISTA","COORDINADOR"],
+          allowedRoles: ["ADMIN", "GERENTE", "JEFE DIVISION", "ALMACENISTA", "COORDINADOR"],
         },
         component: () =>
           import("../pages/llenaderos/GestionEvaporacionPage.vue"),
@@ -173,7 +173,7 @@ const routes = [
         path: "reportes/diario",
         name: "reporte-diario",
         meta: {
-          allowedRoles: ["ADMIN", "GERENTE", "JEFE DIVISION", "ALMACENISTA", "ESTANDAR",'COORDINADOR'],
+          allowedRoles: ["ADMIN", "GERENTE", "JEFE DIVISION", "ALMACENISTA", "ESTANDAR", 'COORDINADOR'],
         },
         component: () => import("../pages/reports/ReporteDiarioPage.vue"),
       },
@@ -181,7 +181,7 @@ const routes = [
         path: "reportes/despachos",
         name: "reporte-despachos",
         meta: {
-          allowedRoles: ["ADMIN", "GERENTE", "JEFE DIVISION", "ALMACENISTA",'COORDINADOR'],
+          allowedRoles: ["ADMIN", "GERENTE", "JEFE DIVISION", "ALMACENISTA", 'COORDINADOR'],
         },
         component: () => import("../pages/reports/ReporteDespachosPage.vue"),
       },
@@ -189,7 +189,7 @@ const routes = [
         path: "reportes/consumo-dependencia",
         name: "reporte-consumo-dependencia",
         meta: {
-          allowedRoles: ["ADMIN", "GERENTE", "JEFE DIVISION", "ALMACENISTA",'COORDINADOR'],
+          allowedRoles: ["ADMIN", "GERENTE", "JEFE DIVISION", "ALMACENISTA", 'COORDINADOR'],
         },
         component: () =>
           import("../pages/reports/DependenciaConsumptionPage.vue"),
@@ -207,6 +207,15 @@ const routes = [
       },
 
 
+
+      {
+        path: "cierre-turno",
+        name: "cierre-turno",
+        meta: {
+          allowedRoles: ["ADMIN", "GERENTE", "JEFE DIVISION", "ALMACENISTA"],
+        },
+        component: () => import("../pages/closings/CierreTurnoPage.vue"),
+      },
 
       // Aquí puedes seguir añadiendo más rutas protegidas, como /vehiculos, etc.
     ],

@@ -36,6 +36,23 @@
         </q-input>
       </template>
 
+      <template v-slot:body-cell-estadisticas="props">
+        <q-td :props="props">
+          <div v-if="props.row.estadisticas && props.row.estadisticas.length > 0">
+            <div v-for="(stat, index) in props.row.estadisticas" :key="index" class="q-py-xs">
+              <q-chip
+                :color="stat.disponibilidad_total > 0 ? 'primary' : 'grey-7'"
+                text-color="white"
+                dense
+              >
+                {{ stat.nombre_combustible }}: {{ stat.disponibilidad_total }} L / {{ stat.capacidad_total }} L
+              </q-chip>
+            </div>
+          </div>
+          <div v-else class="text-caption text-grey">Sin tanques asignados</div>
+        </q-td>
+      </template>
+
       <template v-slot:body-cell-estado="props">
         <q-td :props="props">
           <q-chip

@@ -88,9 +88,7 @@
                     : 'Altura de Vara (Aforo)'
                 "
                 type="number"
-                :suffix="
-                  isFormulaMode ? 'm' : currentTankDetail?.unidad_medida || 'cm'
-                "
+                :suffix="currentTankDetail?.unidad_medida || 'CM'"
                 :disable="!formData.id_tanque"
                 :readonly="isReadOnly"
                 :rules="[
@@ -118,7 +116,7 @@
                     v-model.number="formData.medida_vara"
                     label="Altura de Vara (Referencia)"
                     type="number"
-                    :suffix="currentTankDetail?.unidad_medida || 'cm'"
+                    :suffix="currentTankDetail?.unidad_medida || 'CM'"
                     :disable="!formData.id_tanque"
                     hint="Medida de referencia (opcional)"
                     @update:model-value="calculate"
@@ -341,9 +339,7 @@
 </template>
 
 <script setup>
-import { ref, watch, nextTick, reactive, computed } from "vue";
-import { date } from "quasar";
-import { calcularVolumenTanque } from "./formula.js";
+import { useMeasurementForm } from "./composables/useMeasurementForm.js";
 
 const props = defineProps({
   modelValue: Boolean,
@@ -362,342 +358,24 @@ const emit = defineEmits([
   "tank-changed",
 ]);
 
-const formData = ref({});
-const autoEvaporacion = ref(false);
-
-// Referencias a los inputs para hacer focus
-const inputReal = ref(null);
-const inputDiferencia = ref(null);
-
-// Estado de edición
-const editing = reactive({
-  real: false,
-  diferencia: false,
-});
-
-// Flag persistente de edición manual
-const manualEdit = reactive({
-  real: false,
-  diferencia: false,
-});
-
-// Valores originales para cancelar
-const originalValues = reactive({
-  real: 0,
-  diferencia: 0,
-});
-
-const liters = reactive({
-  real: 0,
-  diferencia: 0,
-});
-
-// --- FUNCIONES DE EDICIÓN INLINE ---
-async function startEdit(field) {
-  // Guardar valor original por si se cancela
-  originalValues[field] = liters[field];
-  editing[field] = true;
-
-  await nextTick();
-
-  // Hacer focus en el input correspondiente
-  if (field === "real" && inputReal.value) {
-    inputReal.value.focus();
-    inputReal.value.select();
-  } else if (field === "diferencia" && inputDiferencia.value) {
-    inputDiferencia.value.focus();
-    inputDiferencia.value.select();
-  }
-}
-
-function finishEdit(field) {
-  editing[field] = false;
-
-  // Asegurar que el valor sea número válido
-  if (liters[field] === null || liters[field] === "" || isNaN(liters[field])) {
-    liters[field] = 0;
-  }
-
-  // Formatear a 2 decimales
-  const finalVal = parseFloat(parseFloat(liters[field]).toFixed(2));
-  liters[field] = finalVal;
-
-  // Marcar como editado manualmente si cambió respecto al original
-  // o si simplemente se confirmó la edición (para asegurar comportamiento manual)
-  if (finalVal !== originalValues[field] || true) {
-    manualEdit[field] = true;
-  }
-
-  // Si se editó 'real', recalcular diferencia automáticamente (si la diferencia no es manual)
-  if (field === "real") {
-    // Si la diferencia NO ha sido fijada manualmente, la recalculamos basada en el nuevo real
-    if (!manualEdit.diferencia) {
-      recalculateDiferencia();
-    }
-  }
-}
-
-function cancelEdit(field) {
-  // Restaurar valor original
-  liters[field] = originalValues[field];
-  editing[field] = false;
-}
-
-// Recalcular diferencia basado en el nuevo valor real
-function recalculateDiferencia() {
-  const sistema = parseFloat(props.currentTankDetail?.nivel_actual || 0);
-  const evap = parseFloat(formData.value.litros_evaporacion || 0);
-  const esperado = sistema - evap;
-  liters.diferencia = parseFloat((esperado - liters.real).toFixed(2));
-}
-
-// Computed para saber si el tanque seleccionado es de gasolina
-const isGasolina = computed(() => {
-  return props.currentTankDetail?.tipo_combustible === "GASOLINA";
-});
-
-// Computed para detectar si aplica fórmula (Sin tabla pero con dimensiones)
-const isFormulaMode = computed(() => {
-  const t = props.currentTankDetail;
-  if (!t) return false;
-
-  const aforoData = t.aforo || t.tabla_aforo;
-  const hasAforo = Array.isArray(aforoData)
-    ? aforoData.length > 0
-    : aforoData && Object.keys(aforoData).length > 0;
-
-  if (hasAforo) return false;
-
-  // Verificar dimensiones según tipo
-  if (t.tipo_tanque === "RECTANGULAR" || t.tipo_tanque === "CUADRADO") {
-    return t.largo > 0 && t.ancho > 0 && t.alto > 0;
-  } else {
-    // Por defecto CILINDRICO
-    return t.largo > 0 && t.radio > 0;
-  }
-});
-
-// Computed para detectar el modo de medición basado en el tanque actual
-const isManualMode = computed(() => {
-  if (!props.currentTankDetail) return false;
-  const t = props.currentTankDetail;
-
-  const aforoData = t.aforo || t.tabla_aforo;
-  const hasAforo = Array.isArray(aforoData)
-    ? aforoData.length > 0
-    : aforoData && Object.keys(aforoData).length > 0;
-
-  if (hasAforo) return false;
-  if (isFormulaMode.value) return false;
-  return true;
-});
-
-// --- INICIALIZACIÓN ---
-function initializeForm() {
-  const now = new Date();
-  const init = props.initialData || {};
-
-  formData.value = {
-    fecha: init.fecha_medicion || date.formatDate(now, "YYYY-MM-DD"),
-    hora: init.hora_medicion || date.formatDate(now, "HH:mm"),
-    id_llenadero: init.Tanque?.id_llenadero || null,
-    id_tanque: init.id_tanque || null,
-    medida_vara: init.medida_vara || null,
-    litros_manuales_ingresados: null, // Podría inferirse si es necesario
-    litros_evaporacion: init.merma_evaporacion || 0,
-    observacion: init.observaciones || "",
-  };
-
-  if (props.isEditing || props.isReadOnly) {
-    liters.real = parseFloat(init.volumen_real || 0);
-    liters.diferencia = parseFloat(init.diferencia || 0);
-    // Marcamos como manual para que no se pisen al cargar el tanque
-    manualEdit.real = true;
-    manualEdit.diferencia = true;
-  } else {
-    liters.real = 0;
-    liters.diferencia = 0;
-    manualEdit.real = false;
-    manualEdit.diferencia = false;
-  }
-
-  autoEvaporacion.value = false;
-  autoEvaporacion.value = false;
-  resetCalculos();
-  // Resetear estados de edición
-  editing.real = false;
-  editing.diferencia = false;
-}
-
-watch(
-  () => props.modelValue,
-  (isNowOpen) => {
-    if (isNowOpen) {
-      initializeForm();
-    }
-  },
-);
-
-function onLlenaderoSelect(llenaderoId) {
-  formData.value.id_tanque = null;
-  emit("llenadero-changed", llenaderoId);
-  resetCalculos();
-}
-
-function onTankSelect(tankId) {
-  emit("tank-changed", tankId);
-  formData.value.medida_vara = null;
-  formData.value.litros_manuales_ingresados = null;
-  formData.value.litros_evaporacion = 0;
-  autoEvaporacion.value = false;
-  resetCalculos();
-}
-
-function resetCalculos() {
-  liters.real = 0;
-  liters.diferencia = 0;
-  manualEdit.real = false;
-  manualEdit.diferencia = false;
-}
-
-// --- MOTOR DE CÁLCULO ---
-function calculate() {
-  if (!props.currentTankDetail) return;
-
-  const sistema = parseFloat(props.currentTankDetail.nivel_actual || 0);
-  let volReal = liters.real;
-
-  // 1. Determinar Volumen Real (SOLO SI NO ES MANUAL)
-  if (!manualEdit.real) {
-    if (isManualMode.value) {
-      const litrosManuales = parseFloat(
-        formData.value.litros_manuales_ingresados,
-      );
-      volReal = isNaN(litrosManuales) ? 0 : litrosManuales;
-    } else if (isFormulaMode.value) {
-      const medida = parseFloat(formData.value.medida_vara);
-      if (!isNaN(medida)) {
-        const t = props.currentTankDetail;
-        const unidad = t.unidad_medida || "CM";
-        let h_m;
-
-        if (unidad === "PULGADAS") {
-          h_m = medida * 0.0254;
-        } else {
-          // Asumimos CM por defecto
-          h_m = medida / 100;
-        }
-
-        // Determinar dimensiones según el tipo
-        let dimension3 = 0;
-        let hMax = null;
-
-        if (t.tipo_tanque === "RECTANGULAR" || t.tipo_tanque === "CUADRADO") {
-          // CORRECCIÓN: Para rectangulares usamos las dimensiones directas
-          const largo_m = parseFloat(t.largo);
-          const ancho_m = parseFloat(t.ancho);
-          const alto_m = parseFloat(t.alto);
-
-          const calc = calcularVolumenTanque(
-            h_m,
-            largo_m,
-            ancho_m,
-            t.tipo_tanque,
-            alto_m,
-          );
-          volReal = parseFloat(calc.toFixed(2));
-        } else {
-          // PARA CILÍNDRICOS: CORRECCIÓN DE DIMENSIONES
-          // Si el usuario guardó radio=2 queriendo decir 2 metros, pero la unidad es CM...
-          // el problema es de data entry. Pero si asumimos que radio está en metros siempre:
-
-          const largo_m = parseFloat(t.largo);
-          const radio_m = parseFloat(t.radio);
-
-          // Si el radio es muy pequeño (ej < 10) y la unidad es CM, es probable que esté en Metros
-          // pero si el usuario dice que todo es en CM, entonces radio 2 es 2 cm.
-          // Vamos a probar SIN el factor de 0.01 para las dimensiones, asumiendo que
-          // el usuario ya las ingresó en la escala correcta para la fórmula (metros).
-
-          const calc = calcularVolumenTanque(
-            h_m,
-            largo_m,
-            radio_m,
-            "CILINDRICO",
-          );
-          volReal = parseFloat(calc.toFixed(2));
-        }
-      } else {
-        volReal = 0;
-      }
-    } else {
-      const aforoData =
-        props.currentTankDetail.aforo ||
-        props.currentTankDetail.tabla_aforo ||
-        [];
-      const medida = parseFloat(formData.value.medida_vara);
-
-      if (Array.isArray(aforoData)) {
-        // Formato array de objetos: [{"altura": 1, "volumen": 93}, ...]
-        const entry = aforoData.find((e) => parseFloat(e.altura) === medida);
-        volReal = entry ? parseFloat(entry.volumen) : 0;
-      } else {
-        // Formato objeto: {"1": 93, "2": 180}
-        volReal = aforoData[String(medida)] || 0;
-      }
-    }
-    liters.real = volReal;
-  } else {
-    // Si es manual, usamos el valor que ya tiene liters.real
-    volReal = liters.real;
-  }
-
-  // 2. Calcular Evaporación Automática (Si aplica)
-  // Solo recalcular evaporación si no fue fijada manualmente (aunque evap no tiene flag manual específico,
-  // se calcula en base a volReal, así que si volReal es manual, evap se actualiza acorde)
-  if (isGasolina.value && autoEvaporacion.value) {
-    const evapCalc = (0.25 * volReal) / 100;
-    formData.value.litros_evaporacion = parseFloat(evapCalc.toFixed(2));
-  }
-
-  // 3. Calcular Diferencia (SOLO SI NO ES MANUAL)
-  if (!manualEdit.diferencia) {
-    const evap = parseFloat(formData.value.litros_evaporacion || 0);
-    const esperado = sistema - evap;
-    liters.diferencia = parseFloat((esperado - volReal).toFixed(2));
-  }
-}
-
-async function onSave() {
-  await nextTick();
-
-  const payload = {
-    id_medicion: props.initialData?.id_medicion,
-    id_tanque: formData.value.id_tanque,
-    fecha_medicion: formData.value.fecha,
-    hora_medicion: formData.value.hora,
-    medida_vara: formData.value.medida_vara,
-    volumen_real: liters.real,
-    merma_evaporacion: formData.value.litros_evaporacion,
-    observaciones: formData.value.observacion,
-  };
-
-  if (isManualMode.value) {
-    payload.litros_manuales_ingresados = parseFloat(
-      payload.litros_manuales_ingresados,
-    );
-    if (payload.medida_vara !== null && payload.medida_vara !== "") {
-      payload.medida_vara = parseFloat(payload.medida_vara);
-    }
-  } else {
-    payload.medida_vara = parseFloat(payload.medida_vara);
-    delete payload.litros_manuales_ingresados;
-  }
-
-  payload.litros_evaporacion = parseFloat(payload.litros_evaporacion || 0);
-
-  emit("save", payload);
-}
+const {
+  formData,
+  autoEvaporacion,
+  editing,
+  liters,
+  inputReal,
+  inputDiferencia,
+  isGasolina,
+  isFormulaMode,
+  isManualMode,
+  calculate,
+  startEdit,
+  finishEdit,
+  cancelEdit,
+  onLlenaderoSelect,
+  onTankSelect,
+  onSave,
+} = useMeasurementForm(props, emit);
 </script>
 
 <style scoped>
