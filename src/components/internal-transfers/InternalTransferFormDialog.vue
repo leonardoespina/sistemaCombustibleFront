@@ -58,8 +58,8 @@
 
             <q-separator class="col-12 q-my-sm" />
 
-            <!-- LLENADERO -->
-            <div class="col-12">
+            <!-- LLENADEROS -->
+            <div class="col-12 col-md-6">
               <q-select
                 dense
                 outlined
@@ -67,7 +67,7 @@
                 :options="llenaderosList"
                 option-value="id_llenadero"
                 option-label="nombre_llenadero"
-                label="Seleccionar Llenadero *"
+                label="Surtidor Origen *"
                 emit-value
                 map-options
                 :readonly="isReadOnly || isEditing"
@@ -86,7 +86,7 @@
                 dense
                 outlined
                 v-model="formData.id_tanque_origen"
-                :options="tanksList"
+                :options="filteredSourceTanks"
                 option-value="id_tanque"
                 :option-label="(opt) => opt ? `${opt.codigo} - ${opt.nombre} (${opt.TipoCombustible?.nombre || ''})` : ''"
                 label="Tanque Origen"
@@ -114,7 +114,7 @@
                 v-model="formData.id_tanque_destino"
                 :options="filteredDestinationTanks"
                 option-value="id_tanque"
-                :option-label="(opt) => opt ? `${opt.codigo} - ${opt.nombre} (${opt.TipoCombustible?.nombre || ''})` : ''"
+                :option-label="(opt) => opt ? `${opt.Llenadero?.nombre_llenadero || 'Surtidor'} > ${opt.codigo} - ${opt.nombre}` : ''"
                 label="Tanque Destino"
                 emit-value
                 map-options
@@ -127,15 +127,15 @@
                 @update:model-value="onDestinationTankSelect"
               >
                 <template v-slot:selected-item="scope">
-                    <span v-if="scope.opt">{{ scope.opt.codigo }} - {{ scope.opt.nombre }}</span>
-                    <span v-else-if="initialData?.TanqueDestino">{{ initialData.TanqueDestino.codigo }} - {{ initialData.TanqueDestino.nombre }}</span>
+                    <span v-if="scope.opt">{{ scope.opt.Llenadero?.nombre_llenadero }} > {{ scope.opt.codigo }} - {{ scope.opt.nombre }}</span>
+                    <span v-else-if="initialData?.TanqueDestino">{{ initialData.TanqueDestino.Llenadero?.nombre_llenadero }} > {{ initialData.TanqueDestino.codigo }} - {{ initialData.TanqueDestino.nombre }}</span>
                 </template>
               </q-select>
               <div v-if="destinationTankDetail" class="text-caption text-grey-8 q-ml-sm">
                 Nivel Actual: <strong>{{ destinationTankDetail.nivel_actual }} L</strong>
               </div>
               <div v-if="formData.id_tanque_origen && filteredDestinationTanks.length === 0" class="text-caption text-negative q-ml-sm">
-                * No hay otros tanques con el mismo combustible en este llenadero.
+                * No hay tanques compatibles disponibles.
               </div>
             </div>
 
@@ -209,25 +209,51 @@
 
             <!-- 4. RESULTADOS (RESUMEN) -->
             <div class="col-12 q-mt-md">
-              <q-banner rounded class="bg-blue-1 text-primary">
-                <div class="text-subtitle2 text-weight-bold uppercase q-mb-xs">Resumen de Movimiento</div>
-                <div class="row q-col-gutter-sm">
-                  <div class="col-6">
-                    A TRANSFERIR:
-                    <div class="text-h6 text-weight-bold">{{ computedLitersTransferidos }} L</div>
+              <q-card flat bordered :class="isTransferValid ? 'bg-blue-1 border-blue' : 'bg-red-1 border-red'">
+                <q-card-section class="q-py-md">
+                  <div class="row items-center justify-between q-col-gutter-sm">
+                    <!-- Origen Balance -->
+                    <div class="col-12 col-md-5 text-center">
+                      <div class="text-caption text-grey-7 uppercase">Origen (Neto)</div>
+                      <div class="text-h6 text-weight-bold" :class="parseFloat(litersOrigenDespues) < 0 ? 'text-negative' : 'text-primary'">
+                        {{ litersOrigenDespues }} L
+                      </div>
+                      <div class="text-xxs text-grey-6">{{ sourceTankDetail?.nombre }}</div>
+                    </div>
+
+                    <!-- Dirección -->
+                    <div class="col-12 col-md-2 text-center">
+                      <q-icon
+                        :name="isTransferValid ? 'trending_flat' : 'error_outline'"
+                        :color="isTransferValid ? 'primary' : 'negative'"
+                        size="md"
+                      />
+                      <div class="text-xxs uppercase text-weight-bold" :class="isTransferValid ? 'text-primary' : 'text-negative'">
+                        {{ isTransferValid ? 'Transferir' : 'Inválido' }}
+                      </div>
+                    </div>
+
+                    <!-- Destino Balance -->
+                    <div class="col-12 col-md-5 text-center">
+                      <div class="text-caption text-grey-7 uppercase">A Transferir</div>
+                      <div class="text-h6 text-weight-bold" :class="isTransferValid ? 'text-primary' : 'text-negative'">
+                        <span v-if="parseFloat(computedLitersTransferidos) > 0">+</span>{{ computedLitersTransferidos }} L
+                      </div>
+                      <div class="text-xxs text-grey-6">{{ destinationTankDetail?.nombre }}</div>
+                    </div>
                   </div>
-                  <div class="col-6 text-right">
-                    NUEVO NIVEL ORIGEN:
-                    <div class="text-h6 text-weight-bold" :class="{'text-negative': parseFloat(litersOrigenDespues) < 0}">{{ litersOrigenDespues }} L</div>
+
+                  <!-- Mensajes de Error -->
+                  <div v-if="!isTransferValid" class="q-mt-sm text-center">
+                    <q-badge color="negative" class="q-pa-xs">
+                      <q-icon name="warning" size="xs" class="q-mr-xs" />
+                      <span v-if="parseFloat(computedLitersTransferidos) <= 0">La medición final debe ser mayor al nivel actual ({{ destinationTankDetail?.nivel_actual }} L).</span>
+                      <span v-else-if="parseFloat(litersOrigenDespues) < 0">No hay suficiente combustible en el tanque origen.</span>
+                      <span v-else>Medición o cantidad inválida.</span>
+                    </q-badge>
                   </div>
-                </div>
-                <div v-if="parseFloat(computedLitersTransferidos) <= 0" class="text-caption text-negative q-mt-xs">
-                  * El nivel final debe ser mayor al actual.
-                </div>
-                <div v-if="parseFloat(litersOrigenDespues) < 0" class="text-caption text-negative q-mt-xs">
-                  * Insuficiente producto en origen.
-                </div>
-              </q-banner>
+                </q-card-section>
+              </q-card>
             </div>
 
             <div class="col-12">
@@ -254,13 +280,22 @@
             type="submit"
             color="primary"
             unelevated
-            :disable="parseFloat(computedLitersTransferidos) <= 0 || parseFloat(litersOrigenDespues) < 0"
+            :disable="!isTransferValid"
           />
         </q-card-actions>
       </q-form>
     </q-card>
   </q-dialog>
 </template>
+
+<style scoped>
+.border-blue {
+  border: 1px solid #2196f3;
+}
+.border-red {
+  border: 1px solid #f44336;
+}
+</style>
 
 <script setup>
 import { ref, watch, computed } from "vue";
@@ -288,27 +323,27 @@ const emit = defineEmits([
 
 const {
   formData, calculationMode, litersToTransfer, editing, manualEdit, liters,
-  tieneAforo, isFormulaMode, computedLitersTransferidos, litersOrigenDespues,
-  calculate, calculateFinalFromAmount, startEdit, finishEdit, initializeForm, resetAllStates
+  tieneAforo, isFormulaMode, computedLitersTransferidos, litersOrigenDespues, isTransferValid,
+  calculate, calculateFinalFromAmount, startEdit, finishEdit, cancelEdit, initializeForm, resetAllStates
 } = useInternalTransferForm(props, emit);
 
 const almacenistaNombre = ref("");
 
-// Filtrado de tanques destino (mismo combustible que origen)
+// Filtrado de tanques origen (pertenecientes al llenadero seleccionado)
+const filteredSourceTanks = computed(() => {
+  if (!formData.value.id_llenadero) return [];
+  return props.tanksList.filter(t => Number(t.id_llenadero) === Number(formData.value.id_llenadero));
+});
+
+// Filtrado de tanques destino (mismo combustible que origen de forma global)
 const filteredDestinationTanks = computed(() => {
   if (!formData.value.id_tanque_origen || !props.sourceTankDetail) return [];
   
-  // Usamos el id_tipo_combustible del detalle cargado
   const combustibleOrigen = props.sourceTankDetail.id_tipo_combustible;
   
-  console.log("Combustible Origen:", combustibleOrigen);
-  console.log("Lista de tanques disponibles:", props.tanksList);
-
   return props.tanksList.filter(t => {
-    // Aseguramos comparación numérica y verificamos existencia de tipos
-    const match = t.id_tanque !== formData.value.id_tanque_origen && 
-                  Number(t.id_tipo_combustible) === Number(combustibleOrigen);
-    return match;
+    return t.id_tanque !== formData.value.id_tanque_origen && 
+           Number(t.id_tipo_combustible) === Number(combustibleOrigen);
   });
 });
 
@@ -331,9 +366,11 @@ watch(() => props.destinationTankAforo, () => {
 function onLlenaderoSelect(id) {
   formData.value.id_tanque_origen = null;
   formData.value.id_tanque_destino = null;
-  emit("llenadero-changed", id);
+  // Ya no emitimos llenadero-changed para filtrar el store, lo hacemos local
   resetAllStates();
 }
+
+
 
 function onSourceTankSelect(id) {
   formData.value.id_tanque_destino = null;

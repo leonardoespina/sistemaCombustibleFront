@@ -148,7 +148,13 @@ const {
 const columns = [
   { name: "fecha", label: "Llegada", field: row => date.formatDate(row.fecha_llegada, "DD/MM HH:mm"), align: "left", sortable: true },
   { name: "guia", label: "N° Guía / Cisterna", field: "numero_guia", align: "left" },
-  { name: "tanque", label: "Tanque Receptor", field: row => row.Tanque?.nombre || 'N/A', align: "left" },
+  { name: "tanque", label: "Tanque Receptor", field: row => {
+      const tanques = row.tanques_descarga || [];
+      if (tanques.length > 0) {
+        return tanques.map(t => t.Tanque?.nombre || t.Tanque?.codigo || `Tanque #${t.id_tanque}`).join(', ');
+      }
+      return row.Tanque?.nombre || 'N/A';
+    }, align: "left" },
   { name: "guia_litros", label: "Guía (L)", field: "litros_segun_guia", align: "right", format: val => `${parseFloat(val).toLocaleString()} L` },
   { name: "recibido", label: "Recibido (L)", field: "litros_recibidos", align: "right" },
   { name: "diferencia", label: "Dif. Guía", field: "diferencia_guia", align: "center" },

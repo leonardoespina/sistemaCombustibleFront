@@ -30,6 +30,7 @@ export function useCierreTurnoPage() {
 
     // ─── COMPUTADOS ──────────────────────────────────────────
     const rows = computed(() => store.rows);
+
     const loading = computed(() => store.loading);
     const reporteActual = computed(() => store.reporteActual);
 

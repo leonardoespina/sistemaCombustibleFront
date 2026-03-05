@@ -40,15 +40,15 @@
           <q-td :props="props">
             <div class="row items-center no-wrap">
               <q-icon
-                :name="props.row.es_generador ? 'bolt' : 'directions_car'"
-                :color="props.row.es_generador ? 'orange-8' : 'primary'"
+                :name="props.row.es_planta ? 'precision_manufacturing' : (props.row.es_generador ? 'bolt' : 'directions_car')"
+                :color="props.row.es_planta ? 'green-8' : (props.row.es_generador ? 'orange-8' : 'primary')"
                 size="sm"
                 class="q-mr-sm"
               >
                 <q-tooltip>{{
-                  props.row.es_generador
-                    ? "Generador / Planta"
-                    : "Vehículo Flota"
+                  props.row.es_planta 
+                    ? "Planta Eléctrica" 
+                    : (props.row.es_generador ? "Generador" : "Vehículo Flota")
                 }}</q-tooltip>
               </q-icon>
               <span class="text-weight-medium">{{ props.row.placa }}</span>

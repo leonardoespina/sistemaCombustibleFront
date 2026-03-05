@@ -65,7 +65,9 @@ export function useMainLayout() {
    * Control de Acceso por Tipo de Dependencia
    */
   const canAccess = (moduleName) => {
+    // Si es admin o almacenista, entran a Operativo directamente
     if (isAdmin.value) return true;
+    if (userData.value?.tipo_usuario === "ALMACENISTA" && moduleName === "OPERATIVO") return true;
     const tipoMenu =
       userData.value?.Dependencia?.tipo_acceso_menu || "ESTANDAR";
 

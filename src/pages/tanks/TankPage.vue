@@ -120,44 +120,36 @@
       @save="onFormSave"
     />
 
-    <!-- Diálogo de Confirmación de Borrado -->
-    <q-dialog v-model="isDeleteDialogVisible" persistent>
-      <q-card>
-        <q-card-section class="row items-center">
-          <q-avatar icon="warning" color="negative" text-color="white" />
-          <span class="q-ml-sm"
-            >¿Seguro que deseas desactivar el tanque
-            <strong>{{ editingTank?.nombre }}</strong
-            >?</span
-          >
-        </q-card-section>
-        <q-card-actions align="right">
-          <q-btn flat label="Cancelar" v-close-popup />
-          <q-btn
-            flat
-            label="Desactivar"
-            color="negative"
-            @click="confirmDelete"
-            :loading="loading"
-          />
-        </q-card-actions>
-      </q-card>
-    </q-dialog>
+
   </q-page>
 </template>
 
 <script setup>
-import { ref, onMounted, onUnmounted } from "vue";
+import { onMounted, onUnmounted, computed } from "vue";
 import { storeToRefs } from "pinia";
 import { useTankStore } from "../../stores/tankStore.js";
+import { useTankPage } from "./composables/useTankPage.js";
 import TankFormDialog from "../../components/tanks/TankFormDialog.vue";
 
 const tankStore = useTankStore();
-const { rows, loading, filter, pagination } = storeToRefs(tankStore);
+const { rows, loading, pagination } = storeToRefs(tankStore);
 
-const isFormDialogVisible = ref(false);
-const isDeleteDialogVisible = ref(false);
-const editingTank = ref(null);
+const {
+  isFormDialogVisible,
+  editingTank,
+  handleRequest,
+  openAddDialog,
+  openEditDialog,
+  openDeleteDialog,
+  onFormSave,
+  getProgressColor,
+  getStatusColor
+} = useTankPage(tankStore);
+
+const filter = computed({
+  get: () => tankStore.filter,
+  set: (val) => (tankStore.filter = val),
+});
 
 const columns = [
   { name: "id_tanque", label: "ID", field: "id_tanque", sortable: true, align: "left" },
@@ -172,61 +164,6 @@ const columns = [
   { name: "actions", label: "Acciones", align: "right" },
 ];
 
-function handleRequest(props) {
-  pagination.value = props.pagination;
-  filter.value = props.filter;
-  tankStore.fetchTanks();
-}
-
-function openAddDialog() {
-  editingTank.value = null;
-  isFormDialogVisible.value = true;
-}
-
-function openEditDialog(tank) {
-  editingTank.value = JSON.parse(JSON.stringify(tank));
-  isFormDialogVisible.value = true;
-}
-
-function openDeleteDialog(tank) {
-  editingTank.value = tank;
-  isDeleteDialogVisible.value = true;
-}
-
-async function onFormSave(formData) {
-  let success = false;
-  if (editingTank.value) {
-    success = await tankStore.updateTank(editingTank.value.id_tanque, formData);
-  } else {
-    success = await tankStore.createTank(formData);
-  }
-  if (success) {
-    isFormDialogVisible.value = false;
-  }
-}
-
-async function confirmDelete() {
-  await tankStore.deleteTank(editingTank.value.id_tanque);
-  isDeleteDialogVisible.value = false;
-}
-
-function getProgressColor(row) {
-  const percent = row.nivel_actual / row.capacidad_maxima;
-  if (percent < 0.15) return "negative";
-  if (percent < 0.3) return "warning";
-  return "positive";
-}
-
-function getStatusColor(status) {
-  switch (status) {
-    case "ACTIVO": return "positive";
-    case "INACTIVO": return "grey";
-    case "MANTENIMIENTO": return "orange";
-    case "CONTAMINADO": return "negative";
-    default: return "blue";
-  }
-}
-
 onMounted(() => {
   tankStore.initSocket();
   tankStore.fetchTanks();
@@ -234,6 +171,7 @@ onMounted(() => {
 
 onUnmounted(() => {
   tankStore.cleanupSocket();
+  // Resetear filtros y paginación al salir
   tankStore.filter = "";
   tankStore.pagination = {
     page: 1,

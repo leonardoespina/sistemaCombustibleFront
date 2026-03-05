@@ -14,20 +14,22 @@
 
       <q-form @submit.prevent="handleSave">
         <q-card-section class="q-pt-none">
-          <!-- === TIPO DE ACTIVO (TOGGLE) === -->
+          <!-- === TIPO DE UNIDAD (SELECTOR) === -->
           <div class="row q-mb-md bg-grey-1 q-pa-sm rounded-borders">
-            <div class="col-12 flex items-center">
-              <q-icon
-                :name="formData.es_generador ? 'bolt' : 'directions_car'"
-                size="sm"
-                class="q-mr-sm text-grey-8"
-              />
-              <span class="text-subtitle2 q-mr-md">Tipo de Activo:</span>
-              <q-toggle
-                v-model="formData.es_generador"
-                label="Es Generador / Planta Eléctrica"
-                color="orange"
-                left-label
+            <div class="col-12 items-center">
+              <div class="text-subtitle2 q-mb-sm text-grey-8">Tipo de Unidad:</div>
+              <q-btn-toggle
+                v-model="unitType"
+                :toggle-color="toggleColor"
+                toggle-text-color="white"
+                unelevated
+                spread
+                class="border-primary"
+                :options="[
+                  { label: 'Vehículo', value: 'VEHICULO', icon: 'directions_car' },
+                  { label: 'Generador', value: 'GENERADOR', icon: 'bolt' },
+                  { label: 'Planta', value: 'PLANTA', icon: 'precision_manufacturing' }
+                ]"
               />
             </div>
           </div>
@@ -54,7 +56,7 @@
                 dense
                 outlined
                 v-model="formData.placa"
-                :label="formData.es_generador ? 'Código de Activo' : 'Placa'"
+                :label="unitType === 'VEHICULO' ? 'Placa' : 'Código de Activo'"
                 :rules="[(val) => !!val || 'Requerido']"
                 :loading="loadingCorrelativo"
               />
@@ -168,6 +170,9 @@ const props = defineProps({
 
 const emit = defineEmits(["update:modelValue", "save", "brand-changed"]);
 
+import { computed } from "vue";
+
+
 // Delegamos la lógica al composable
 const {
   formData,
@@ -178,8 +183,15 @@ const {
   mappedCategory,
   mappedDependency,
   mappedSubdependency,
+  unitType,
   filterBrandFn,
   onSinPlacaChange,
   handleSave,
 } = useVehicleForm(props, emit);
+
+const toggleColor = computed(() => {
+  if (unitType.value === "PLANTA") return "green-8";
+  if (unitType.value === "GENERADOR") return "orange-8";
+  return "primary";
+});
 </script>

@@ -33,13 +33,25 @@ export function useInternalTransferForm(props, emit) {
     if (!props.destinationTankDetail) return "0.00";
     const antes = parseFloat(props.destinationTankDetail.nivel_actual) || 0;
     const despues = parseFloat(liters.final) || 0;
-    return (despues - antes).toFixed(2);
+    const diff = despues - antes;
+    return diff.toFixed(2);
+  });
+
+  const isTransferValid = computed(() => {
+    const transferido = parseFloat(computedLitersTransferidos.value);
+    const balanceOrigen = parseFloat(litersOrigenDespues.value);
+    // Válido si se transfiere algo positivo y el origen no queda negativo
+    return transferido > 0 && balanceOrigen >= 0;
   });
 
   const litersOrigenDespues = computed(() => {
     if (!props.sourceTankDetail) return "0.00";
     const origenAntes = parseFloat(props.sourceTankDetail.nivel_actual) || 0;
     const transferido = parseFloat(computedLitersTransferidos.value);
+
+    // Si la transferencia no es válida (negativa), no mostramos un incremento ficticio en el origen
+    if (transferido <= 0) return origenAntes.toFixed(2);
+
     return (origenAntes - transferido).toFixed(2);
   });
 
@@ -49,30 +61,73 @@ export function useInternalTransferForm(props, emit) {
 
     const vara = parseFloat(formData.value.medida_vara_destino);
     const t = props.destinationTankDetail;
-    const aforoData = props.destinationTankAforo || [];
     const unidad = (t.unidad_medida || "CM").toUpperCase();
 
     let vol = 0;
     if (isNaN(vara)) {
-        liters.final = 0;
-        return;
+      liters.final = 0;
+      return;
     }
 
     if (tieneAforo.value) {
-      if (Array.isArray(aforoData)) {
-        const entry = aforoData.find(e => parseFloat(e.altura) === vara);
-        vol = entry ? parseFloat(entry.volumen) : 0;
+      // Normalizar aforo (sea object o array)
+      let aforoData = props.destinationTankAforo || [];
+      if (!Array.isArray(aforoData) && typeof aforoData === "object") {
+        aforoData = Object.entries(aforoData).map(([alt, vl]) => ({
+          altura: parseFloat(alt),
+          volumen: parseFloat(vl)
+        }));
+      }
+
+      // Ordenar por altura para asegurar interpolación correcta
+      aforoData.sort((a, b) => a.altura - b.altura);
+
+      // Búsqueda o interpolación
+      const matchExacto = aforoData.find(e => e.altura === vara);
+      if (matchExacto) {
+        vol = matchExacto.volumen;
       } else {
-        vol = aforoData[String(vara)] || 0;
+        const inf = [...aforoData].reverse().find(e => e.altura <= vara);
+        const sup = aforoData.find(e => e.altura >= vara);
+
+        if (inf && sup && inf.altura !== sup.altura) {
+          vol = inf.volumen + ((vara - inf.altura) * (sup.volumen - inf.volumen)) / (sup.altura - inf.altura);
+        } else if (inf) {
+          vol = inf.volumen;
+        } else if (sup) {
+          vol = (vara / sup.altura) * sup.volumen; // aprox desde 0
+        } else {
+          vol = 0;
+        }
       }
     } else if (isFormulaMode.value) {
-      let h_m = unidad === "PULGADAS" ? vara * 0.0254 : vara / 100;
+      // Conversión a metros de la lectura de vara
+      let h_m = vara;
+      if (unidad === "CM") h_m = vara / 100;
+      else if (unidad === "PULGADAS") h_m = vara * 0.0254;
+
+      /**
+       * Heurística de Escala Geométrica:
+       * Si las dimensiones en la BD (largo, radio, ancho) son > 50,
+       * es muy probable que estén guardadas en Centímetros, no Metros.
+       * Ejemplo: Largo 4900 -> 4.9m. Radio 1150 -> 1.15m.
+       */
+      const normalize = (val) => {
+        const n = parseFloat(val) || 0;
+        return n > 50 ? n / 1000 : n; // Si > 50 asumimos milímetros o centímetros escalados
+      };
+
+      const largo_m = normalize(t.largo);
+      const ancho_m = normalize(t.ancho);
+      const radio_m = normalize(t.radio);
+      const alto_m = normalize(t.alto);
+
       vol = calcularVolumenTanque(
         h_m,
-        parseFloat(t.largo),
-        t.tipo_tanque === 'CILINDRICO' ? parseFloat(t.radio) : parseFloat(t.ancho),
+        largo_m,
+        t.tipo_tanque === 'CILINDRICO' ? radio_m : ancho_m,
         t.tipo_tanque,
-        parseFloat(t.alto)
+        alto_m
       );
     }
 
@@ -141,7 +196,7 @@ export function useInternalTransferForm(props, emit) {
 
   return {
     formData, calculationMode, litersToTransfer, editing, manualEdit, liters,
-    tieneAforo, isFormulaMode, computedLitersTransferidos, litersOrigenDespues,
+    tieneAforo, isFormulaMode, computedLitersTransferidos, litersOrigenDespues, isTransferValid,
     calculate, calculateFinalFromAmount, startEdit, finishEdit, cancelEdit, initializeForm, resetAllStates
   };
 }

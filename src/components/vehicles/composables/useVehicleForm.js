@@ -51,6 +51,7 @@ export function useVehicleForm(props, emit) {
     formData.value = {
       placa: data.placa || "",
       es_generador: !!data.es_generador,
+      es_planta: !!data.es_planta,
       es_sin_placa: false, // Por defecto false al abrir
       id_marca: data.id_marca ? Number(data.id_marca) : null,
       id_modelo: data.id_modelo ? Number(data.id_modelo) : null,
@@ -143,6 +144,8 @@ export function useVehicleForm(props, emit) {
       id_subdependencia: formData.value.id_subdependencia
         ? Number(formData.value.id_subdependencia)
         : null,
+      es_generador: formData.value.es_generador,
+      es_planta: formData.value.es_planta,
     };
     emit("save", payload);
   };
@@ -170,6 +173,19 @@ export function useVehicleForm(props, emit) {
     },
   );
 
+  // --- Computed para Tipo de Unidad (3 opciones) ---
+  const unitType = computed({
+    get: () => {
+      if (formData.value.es_generador) return "GENERADOR";
+      if (formData.value.es_planta) return "PLANTA";
+      return "VEHICULO";
+    },
+    set: (val) => {
+      formData.value.es_generador = val === "GENERADOR";
+      formData.value.es_planta = val === "PLANTA";
+    },
+  });
+
   onMounted(async () => {
     if (props.modelValue) await initializeForm();
   });
@@ -183,6 +199,7 @@ export function useVehicleForm(props, emit) {
     mappedCategory,
     mappedDependency,
     mappedSubdependency,
+    unitType,
     filterBrandFn,
     onSinPlacaChange,
     handleSave,

@@ -1,4 +1,4 @@
-import { ref, onMounted, onUnmounted } from "vue";
+import { ref } from "vue";
 import { storeToRefs } from "pinia";
 import { useCisternLoadStore } from "../../../stores/cisternLoadStore.js";
 import socket from "../../../services/socket";
@@ -83,9 +83,9 @@ export function useCisternLoadTable() {
     socket.on("carga:creada", () => loadStore.fetchLoads());
     socket.on("carga:actualizada", () => loadStore.fetchLoads());
     socket.on("tanque:actualizado", (data) => {
-       if (selectedTankDetail.value && selectedTankDetail.value.id_tanque === data.id_tanque) {
-         loadStore.fetchTankDetail(data.id_tanque);
-       }
+      if (selectedTankDetail.value && selectedTankDetail.value.id_tanque === data.id_tanque) {
+        loadStore.fetchTankDetail(data.id_tanque);
+      }
     });
   }
 

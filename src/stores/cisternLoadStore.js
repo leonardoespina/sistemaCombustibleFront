@@ -122,19 +122,17 @@ export const useCisternLoadStore = defineStore("cisternLoads", () => {
       const response = await api.get(`/tanques/${tankId}`);
       const tankData = response.data;
 
-      // Guardar detalle completo del tanque
-      selectedTankDetail.value = tankData;
-
-      // Procesar aforo
-      let aforo = tankData.tabla_aforo;
-      if (typeof aforo === "string") {
+      // Parsear aforo de forma segura en el objeto principal
+      if (typeof tankData.tabla_aforo === "string") {
         try {
-          aforo = JSON.parse(aforo);
+          tankData.tabla_aforo = JSON.parse(tankData.tabla_aforo);
         } catch (e) {
-          aforo = {};
+          tankData.tabla_aforo = {};
         }
       }
-      selectedTankAforo.value = aforo || {};
+
+      selectedTankDetail.value = tankData;
+      selectedTankAforo.value = tankData.tabla_aforo || {};
     } catch (error) {
       selectedTankAforo.value = null;
       selectedTankDetail.value = null;

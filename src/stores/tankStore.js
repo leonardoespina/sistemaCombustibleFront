@@ -81,7 +81,7 @@ export const useTankStore = defineStore("tanks", () => {
       $q.notify({ type: "positive", message: response.data.msg });
       await fetchTanks();
     } catch (error) {
-       console.error(error);
+      console.error(error);
     } finally {
       loading.value = false;
     }
@@ -92,7 +92,9 @@ export const useTankStore = defineStore("tanks", () => {
   async function fetchLlenaderosList() {
     try {
       const response = await api.get("/llenaderos/lista");
+
       llenaderos.value = response.data;
+
     } catch (error) {
       console.error("Error llenaderos:", error);
     }
@@ -108,7 +110,7 @@ export const useTankStore = defineStore("tanks", () => {
   }
 
   // --- SOCKET IO ---
-  
+
   function initSocket() {
     socket.on("tanque:creado", () => fetchTanks());
     socket.on("tanque:actualizado", () => fetchTanks());

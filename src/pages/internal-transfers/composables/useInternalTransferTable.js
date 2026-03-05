@@ -30,6 +30,7 @@ export function useInternalTransferTable() {
     isReadOnly.value = false;
     selectedItem.value = null;
     await transferStore.fetchLlenaderos();
+    await transferStore.loadTanksList(); // Cargar todos para permitir transferencias cruzadas
     isFormDialogVisible.value = true;
   }
 
@@ -38,17 +39,19 @@ export function useInternalTransferTable() {
     isDetailDialogVisible.value = true;
   }
 
-  function openEditDialog(item) {
+  async function openEditDialog(item) {
     isEditing.value = true;
     isReadOnly.value = false;
     selectedItem.value = item;
+    await transferStore.fetchLlenaderos();
+    await transferStore.loadTanksList();
     transferStore.fetchTankDetail(item.id_tanque_origen, 'source');
     transferStore.fetchTankDetail(item.id_tanque_destino, 'destination');
     isFormDialogVisible.value = true;
   }
 
   function handleLlenaderoChange(id) {
-    transferStore.loadTanksList(id);
+    // Ya no filtramos la lista global del store, el diálogo filtrará localmente
   }
 
   async function onFormSave(payload) {
@@ -75,10 +78,10 @@ export function useInternalTransferTable() {
     socket.on("transferencia:creada", () => transferStore.fetchTransfers());
     socket.on("transferencia:actualizada", () => transferStore.fetchTransfers());
     socket.on("tanque:actualizado", (data) => {
-        // Refrescar detalles si el tanque afectado es uno de los seleccionados
-        if (sourceTankDetail.value?.id_tanque === data.id_tanque) transferStore.fetchTankDetail(data.id_tanque, 'source');
-        if (destinationTankDetail.value?.id_tanque === data.id_tanque) transferStore.fetchTankDetail(data.id_tanque, 'destination');
-        transferStore.loadTanksList();
+      // Refrescar detalles si el tanque afectado es uno de los seleccionados
+      if (sourceTankDetail.value?.id_tanque === data.id_tanque) transferStore.fetchTankDetail(data.id_tanque, 'source');
+      if (destinationTankDetail.value?.id_tanque === data.id_tanque) transferStore.fetchTankDetail(data.id_tanque, 'destination');
+      transferStore.loadTanksList();
     });
   }
 

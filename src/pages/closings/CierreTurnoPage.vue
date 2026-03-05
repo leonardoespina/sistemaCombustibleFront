@@ -208,6 +208,7 @@
           <div class="text-body2">
             {{ cierreSeleccionado.Almacenista ? `${cierreSeleccionado.Almacenista.nombre} ${cierreSeleccionado.Almacenista.apellido}` : '—' }}
           </div>
+          
 
           <q-separator v-if="cierreSeleccionado.observaciones" class="q-my-md" />
           <div v-if="cierreSeleccionado.observaciones">
@@ -250,7 +251,10 @@
             <div v-for="(val, label) in encabezadoResumen" :key="label" class="col-auto">
               <div class="text-caption text-grey-6">{{ label }}</div>
               <div class="text-body2 text-weight-bold">{{ val }}</div>
-            </div>
+              
+            </div class="col-auto">
+             <div class="text-caption text-body5 text-red-6 text-weight-bold" >Total Despachado: {{ totalDespachado }}</div>
+            
           </div>
 
 
@@ -352,6 +356,7 @@ const encabezadoResumen = computed(() => {
     "Fecha": e.fecha_lote ?? "—",
     "Período": `${e.hora_inicio ?? "—"} → ${e.hora_cierre ?? "—"}`,
     "Almacenista": e.almacenista || "—",
+    
   };
 });
 

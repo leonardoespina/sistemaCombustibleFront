@@ -71,17 +71,6 @@
                 </div>
               </div>
 
-              <q-select
-                dense filled
-                use-input
-                v-model="lote.id_usuario_pcp"
-                :options="pcpList"
-                :option-label="(u) => `${u.nombre} ${u.apellido}`"
-                option-value="id_usuario"
-                label="Validador PCP"
-                emit-value map-options
-                class="q-mb-sm"
-              />
 
               <q-input
                 dense
