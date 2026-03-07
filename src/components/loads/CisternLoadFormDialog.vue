@@ -339,6 +339,29 @@
 
                 </div>
               </div>
+              
+              <!-- NUEVO: SELECTOR DE ORIGEN PARA ACTUALIZAR -->
+              <div class="col-12 q-mt-md" v-if="!isReadOnly">
+                <q-card flat bordered class="bg-grey-1">
+                  <q-card-section>
+                    <div class="text-subtitle2 text-primary text-weight-bold q-mb-sm">
+                      Origen de Actualización del Nivel del Tanque
+                    </div>
+                    <div class="text-caption text-grey-8 q-mb-sm">
+                      Seleccione cuál fuente de medición impactará físicamente al inventario final.
+                    </div>
+                    <q-option-group
+                      v-model="formData.fuente_actualizacion"
+                      :options="[
+                        { label: 'Priorizar Flujómetro (Si está ingresado y reporta > 0)', value: 'FLUJOMETRO', disable: !(parseFloat(formData.litros_flujometro) > 0) },
+                        { label: 'Priorizar Varillaje (Lectura técnica mediante regla final)', value: 'VARILLAJE' }
+                      ]"
+                      color="primary"
+                      inline
+                    />
+                  </q-card-section>
+                </q-card>
+              </div>
 
               <div class="col-12 q-mt-md">
                 <q-input dense outlined v-model="formData.observacion" type="textarea" label="Observaciones" rows="2" :readonly="isReadOnly" />

@@ -324,6 +324,7 @@ export function useCisternLoadForm(props, emit) {
       id_almacenista: init.id_almacenista || null,
       litros_segun_guia: init.litros_segun_guia || null,
       litros_flujometro: init.litros_flujometro || null,
+      fuente_actualizacion: init.fuente_actualizacion || "VARILLAJE",
       peso_entrada: init.peso_entrada || null,
       peso_salida: init.peso_salida || null,
       hora_inicio_descarga: init.hora_inicio_descarga || "08:00",
@@ -379,6 +380,13 @@ export function useCisternLoadForm(props, emit) {
     calculateAll();
     calcularPesoNeto();
   }
+
+  // Si el usuario vacía el flujómetro, forzamos regresar a varillaje
+  watch(() => formData.value.litros_flujometro, (newVal) => {
+    if (!newVal || parseFloat(newVal) <= 0) {
+      formData.value.fuente_actualizacion = "VARILLAJE";
+    }
+  });
 
   // --- ANÁLISIS DE CONSISTENCIA Y VARIACIONES ---
   function calcularEstadoDiferencia(litrosBase, litrosComparar) {

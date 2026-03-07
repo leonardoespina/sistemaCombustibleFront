@@ -5,223 +5,251 @@
     persistent
   >
     <q-card style="width: 900px; max-width: 98vw">
-
-      <!-- TÍTULO (estilo MeasurementFormDialog: simple, sin color) -->
+      <!-- TÍTULO -->
       <q-card-section>
-        <div class="text-h6">Generar Cierre de Turno</div>
-        <div class="text-caption text-grey-7">Medición física + conciliación de lote</div>
+        <div class="row items-center justify-between">
+            <div>
+              <div class="text-h6">Generar Cierre de Turno</div>
+              <div class="text-caption text-grey-7">Medición física + conciliación de lote</div>
+            </div>
+            <q-btn icon="close" flat round dense v-close-popup />
+        </div>
       </q-card-section>
 
       <q-form @submit.prevent="onSave">
-        <q-card-section class="q-pt-none scroll" style="max-height: 78vh">
-          <div class="row q-col-gutter-lg">
-
-            <!-- ── PANEL IZQUIERDO: Datos del lote ─────────────── -->
-            <div class="col-12 col-md-4">
-              <div class="text-subtitle2 text-primary q-mb-sm">
-                Datos del Lote
-              </div>
-
-              <q-select
-                dense filled
-                v-model="lote.id_llenadero"
-                :options="llenaderosList"
-                option-value="id_llenadero"
-                option-label="nombre_llenadero"
-                label="Llenadero *"
-                emit-value map-options
-                class="q-mb-sm"
-                :rules="[(v) => !!v || 'Requerido']"
-                @update:model-value="$emit('llenadero-changed', $event)"
-              />
-
-              <q-select
-                dense filled
-                v-model="lote.turno"
-                :options="['DIURNO', 'NOCTURNO']"
-                label="Turno *"
-                class="q-mb-sm"
-              />
-
-              <q-input
-                dense filled
-                v-model="lote.fecha_lote"
-                type="date"
-                label="Fecha del Lote *"
-                class="q-mb-sm"
-                :rules="[(v) => !!v || 'Requerido']"
-              />
-
-              <div class="row q-col-gutter-sm q-mb-sm">
-                <div class="col-6">
+        <q-stepper
+          v-model="step"
+          ref="stepper"
+          color="primary"
+          animated
+          flat
+        >
+          <!-- ── PASO 1: DATOS DEL LOTE ─────────────────────── -->
+          <q-step
+            :name="1"
+            title="Datos del Lote"
+            icon="settings"
+            :done="step > 1"
+          >
+            <div class="q-col-gutter-lg row q-mt-md">
+              <div class="col-12 col-md-6">
+                  <q-select
+                    dense filled
+                    v-model="lote.id_llenadero"
+                    :options="llenaderosList"
+                    option-value="id_llenadero"
+                    option-label="nombre_llenadero"
+                    label="Llenadero *"
+                    emit-value map-options
+                    class="q-mb-md"
+                    :rules="[(v) => !!v || 'Requerido']"
+                    @update:model-value="$emit('llenadero-changed', $event)"
+                  />
+                  <q-select
+                    dense filled
+                    v-model="lote.turno"
+                    :options="['DIURNO', 'NOCTURNO']"
+                    label="Turno *"
+                    class="q-mb-md"
+                  />
                   <q-input
                     dense filled
-                    v-model="lote.hora_inicio_lote"
-                    type="time"
-                    label="Hora Inicio *"
+                    v-model="lote.fecha_lote"
+                    type="date"
+                    label="Fecha del Lote *"
+                    class="q-mb-md"
+                    :rules="[(v) => !!v || 'Requerido']"
                   />
-                </div>
-                <div class="col-6">
+              </div>
+              <div class="col-12 col-md-6">
+                  <div class="row q-col-gutter-sm q-mb-md">
+                    <div class="col-6">
+                        <q-input dense filled v-model="lote.hora_inicio_lote" type="time" label="Hora Inicio *" />
+                    </div>
+                    <div class="col-6">
+                        <q-input dense filled v-model="lote.hora_cierre_lote" type="time" label="Hora Cierre *" />
+                    </div>
+                  </div>
                   <q-input
                     dense filled
-                    v-model="lote.hora_cierre_lote"
-                    type="time"
-                    label="Hora Cierre *"
+                    v-model="lote.observaciones"
+                    type="textarea"
+                    label="Observaciones"
+                    rows="4"
                   />
-                </div>
               </div>
-
-
-              <q-input
-                dense
-                v-model="lote.observaciones"
-                type="textarea"
-                label="Observaciones"
-                rows="3"
-              />
             </div>
+          </q-step>
 
-            <!-- ── PANEL DERECHO: Mediciones por tanque ─────────── -->
-            <div class="col-12 col-md-8">
-
-              <!-- Estado: sin llenadero -->
+          <!-- ── PASO 2: SELECCIÓN DE TANQUES ─────────────────── -->
+          <q-step
+            :name="2"
+            title="Seleccionar Tanques"
+            icon="list"
+            :done="step > 2"
+          >
               <div v-if="!lote.id_llenadero" class="column items-center text-grey-5 q-pa-xl">
-                <q-icon name="oil_barrel" size="64px" color="grey-3" />
-                <div class="q-mt-sm text-body2">Selecciona un llenadero para ver los tanques</div>
+                  <q-icon name="oil_barrel" size="64px" color="grey-3" />
+                  <div class="q-mt-sm text-body2">Regresa al paso anterior y selecciona un llenadero</div>
               </div>
-
-              <!-- Estado: sin tanques -->
-              <div
-                v-else-if="tanquesForm.length === 0 && !cargandoTanques"
-                class="row items-center q-pa-md rounded-borders q-gutter-sm bg-orange-1"
-              >
-                <q-icon name="warning" color="warning" />
-                <span class="text-caption">No hay tanques activos para despacho en este llenadero</span>
+              <div v-else-if="cargandoTanques" class="q-pa-xl text-center">
+                  <q-spinner-gears size="40px" color="primary" />
               </div>
-
-              <!-- Cargando -->
-              <q-inner-loading :showing="cargandoTanques">
-                <q-spinner-gears size="40px" color="primary" />
-              </q-inner-loading>
-
-              <!-- Tarjeta por tanque -->
-              <div
-                v-for="(t, idx) in tanquesForm"
-                :key="t.id_tanque"
-                class="q-mb-md"
-              >
-                <!-- Nombre del tanque + chips informativos -->
-                <div class="row items-center q-mb-xs q-gutter-xs">
-                  <span class="text-subtitle2 text-weight-bold text-primary">
-                    {{ t.codigo }} — {{ t.nombre }}
-                  </span>
-                  <q-chip
-                    dense size="sm"
-                    :color="t.combustible?.includes('GASOLINA') ? 'orange-2' : 'blue-2'"
-                    :text-color="t.combustible?.includes('GASOLINA') ? 'orange-9' : 'blue-9'"
-                  >
-                    {{ t.combustible }}
-                  </q-chip>
-                  <q-chip dense size="sm" color="grey-2" text-color="grey-8">
-                    {{ getModo(t) }}
-                  </q-chip>
-                </div>
-
-                <!-- Chips de referencia (último cierre / nivel sistema) -->
-                <div class="row q-gutter-xs q-mb-sm">
-                  <q-chip dense icon="history" color="teal-1" text-color="teal-9" size="sm">
-                    Último cierre:
-                    <strong class="q-ml-xs">
-                      {{ t.ultimo_cierre
-                        ? `${t.ultimo_cierre.volumen_real.toLocaleString()} Lts (${t.ultimo_cierre.fecha})`
-                        : 'Sin cierre previo' }}
-                    </strong>
-                  </q-chip>
-                  <q-chip dense icon="gauge" color="blue-1" text-color="blue-9" size="sm">
-                    Sistema actual:
-                    <strong class="q-ml-xs">{{ t.nivel_actual?.toLocaleString() }} Lts</strong>
-                  </q-chip>
-                </div>
-
-                <!-- Inputs + card de resumen estilo MeasurementFormDialog -->
-                <div class="row q-col-gutter-md q-mb-sm">
-                  <div class="col-12 col-sm-6" v-if="getModo(t) !== 'MANUAL'">
-                    <q-input
-                      dense filled
-                      v-model.number="t.medida_vara"
-                      type="number"
-                      :label="`Medida de Vara (${t.unidad_medida || 'cm'})`"
-                      @update:model-value="calcular(idx)"
-                    />
+              <div v-else-if="tanquesForm.length === 0" class="row items-center q-pa-md rounded-borders q-gutter-sm bg-orange-1">
+                  <q-icon name="warning" color="warning" />
+                  <span class="text-caption">No hay tanques registrados o activos en este llenadero</span>
+              </div>
+              <div v-else>
+                  <!-- Agrupado por combustible -->
+                  <div class="q-mb-md" v-for="(listaTanques, combustible) in tanquesPorCombustible" :key="combustible">
+                    <div class="text-subtitle1 text-weight-bold q-my-sm text-secondary">{{ combustible }}</div>
+                    <q-list bordered separator class="rounded-borders relative-position">
+                        <q-item
+                          v-for="t in listaTanques"
+                          :key="t.id_tanque"
+                          tag="label"
+                          v-ripple
+                        >
+                            <q-item-section avatar>
+                                <q-checkbox v-model="tanquesSeleccionados" :val="t.id_tanque" color="primary" />
+                            </q-item-section>
+                            <q-item-section>
+                                <q-item-label class="text-subtitle2 text-weight-bold text-primary">{{ t.codigo }} — {{ t.nombre }}</q-item-label>
+                                <q-item-label caption>
+                                  Nivel Sistema: {{ t.nivel_actual?.toLocaleString() }} L
+                                </q-item-label>
+                            </q-item-section>
+                            <q-item-section side>
+                                <q-chip
+                                  dense size="sm"
+                                  :color="combustible.includes('GASOLINA') ? 'orange-2' : 'blue-2'"
+                                  :text-color="combustible.includes('GASOLINA') ? 'orange-9' : 'blue-9'"
+                                >
+                                  {{ t.combustible }}
+                                </q-chip>
+                            </q-item-section>
+                        </q-item>
+                    </q-list>
                   </div>
+              </div>
+          </q-step>
 
-                  <div :class="getModo(t) === 'MANUAL' ? 'col-12' : 'col-12 col-sm-6'">
-                    <q-input
-                      dense filled
-                      v-model.number="t.volumen_calculado"
-                      type="number"
-                      suffix="Lts"
-                      :label="getModo(t) === 'MANUAL' ? 'Volumen Medido (Lts) *' : 'Volumen Calculado (Lts)'"
-                      :readonly="getModo(t) !== 'MANUAL'"
-                      :bg-color="getModo(t) !== 'MANUAL' ? 'grey-2' : undefined"
-                      :rules="[(v) => (v !== null && v !== '') || 'Requerido']"
-                      @update:model-value="getModo(t) === 'MANUAL' && onVolumenManual(idx)"
-                    />
-                  </div>
-                </div>
-
-                <!-- Resumen Sistema / Medido / Diferencia — igual que MeasurementFormDialog -->
-                <q-card flat bordered class="bg-grey-1">
-                  <q-card-section class="row q-col-gutter-md text-center q-py-sm">
-                    <!-- Sistema -->
-                    <div class="col-4">
-                      <div class="text-caption text-grey-8">Sistema (Teórico)</div>
-                      <div class="text-h6">{{ (t.nivel_actual ?? 0).toLocaleString() }} L</div>
-                    </div>
-
-                    <!-- Real (Medido) -->
-                    <div class="col-4">
-                      <div class="text-caption text-grey-8">Real (Vara)</div>
-                      <div class="text-h6 text-primary text-weight-bold">
-                        {{ t.volumen_calculado != null ? Number(t.volumen_calculado).toLocaleString() : '—' }} L
-                      </div>
-                    </div>
-
-                    <!-- Diferencia -->
-                    <div class="col-4">
-                      <div class="text-caption text-grey-8">Diferencia Neta</div>
+          <!-- ── PASO 3: MEDICIONES CON EVAPORACIÓN ───────────── -->
+          <q-step
+            :name="3"
+            title="Ingresar Mediciones"
+            icon="edit"
+          >
+              <div v-if="tanquesSeleccionados.length === 0" class="column items-center text-grey-5 q-pa-xl">
+                  <q-icon name="check_box_outline_blank" size="64px" color="grey-3" />
+                  <div class="q-mt-sm text-body2">No has seleccionado tanques para medir</div>
+              </div>
+              <div v-else>
+                  <!-- Agrupar por combustible para renderizar solo los seleccionados -->
+                  <div class="q-mb-lg" v-for="(listaTanques, combustible) in tanquesPorCombustible" :key="combustible">
+                    <!-- Solo mostrar el grupo si hay al menos un tanque seleccionado de este combustible -->
+                    <div v-if="listaTanques.some(t => tanquesSeleccionados.includes(t.id_tanque))">
+                      <div class="text-subtitle1 text-weight-bold q-my-sm text-secondary">{{ combustible }}</div>
+                      
                       <div
-                        class="text-h6"
-                        :class="t.diferencia > 0 ? 'text-negative' : t.diferencia < 0 ? 'text-warning' : 'text-positive'"
+                        v-for="(t) in listaTanques"
+                        :key="t.id_tanque"
                       >
-                        {{ t.diferencia != null ? Number(t.diferencia).toLocaleString() : '—' }} L
-                      </div>
-                      <div class="text-xs text-grey-6">
-                        {{ t.diferencia > 0 ? 'Faltante' : t.diferencia < 0 ? 'Sobrante' : '' }}
+                        <div v-if="tanquesSeleccionados.includes(t.id_tanque)" class="q-mb-md">
+                          <div class="row items-center q-mb-xs q-gutter-xs">
+                              <span class="text-subtitle2 text-weight-bold text-primary">
+                              {{ t.codigo }} — {{ t.nombre }}
+                              </span>
+                              <q-chip dense size="sm" color="grey-2" text-color="grey-8">
+                              {{ getModo(t) }}
+                              </q-chip>
+                          </div>
+
+                          <div class="row q-col-gutter-md q-mb-sm">
+                              <div class="col-12 col-sm-4" v-if="getModo(t) !== 'MANUAL'">
+                              <q-input
+                                  dense filled
+                                  v-model.number="t.medida_vara"
+                                  type="number"
+                                  :label="`Vara (${t.unidad_medida || 'cm'})`"
+                                  @update:model-value="calcular(t)"
+                              />
+                              </div>
+                              <div :class="getModo(t) === 'MANUAL' ? 'col-12 col-sm-6' : 'col-12 col-sm-4'">
+                              <q-input
+                                  dense filled
+                                  v-model.number="t.volumen_calculado"
+                                  type="number"
+                                  suffix="Lts"
+                                  :label="getModo(t) === 'MANUAL' ? 'Volumen Medido (L) *' : 'Volumen Calc. (L)'"
+                                  :readonly="getModo(t) !== 'MANUAL'"
+                                  :bg-color="getModo(t) !== 'MANUAL' ? 'grey-2' : undefined"
+                                  :rules="[(v) => (v !== null && v !== '') || 'Requerido']"
+                                  @update:model-value="getModo(t) === 'MANUAL' && onVolumenManual(t)"
+                              />
+                              </div>
+                              <div :class="getModo(t) === 'MANUAL' ? 'col-12 col-sm-6' : 'col-12 col-sm-4'">
+                              <q-input
+                                  dense filled
+                                  v-model.number="t.merma_evaporacion"
+                                  type="number"
+                                  suffix="Lts"
+                                  label="Evaporación"
+                                  placeholder="Ej: 50"
+                              />
+                              </div>
+                          </div>
+
+                          <q-card flat bordered class="bg-grey-1">
+                              <q-card-section class="row q-col-gutter-md text-center q-py-sm">
+                              <div class="col-4">
+                                  <div class="text-caption text-grey-8">Sistema</div>
+                                  <div class="text-h6">{{ (t.nivel_actual ?? 0).toLocaleString() }} L</div>
+                              </div>
+                              <div class="col-4">
+                                  <div class="text-caption text-grey-8">Real</div>
+                                  <div class="text-h6 text-primary text-weight-bold">
+                                  {{ t.volumen_calculado != null ? Number(t.volumen_calculado).toLocaleString() : '—' }} L
+                                  </div>
+                              </div>
+                              <div class="col-4">
+                                  <div class="text-caption text-grey-8">Diferencia</div>
+                                  <div
+                                  class="text-h6"
+                                  :class="t.diferencia > 0 ? 'text-negative' : t.diferencia < 0 ? 'text-warning' : 'text-positive'"
+                                  >
+                                  {{ t.diferencia != null ? Number(t.diferencia).toLocaleString() : '—' }} L
+                                  </div>
+                              </div>
+                              </q-card-section>
+                          </q-card>
+                        </div>
                       </div>
                     </div>
-                  </q-card-section>
-                </q-card>
-
-                <q-separator v-if="idx < tanquesForm.length - 1" class="q-mt-md" />
+                  </div>
               </div>
-            </div>
-          </div>
-        </q-card-section>
+          </q-step>
 
-        <q-separator />
-        <q-card-actions align="right" class="q-pa-md">
-          <q-btn flat label="Cancelar" v-close-popup />
-          <q-btn
-            type="submit"
-            color="primary"
-            icon="lock_clock"
-            label="Generar Cierre"
-            unelevated
-            :loading="loading"
-            :disable="tanquesForm.length === 0"
-          />
-        </q-card-actions>
+          <!-- ── NAVEGACIÓN DEL STEPPER ───────────────────────────── -->
+          <template v-slot:navigation>
+            <q-separator class="q-my-md"/>
+            <q-stepper-navigation class="row justify-end q-gutter-sm">
+              <q-btn flat label="Cancelar" v-close-popup v-if="step === 1" />
+              <q-btn v-if="step > 1" flat color="primary" @click="step--" label="Atrás" />
+              <q-btn v-if="step < 3" :disable="step === 2 && tanquesSeleccionados.length === 0" color="primary" @click="step++" label="Continuar" unelevated />
+              <q-btn
+                v-if="step === 3"
+                type="submit"
+                color="primary"
+                icon="lock_clock"
+                label="Generar Cierre"
+                unelevated
+                :loading="loading"
+                :disable="tanquesSeleccionados.length === 0"
+              />
+            </q-stepper-navigation>
+          </template>
+        </q-stepper>
       </q-form>
     </q-card>
   </q-dialog>
@@ -241,6 +269,6 @@ const props = defineProps({
 
 const emit = defineEmits(["update:modelValue", "llenadero-changed", "save"]);
 
-const { lote, tanquesForm, calcular, onVolumenManual, getModo, onSave } =
+const { step, lote, tanquesForm, tanquesPorCombustible, tanquesSeleccionados, calcular, onVolumenManual, getModo, onSave } =
   useGenerarCierreForm(props, emit);
 </script>

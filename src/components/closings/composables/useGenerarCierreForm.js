@@ -18,9 +18,14 @@ export function useGenerarCierreForm(props, emit) {
         observaciones: "",
     });
 
+    // ─── ESTADO DEL STEPPER ──────────────────────────────────
+    const step = ref(1);
+
     // ─── TANQUES ACTIVOS DEL LLENADERO ───────────────────────
-    // Cada entrada: { ...tankDetail, medida_vara, volumen_calculado, diferencia }
+    // Cada entrada: { ...tankDetail, medida_vara, volumen_calculado, diferencia, merma_evaporacion }
     const tanquesForm = ref([]);
+    // IDs de los tanques seleccionados por el usuario para este cierre
+    const tanquesSeleccionados = ref([]);
 
     // ─── RESET AL ABRIR ──────────────────────────────────────
     watch(
@@ -38,6 +43,8 @@ export function useGenerarCierreForm(props, emit) {
                     observaciones: "",
                 };
                 tanquesForm.value = [];
+                tanquesSeleccionados.value = [];
+                step.value = 1;
             }
         }
     );
@@ -51,15 +58,29 @@ export function useGenerarCierreForm(props, emit) {
                 medida_vara: null,
                 volumen_calculado: null,
                 diferencia: null,
+                merma_evaporacion: null, // Nuevo campo para evaporación
             }));
+            // Por defecto no seleccionamos ninguno, el usuario debe elegirlos
+            tanquesSeleccionados.value = [];
         },
         { immediate: true }
     );
 
+    // ─── TANQUES AGRUPADOS POR COMBUSTIBLE ──────────────────
+    const tanquesPorCombustible = computed(() => {
+        const grupos = {};
+        tanquesForm.value.forEach(t => {
+            const comb = t.combustible || "Sin Especificar";
+            if (!grupos[comb]) grupos[comb] = [];
+            grupos[comb].push(t);
+        });
+        return grupos;
+    });
+
     // ─── CALCULAR VOLUMEN POR TANQUE ─────────────────────────
     // Misma lógica que useMeasurementForm.calculate()
-    function calcular(idx) {
-        const t = tanquesForm.value[idx];
+    function calcular(paramsT) {
+        const t = typeof paramsT === 'object' ? paramsT : tanquesForm.value[paramsT];
         if (!t) return;
 
         const medida = parseFloat(t.medida_vara);
@@ -125,8 +146,8 @@ export function useGenerarCierreForm(props, emit) {
     }
 
     // Si el usuario escribe volumen directamente (modo manual)
-    function onVolumenManual(idx) {
-        const t = tanquesForm.value[idx];
+    function onVolumenManual(paramsT) {
+        const t = typeof paramsT === 'object' ? paramsT : tanquesForm.value[paramsT];
         if (!t) return;
         t.diferencia =
             t.volumen_calculado !== null
@@ -150,12 +171,18 @@ export function useGenerarCierreForm(props, emit) {
 
     // ─── GUARDAR ─────────────────────────────────────────────
     function onSave() {
+        // Filtrar solo los tanques que el usuario seleccionó
+        const tanquesAEnviar = tanquesForm.value.filter((t) =>
+            tanquesSeleccionados.value.includes(t.id_tanque)
+        );
+
         // Construir payload para el backend
-        const mediciones = tanquesForm.value.map((t) => ({
+        const mediciones = tanquesAEnviar.map((t) => ({
             id_tanque: t.id_tanque,
             id_tipo_combustible: t.id_tipo_combustible,
             medida_vara: t.medida_vara !== null ? parseFloat(t.medida_vara) : null,
             volumen_real: parseFloat(t.volumen_calculado),
+            merma_evaporacion: t.merma_evaporacion ? parseFloat(t.merma_evaporacion) : 0,
         }));
 
         emit("save", {
@@ -165,8 +192,11 @@ export function useGenerarCierreForm(props, emit) {
     }
 
     return {
+        step,
         lote,
         tanquesForm,
+        tanquesPorCombustible,
+        tanquesSeleccionados,
         calcular,
         onVolumenManual,
         getModo,

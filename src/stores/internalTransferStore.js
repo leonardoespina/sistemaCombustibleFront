@@ -82,7 +82,7 @@ export const useInternalTransferStore = defineStore("internalTransfers", () => {
       const response = await api.get("/llenaderos");
       // El backend devuelve directamente el array o envuelto en data
       const data = response.data.data || response.data;
-      
+
       llenaderosList.value = Array.isArray(data) ? data : (data.docs || []);
     } catch (error) {
       console.error("Error al cargar llenaderos", error);
@@ -100,11 +100,19 @@ export const useInternalTransferStore = defineStore("internalTransfers", () => {
   }
 
   async function fetchTankDetail(tankId, target = 'source') {
-    if (!tankId) return;
+    if (!tankId) {
+      if (target === 'source') {
+        sourceTankDetail.value = null;
+      } else {
+        destinationTankDetail.value = null;
+        destinationTankAforo.value = [];
+      }
+      return;
+    }
     try {
       const response = await api.get(`/tanques/${tankId}`);
       const tank = response.data;
-      
+
       // Parsear aforo
       if (typeof tank.aforo === "string") {
         try { tank.aforo = JSON.parse(tank.aforo); } catch (e) { tank.aforo = []; }

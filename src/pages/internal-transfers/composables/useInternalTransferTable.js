@@ -29,6 +29,11 @@ export function useInternalTransferTable() {
     isEditing.value = false;
     isReadOnly.value = false;
     selectedItem.value = null;
+
+    // Forzamos limpiar el caché de tanques antes de abrir
+    transferStore.fetchTankDetail(null, 'source');
+    transferStore.fetchTankDetail(null, 'destination');
+
     await transferStore.fetchLlenaderos();
     await transferStore.loadTanksList(); // Cargar todos para permitir transferencias cruzadas
     isFormDialogVisible.value = true;

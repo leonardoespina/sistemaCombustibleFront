@@ -20,6 +20,7 @@ export const useCierreTurnoStore = defineStore("cierreTurno", () => {
     const filter = ref("");
     const cierreActual = ref(null);
     const reporteActual = ref(null);
+    const actaActual = ref(null);
 
     // ─── ACTIONS ─────────────────────────────────────────────
 
@@ -70,8 +71,14 @@ export const useCierreTurnoStore = defineStore("cierreTurno", () => {
         return res.data;
     }
 
+    async function fetchActa(id_cierre) {
+        const res = await api.get(`/cierres-turno/${id_cierre}/acta`);
+        actaActual.value = res.data;
+        return res.data;
+    }
+
     return {
-        rows, loading, pagination, filter, cierreActual, reporteActual,
-        fetchCierres, fetchCierre, fetchTanquesLlenadero, generarCierre, fetchReporte,
+        rows, loading, pagination, filter, cierreActual, reporteActual, actaActual,
+        fetchCierres, fetchCierre, fetchTanquesLlenadero, generarCierre, fetchReporte, fetchActa,
     };
 });

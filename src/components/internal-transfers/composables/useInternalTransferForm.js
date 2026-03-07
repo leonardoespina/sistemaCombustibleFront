@@ -175,21 +175,31 @@ export function useInternalTransferForm(props, emit) {
 
   function initializeForm() {
     const now = new Date();
-    const init = props.initialData || {};
-    formData.value = {
-      fecha: init.fecha_transferencia ? date.formatDate(init.fecha_transferencia, "YYYY-MM-DD") : date.formatDate(now, "YYYY-MM-DD"),
-      hora: init.fecha_transferencia ? date.formatDate(init.fecha_transferencia, "HH:mm") : date.formatDate(now, "HH:mm"),
-      id_llenadero: init.TanqueOrigen?.id_llenadero || null,
-      id_tanque_origen: init.id_tanque_origen || null,
-      id_tanque_destino: init.id_tanque_destino || null,
-      medida_vara_destino: init.medida_vara_destino || null,
-      observacion: init.observacion || "",
-    };
 
     if (props.isEditing || props.isReadOnly) {
+      const init = props.initialData || {};
+      formData.value = {
+        fecha: init.fecha_transferencia ? date.formatDate(init.fecha_transferencia, "YYYY-MM-DD") : date.formatDate(now, "YYYY-MM-DD"),
+        hora: init.fecha_transferencia ? date.formatDate(init.fecha_transferencia, "HH:mm") : date.formatDate(now, "HH:mm"),
+        id_llenadero: init.TanqueOrigen?.id_llenadero || null,
+        id_tanque_origen: init.id_tanque_origen || null,
+        id_tanque_destino: init.id_tanque_destino || null,
+        medida_vara_destino: init.medida_vara_destino || null,
+        observacion: init.observacion || "",
+      };
       liters.final = parseFloat(init.nivel_destino_despues || 0);
       manualEdit.final = true;
     } else {
+      // Formulario Nuevo puro: Limpiar todo forzosamente para evitar datos fantasma
+      formData.value = {
+        fecha: date.formatDate(now, "YYYY-MM-DD"),
+        hora: date.formatDate(now, "HH:mm"),
+        id_llenadero: null,
+        id_tanque_origen: null,
+        id_tanque_destino: null,
+        medida_vara_destino: null,
+        observacion: "",
+      };
       resetAllStates();
     }
   }

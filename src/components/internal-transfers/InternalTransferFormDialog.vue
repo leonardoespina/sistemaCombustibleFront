@@ -366,7 +366,8 @@ watch(() => props.destinationTankAforo, () => {
 function onLlenaderoSelect(id) {
   formData.value.id_tanque_origen = null;
   formData.value.id_tanque_destino = null;
-  // Ya no emitimos llenadero-changed para filtrar el store, lo hacemos local
+  emit("source-tank-changed", null);
+  emit("destination-tank-changed", null);
   resetAllStates();
 }
 
@@ -375,6 +376,7 @@ function onLlenaderoSelect(id) {
 function onSourceTankSelect(id) {
   formData.value.id_tanque_destino = null;
   emit("source-tank-changed", id);
+  emit("destination-tank-changed", null);
   resetAllStates();
 }
 

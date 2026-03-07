@@ -76,32 +76,32 @@
           }}</strong>
           se
           <strong>
-            inició el turno con un volumen disponible de combustible
-            {{ formatNumber(acta?.seccion_principal?.nivel_inicio) }}
-            Lts</strong
-          >
-          en la estación de Planta La Camorra (PLC), con la finalidad de llevar
-          un control del combustible suministrado, surtiéndole la cantidad de
+            inició el turno con un volumen disponible de {{ inicioTurnoTexto }}</strong>, con la finalidad de llevar
+          un control del combustible suministrado. Durante el transcurso del turno se surtió la cantidad de
           <strong
             >{{
               formatNumber(acta?.seccion_principal?.consumo_planta)
             }}
             Lts</strong
           >
-          de combustible para el consumo de la planta; la cantidad de
+          de Gasoil para el consumo de la planta, y la cantidad de
           <strong>{{ formatNumber(generadores) }} Lts</strong>
-          para los Generadores Eléctricos; y la cantidad de
+          de Gasoil para los Generadores Eléctricos. Así mismo, se registra un consumo de 
           <strong>{{ formatNumber(consumoVehiculosNeto) }} Lts</strong>
-          para los Vehículos livianos y pesados que complementan las
-          operaciones; quedando en el tanque la cantidad de
+          de Gasoil para el despliegue de los Vehículos livianos y pesados que complementan las
+          operaciones; quedando un stock final disponible de 
           <strong
             >{{
               formatNumber(acta?.seccion_principal?.total_disponible)
             }}
             Lts</strong
           >
-          de gasoil.
+          de Gasoil.
         </div>
+        <q-inner-loading :showing="!acta">
+          <q-spinner-gears size="50px" color="primary" />
+        </q-inner-loading>
+
 
         <!-- INVENTARIO -->
         <div class="row q-col-gutter-md q-mb-lg">
@@ -114,24 +114,22 @@
               class="q-mt-xs"
             >
               <div>
-                <span style="text-decoration: underline"
-                  ><strong>{{ tanque.nombre }} </strong>:
-                  {{ formatNumber(tanque.nivel_final) }} <strong>Evap:</strong>
-                  {{ formatNumber(tanque.evaporizacion) }}</span
-                >
+                <span class="text-weight-bold" style="text-decoration: underline">
+                  {{ tanque.nombre }}: {{ formatNumber(tanque.nivel_final) }}
+                </span>
               </div>
             </div>
             <div class="q-mt-md">
               <div>
                 <strong>INICIO:</strong>
                 <span style="text-decoration: underline"
-                  >{{ totalGasolinaInicio }} Lts</span
+                  >{{ formatNumber(totalGasolinaInicio) }} Lts</span
                 >
               </div>
               <div>
                 <strong>CONSUMO:</strong>
                 <span style="text-decoration: underline"
-                  >{{ totalGasolinaConsumo }} sLts</span
+                  >{{ formatNumber(totalGasolinaConsumo) }} Lts</span
                 >
               </div>
               <div>
@@ -167,22 +165,9 @@
               class="q-mt-xs"
             >
               <div>
-                <strong>
-                  <span style="text-decoration: underline"
-                    ><strong> {{ tanque.nombre }}</strong
-                    >: {{ formatNumber(tanque.nivel_final) }}</span
-                  ></strong
-                >
-              </div>
-            </div>
-            <div v-if="tanquePrincipal" class="q-mt-xs">
-              <div>
-                <strong>
-                  <span style="text-decoration: underline"
-                    >{{ tanquePrincipal.nombre }} :
-                    {{ formatNumber(tanquePrincipal.nivel_final) }}</span
-                  ></strong
-                >
+                <span class="text-weight-bold" style="text-decoration: underline">
+                  {{ tanque.nombre }}: {{ formatNumber(tanque.nivel_final) }}
+                </span>
               </div>
             </div>
             <div class="q-mt-md">
@@ -341,12 +326,14 @@ const props = defineProps({
 const emit = defineEmits(["update:modelValue"]);
 
 const generadores = computed(() => {
-  // Extraer datos del usuario (PCP/Inspector) desde snapshot_desglose_despachos
-  let desgloseConsumo = props.acta?.seccion_principal?.desglose_consumo;
-
-  const generador = JSON.parse(desgloseConsumo);
-
-  return generador.generadores;
+  let dc = props.acta?.seccion_principal?.desglose_consumo;
+  if (!dc) return 0;
+  try {
+    const data = typeof dc === "string" ? JSON.parse(dc) : dc;
+    return data.generadores || 0;
+  } catch (e) {
+    return 0;
+  }
 });
 
 // ========== COMPUTED PROPERTIES PARA DATOS DE FIRMAS ==========
@@ -415,8 +402,7 @@ const tanquesGasolina = computed(() => {
 });
 
 const tanquesGasoil = computed(() => {
-  const tanques = props.acta?.inventario_gasoil?.tanques || [];
-  return tanques.filter((t) => !t.es_principal);
+  return props.acta?.inventario_gasoil?.tanques || [];
 });
 
 const tanquePrincipal = computed(() => {
@@ -425,12 +411,25 @@ const tanquePrincipal = computed(() => {
 });
 
 const totalGasolinaInicio = computed(() => {
-  // Sumar todos los niveles iniciales de gasolina
-  return props.acta.inventario_gasolina.saldo_inicial_total || 0;
+  return props.acta?.inventario_gasolina?.saldo_inicial_total || 0;
 });
 
 const totalGasolinaConsumo = computed(() => {
-  return props.acta?.inventario_gasolina?.consumo_total_despachos || [];
+  return props.acta?.inventario_gasolina?.consumo_total_despachos || 0;
+});
+
+// Calculamos el inicio de turno dinamico por combustibles
+const inicioTurnoTexto = computed(() => {
+  if (!props.acta) return '';
+
+  const llenaderoInfo = props.acta?.datos_generales?.llenadero?.trim() || 'Planta La Camorra (PLC)';
+  
+  const saldoGasoil = props.acta?.inventario_gasoil?.saldo_inicial_total;
+  if (saldoGasoil != null && saldoGasoil > 0) {
+    return `en el Llenadero ${llenaderoInfo} GASOIL con total de ${formatNumber(saldoGasoil)} LTS`;
+  }
+  
+  return `en la estación de ${llenaderoInfo} con un total de ${formatNumber(props.acta?.seccion_principal?.nivel_inicio)} LTS`; 
 });
 
 // Calculamos el consumo neto de vehículos. Ahora, consumo_total_despachos

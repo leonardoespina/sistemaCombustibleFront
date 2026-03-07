@@ -139,6 +139,13 @@
             >
               <q-tooltip>Reporte Final</q-tooltip>
             </q-btn>
+            <q-btn
+              dense round flat
+              color="deep-orange-8" icon="article"
+              @click="verActa(row)"
+            >
+              <q-tooltip>Acta de Cierre (PCP)</q-tooltip>
+            </q-btn>
           </q-td>
         </template>
 
@@ -215,6 +222,63 @@
             <div class="text-subtitle2 text-primary q-mb-sm">Observaciones</div>
             <div class="text-body2">{{ cierreSeleccionado.observaciones }}</div>
           </div>
+
+          <!-- Tanques Medidos (Agrupados por combustible) -->
+          <template v-if="Object.keys(tanquesAgrupadosDetalle).length > 0">
+            <q-separator class="q-my-lg" />
+            <div class="text-h6 text-primary q-mb-md">
+              <q-icon name="oil_barrel" class="q-mr-sm" />
+              Mediciones Físicas
+            </div>
+
+            <div v-for="(mediciones, combustible) in tanquesAgrupadosDetalle" :key="combustible" class="q-mb-lg">
+              <q-card flat bordered>
+                <q-card-section class="bg-primary text-white q-py-sm">
+                  <div class="text-subtitle1 text-weight-bold text-uppercase">
+                    <q-icon name="local_gas_station" class="q-mr-sm" />
+                    {{ combustible }}
+                  </div>
+                </q-card-section>
+                
+                <q-card-section class="q-pa-md bg-grey-2">
+                  <div class="row q-col-gutter-md">
+                    <div v-for="m in mediciones" :key="m.id_medicion" class="col-12 col-sm-6 col-md-4">
+                      <q-card flat bordered class="bg-white h-full">
+                        <q-card-section class="q-pa-sm">
+                          <div class="text-subtitle2 text-weight-bold text-primary q-mb-xs">
+                            {{ m.Tanque?.codigo }} — {{ m.Tanque?.nombre }}
+                          </div>
+                          
+                          <div class="row items-center justify-between text-caption q-mb-xs">
+                            <span class="text-grey-8">Vara:</span>
+                            <span class="text-weight-medium">{{ m.MedicionCierre?.medida_vara ?? '—' }} {{ m.Tanque?.unidad_medida }}</span>
+                          </div>
+                          <div class="row items-center justify-between text-caption q-mb-xs">
+                            <span class="text-grey-8">Vol. Real:</span>
+                            <span class="text-weight-bold text-primary">{{ Number(m.MedicionCierre?.volumen_real || 0).toLocaleString() }} L</span>
+                          </div>
+                          <div class="row items-center justify-between text-caption q-mb-xs">
+                            <span class="text-grey-8">Vol. Teórico:</span>
+                            <span>{{ Number(m.MedicionCierre?.volumen_teorico || 0).toLocaleString() }} L</span>
+                          </div>
+                          <div class="row items-center justify-between text-caption q-mb-xs">
+                            <span class="text-grey-8">Diferencia:</span>
+                            <span :class="m.MedicionCierre?.diferencia > 0 ? 'text-negative' : m.MedicionCierre?.diferencia < 0 ? 'text-warning' : 'text-positive'">
+                              {{ Number(m.MedicionCierre?.diferencia || 0).toLocaleString() }} L
+                            </span>
+                          </div>
+                          <div class="row items-center justify-between text-caption q-mb-xs" v-if="m.MedicionCierre?.merma_evaporacion">
+                            <span class="text-grey-8">Evaporación:</span>
+                            <span>{{ Number(m.MedicionCierre?.merma_evaporacion).toLocaleString() }} L</span>
+                          </div>
+                        </q-card-section>
+                      </q-card>
+                    </div>
+                  </div>
+                </q-card-section>
+              </q-card>
+            </div>
+          </template>
         </q-card-section>
 
         <q-card-actions align="right" class="q-pa-md">
@@ -222,6 +286,10 @@
           <q-btn
             unelevated color="secondary" icon="description"
             label="Ver Reporte" @click="verReporte(cierreSeleccionado); showDetalleDialog = false"
+          />
+          <q-btn
+            unelevated color="deep-orange-8" icon="article"
+            label="Ver Acta" @click="verActa(cierreSeleccionado); showDetalleDialog = false"
           />
         </q-card-actions>
       </q-card>
@@ -251,73 +319,81 @@
             <div v-for="(val, label) in encabezadoResumen" :key="label" class="col-auto">
               <div class="text-caption text-grey-6">{{ label }}</div>
               <div class="text-body2 text-weight-bold">{{ val }}</div>
-              
-            </div class="col-auto">
-             <div class="text-caption text-body5 text-red-6 text-weight-bold" >Total Despachado: {{ totalDespachado }}</div>
-            
+            </div>
           </div>
 
+          <!-- Tablas de despachos separadas por bloque de combustible -->
+          <div v-for="combustible in combustiblesReporte" :key="combustible" class="q-mb-xl">
+            <q-toolbar class="bg-primary text-white shadow-2 rounded-borders q-mb-sm">
+              <q-icon name="local_gas_station" />
+              <q-toolbar-title class="text-subtitle1 text-weight-bold text-uppercase">
+                {{ combustible }}
+              </q-toolbar-title>
+            </q-toolbar>
 
+            <q-table
+              :rows="filasPorCombustible(combustible)"
+              :columns="columnasPorCombustible(combustible)"
+              flat bordered dense
+              :rows-per-page-options="[0]"
+              hide-bottom
+            >
+              <template #body="{ row }">
+                <q-tr :class="row.es_ingreso ? 'bg-light-green-1' : ''">
+                  <q-td class="text-center text-caption">{{ row.item }}</q-td>
+                  <q-td class="text-caption">{{ row.fecha }}</q-td>
+                  <q-td class="text-caption" :class="row.es_ingreso ? 'text-positive text-weight-bold' : ''">{{ row.nombre_apellido }}</q-td>
+                  <q-td class="text-caption" :class="row.es_ingreso ? 'text-positive text-weight-bold' : ''">{{ row.placa }}</q-td>
+                  <q-td class="text-caption">{{ row.dependencia }}</q-td>
+                  <q-td class="text-caption">{{ row.subdependencia }}</q-td>
 
-          <!-- Tabla de despachos con cantidad solicitada + niveles por tanque -->
-          <q-table
-            :rows="reporteActual.filas"
-            :columns="columnasReporte"
-            flat bordered dense
-            :rows-per-page-options="[0]"
-            hide-bottom
-          >
-            <!-- Body completo para poder colorear columnas dinámicas por tanque -->
-            <template #body="{ row }">
-              <q-tr>
-                <q-td class="text-center text-caption">{{ row.item }}</q-td>
-                <q-td class="text-caption">{{ row.fecha }}</q-td>
-                <q-td class="text-caption">{{ row.nombre_apellido }}</q-td>
-                <q-td class="text-caption">{{ row.placa }}</q-td>
-                <q-td class="text-caption">{{ row.dependencia }}</q-td>
-                <q-td class="text-caption">{{ row.subdependencia }}</q-td>
+                  <!-- Solicitado -->
+                  <q-td class="text-right text-caption" :class="row.es_ingreso ? 'text-positive' : 'text-grey-7'">
+                    <span v-if="row.es_ingreso">+</span>{{ Number(row.cant_solicitada).toLocaleString() }}
+                  </q-td>
 
-                <!-- Solicitado -->
-                <q-td class="text-right text-caption text-grey-7">
-                  {{ Number(row.cant_solicitada).toLocaleString() }}
-                </q-td>
+                  <!-- Despachado -->
+                  <q-td class="text-right text-weight-bold text-caption" :class="row.es_ingreso ? 'text-positive' : 'text-primary'">
+                    <span v-if="row.es_ingreso">+</span>{{ Number(row.cant_despachada).toLocaleString() }}
+                  </q-td>
 
-                <!-- Despachado -->
-                <q-td class="text-right text-weight-bold text-primary text-caption">
-                  {{ Number(row.cant_despachada).toLocaleString() }}
-                </q-td>
+                  <!-- Diferencia -->
+                  <q-td
+                    class="text-right text-weight-bold text-caption"
+                    :class="row.es_ingreso ? 'text-positive' : ((row.cant_solicitada - row.cant_despachada) > 0 ? 'text-warning' : 'text-positive')"
+                  >
+                    <span v-if="row.es_ingreso">--</span>
+                    <span v-else>{{ (row.cant_solicitada - row.cant_despachada).toLocaleString() }}</span>
+                  </q-td>
 
-                <!-- Diferencia -->
-                <q-td
-                  class="text-right text-weight-bold text-caption"
-                  :class="(row.cant_solicitada - row.cant_despachada) > 0 ? 'text-warning' : 'text-positive'"
-                >
-                  {{ (row.cant_solicitada - row.cant_despachada).toLocaleString() }}
-                </q-td>
+                  <!-- Stock por tanque — color naranja como en la imagen -->
+                  <q-td
+                    v-for="t in tanquesOrdenadosReporte.filter(t => t.combustible === combustible)"
+                    :key="t.codigo"
+                    class="text-right text-caption text-weight-bold text-deep-orange-8"
+                  >
+                    {{ row.stock_tanques?.[t.codigo] != null
+                      ? Number(row.stock_tanques[t.codigo]).toLocaleString()
+                      : '—' }}
+                  </q-td>
 
-                <!-- Stock por tanque — color naranja como en la imagen -->
-                <q-td
-                  v-for="t in reporteActual.encabezado.tanques"
-                  :key="t.codigo"
-                  class="text-right text-caption text-weight-bold text-deep-orange-8"
-                >
-                  {{ row.stock_tanques?.[t.codigo] != null
-                    ? Number(row.stock_tanques[t.codigo]).toLocaleString()
-                    : '—' }}
-                </q-td>
+                  <!-- Stock Total — azul negrita -->
+                  <q-td class="text-right text-weight-bold text-primary text-caption">
+                    {{ Number(tanquesOrdenadosReporte.filter(t => t.combustible === combustible).reduce((sum, t) => sum + parseFloat(row.stock_tanques?.[t.codigo] || 0), 0)).toLocaleString() }}
+                  </q-td>
 
-                <!-- Stock Total — azul negrita -->
-                <q-td class="text-right text-weight-bold text-primary text-caption">
-                  {{ Number(row.stock_total).toLocaleString() }}
-                </q-td>
+                  <q-td class="text-caption">{{ row.almacen }}</q-td>
+                  <q-td class="text-caption">{{ row.pcp }}</q-td>
+                </q-tr>
+              </template>
+            </q-table>
 
-                <q-td class="text-caption">{{ row.almacen }}</q-td>
-                <q-td class="text-caption">{{ row.pcp }}</q-td>
-              </q-tr>
-            </template>
-          </q-table>
-
-
+            <div class="row justify-end q-mt-sm">
+              <div class="text-subtitle2 text-red-6 text-weight-bold">
+                Total Despachado {{ combustible }}: {{ Number(totalDespachadoPorCombustible(combustible)).toLocaleString() }} L
+              </div>
+            </div>
+          </div>
           <div v-if="!reporteActual.filas.length" class="text-center text-grey-6 q-pa-xl">
             <q-icon name="inbox" size="48px" class="q-mb-sm" />
             <div>Sin despachos asociados a este cierre</div>
@@ -326,6 +402,12 @@
       </q-card>
     </q-dialog>
 
+    <!-- ─── DIALOG: ACTA VIEWER ────────────────────────────── -->
+    <ActaViewerDialog
+      v-model="showActaDialog"
+      :acta="actaActual"
+    />
+
   </q-page>
 </template>
 
@@ -333,17 +415,19 @@
 import { computed } from "vue";
 import { useCierreTurnoPage } from "../../components/closings/composables/useCierreTurnoPage.js";
 import GenerarCierreDialog from "../../components/closings/GenerarCierreDialog.vue";
+import ActaViewerDialog from "../../components/closings/ActaViewerDialog.vue";
 
 const {
-  rows, loading, filter, pagination, reporteActual,
-  showGenerarDialog, showReporteDialog, showDetalleDialog,
+  rows, loading, filter, pagination, reporteActual, actaActual,
+  showGenerarDialog, showReporteDialog, showDetalleDialog, showActaDialog,
   filters, llenaderosList, pcpList,
   tanquesActivos, cargandoTanques,
   cierreSeleccionado,
+  tanquesAgrupadosDetalle,
   columns,
   onRequest, applyFilters, clearFilters,
   onLlenaderoChanged, onGenerarCierre,
-  openDetalle, verReporte,
+  openDetalle, verReporte, verActa,
 } = useCierreTurnoPage();
 
 // Encabezado legible del reporte
@@ -360,8 +444,34 @@ const encabezadoResumen = computed(() => {
   };
 });
 
-// Columnas dinámicas del reporte con cant_solicitada + columnas por tanque
-const columnasReporte = computed(() => {
+// Tanques ordenados dinámicamente
+const tanquesOrdenadosReporte = computed(() => {
+  if (!reporteActual.value) return [];
+  return [...(reporteActual.value.encabezado?.tanques ?? [])].sort((a, b) => {
+    const combA = a.combustible || "";
+    const combB = b.combustible || "";
+    if (combA === combB) {
+      return a.codigo.localeCompare(b.codigo);
+    }
+    return combA.localeCompare(combB);
+  });
+});
+
+// Tipos de combustible presentes en el reporte
+const combustiblesReporte = computed(() => {
+  if (!tanquesOrdenadosReporte.value.length) return [];
+  const combs = new Set(tanquesOrdenadosReporte.value.map(t => t.combustible).filter(Boolean));
+  return Array.from(combs);
+});
+
+// Filas filtradas por combustible de despacho
+const filasPorCombustible = (combustible) => {
+  if (!reporteActual.value?.filas) return [];
+  return reporteActual.value.filas.filter(f => f.combustible_despacho === combustible);
+};
+
+// Columnas dinámicas por combustible
+const columnasPorCombustible = (combustible) => {
   if (!reporteActual.value) return [];
   const base = [
     { name: "item",             label: "#",            field: "item",             align: "center", style: "width:40px" },
@@ -375,8 +485,9 @@ const columnasReporte = computed(() => {
     { name: "diferencia",       label: "Diferencia",   field: (r) => r.cant_solicitada - r.cant_despachada, align: "right" },
   ];
 
-  // Una columna por cada tanque del llenadero en orden del encabezado
-  const stockCols = (reporteActual.value.encabezado?.tanques ?? []).map((t) => ({
+  const tanques = tanquesOrdenadosReporte.value.filter(t => t.combustible === combustible);
+  
+  const stockCols = tanques.map((t) => ({
     name:  `stock_${t.codigo}`,
     label: `Stock ${t.codigo}`,
     field: (row) =>
@@ -389,17 +500,23 @@ const columnasReporte = computed(() => {
   return [
     ...base,
     ...stockCols,
-    { name: "stock_total", label: "Stock Total", field: "stock_total", align: "right" },
+    { 
+      name: "stock_total", 
+      label: `Total ${combustible}`, 
+      field: (row) => {
+        let sum = 0;
+        tanques.forEach(t => sum += parseFloat(row.stock_tanques?.[t.codigo] || 0));
+        return sum;
+      }, 
+      align: "right" 
+    },
     { name: "almacen",     label: "Almacén",     field: "almacen",     align: "left"  },
     { name: "pcp",         label: "PCP",         field: "pcp",         align: "left"  },
   ];
-});
+};
 
-
-const totalDespachado = computed(() => {
-  if (!reporteActual.value?.filas) return 0;
-  return reporteActual.value.filas.reduce(
-    (sum, f) => sum + parseFloat(f.cant_despachada || 0), 0
-  );
-});
+const totalDespachadoPorCombustible = (combustible) => {
+  const filas = filasPorCombustible(combustible);
+  return filas.filter(f => !f.es_ingreso).reduce((sum, f) => sum + parseFloat(f.cant_despachada || 0), 0);
+};
 </script>

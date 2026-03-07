@@ -12,6 +12,7 @@ export function useCierreTurnoPage() {
     const showGenerarDialog = ref(false);
     const showReporteDialog = ref(false);
     const showDetalleDialog = ref(false);
+    const showActaDialog = ref(false);
 
     const cargandoTanques = ref(false);
     const tanquesActivos = ref([]);
@@ -33,6 +34,19 @@ export function useCierreTurnoPage() {
 
     const loading = computed(() => store.loading);
     const reporteActual = computed(() => store.reporteActual);
+    const actaActual = computed(() => store.actaActual);
+
+    // ─── AGRUPACIÓN DE TANQUES PARA DETALLE ──────────────────
+    const tanquesAgrupadosDetalle = computed(() => {
+        const grupos = {};
+        const mediciones = cierreSeleccionado.value?.Mediciones || [];
+        mediciones.forEach(m => {
+            const comb = m.Tanque?.TipoCombustible?.nombre || "Sin Especificar";
+            if (!grupos[comb]) grupos[comb] = [];
+            grupos[comb].push(m);
+        });
+        return grupos;
+    });
 
     const filter = computed({
         get: () => store.filter,
@@ -169,9 +183,16 @@ export function useCierreTurnoPage() {
         }
     }
 
-    function openDetalle(row) {
-        cierreSeleccionado.value = row;
+    async function openDetalle(row) {
+        cierreSeleccionado.value = row; // Loading state fallback
         showDetalleDialog.value = true;
+        try {
+            await store.fetchCierre(row.id_cierre);
+            // Sobreescribir con el detalle completo (incluye Mediciones)
+            cierreSeleccionado.value = store.cierreActual;
+        } catch {
+            $q.notify({ type: "warning", message: "Error al cargar el detalle completo del cierre." });
+        }
     }
 
     async function verReporte(row) {
@@ -182,6 +203,17 @@ export function useCierreTurnoPage() {
             await store.fetchReporte(row.id_cierre);
         } catch {
             $q.notify({ type: "negative", message: "Error al generar el reporte." });
+        }
+    }
+
+    async function verActa(row) {
+        store.actaActual = null;
+        cierreSeleccionado.value = row;
+        showActaDialog.value = true;
+        try {
+            await store.fetchActa(row.id_cierre);
+        } catch {
+            $q.notify({ type: "negative", message: "Error al cargar los datos del acta." });
         }
     }
 
@@ -226,16 +258,16 @@ export function useCierreTurnoPage() {
 
     return {
         // state
-        rows, loading, filter, pagination, reporteActual,
-        showGenerarDialog, showReporteDialog, showDetalleDialog,
+        rows, loading, filter, pagination, reporteActual, actaActual,
+        showGenerarDialog, showReporteDialog, showDetalleDialog, showActaDialog,
         filters,
         llenaderosList, pcpList,
         tanquesActivos, cargandoTanques,
-        cierreSeleccionado,
+        cierreSeleccionado, tanquesAgrupadosDetalle,
         columns,
         // methods
         onRequest, applyFilters, clearFilters,
         onLlenaderoChanged, onGenerarCierre,
-        openDetalle, verReporte,
+        openDetalle, verReporte, verActa,
     };
 }
