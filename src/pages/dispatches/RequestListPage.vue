@@ -4,6 +4,7 @@
       <div class="row items-center justify-between">
         <h4 class="text-h4 q-my-none">Gestión de Solicitudes</h4>
         <q-btn
+          v-if="can(PERMISSIONS.CREATE_SOLICITUD)"
           color="primary"
           icon="add"
           label="Nueva Solicitud"
@@ -73,9 +74,9 @@
               <q-tooltip>Ver Detalles</q-tooltip>
             </q-btn>
 
-            <!-- Aprobar (Solo si está PENDIENTE) -->
+            <!-- Aprobar (Solo si está PENDIENTE y tiene permiso) -->
             <q-btn
-              v-if="props.row.estado === 'PENDIENTE'"
+              v-if="props.row.estado === 'PENDIENTE' && can(PERMISSIONS.APPROVE_DISPATCHES)"
               dense
               round
               flat
@@ -86,9 +87,9 @@
               <q-tooltip>Aprobar Solicitud</q-tooltip>
             </q-btn>
 
-            <!-- Rechazar (Solo si no está despachado/vencido) -->
+            <!-- Rechazar (Solo si no está despachado/vencido y tiene permiso) -->
             <q-btn
-              v-if="['PENDIENTE', 'APROBADA'].includes(props.row.estado)"
+              v-if="['PENDIENTE', 'APROBADA'].includes(props.row.estado) && can(PERMISSIONS.REJECT_SOLICITUD)"
               dense
               round
               flat
@@ -118,6 +119,7 @@
 import { ref, onMounted, onUnmounted } from "vue";
 import { storeToRefs } from "pinia";
 import { useRequestStore } from "../../stores/requestStore.js";
+import { PERMISSIONS, hasPermission } from "../../utils/permissions.js";
 import RequestFormDialog from "../../components/dispatches/RequestFormDialog.vue";
 //import TicketPreviewDialog from "../../components/dispatches/TicketPreviewDialog.vue";
 import RequestDetailsDialog from "../../components/dispatches/RequestDetailsDialog.vue";
@@ -126,6 +128,11 @@ import { useQuasar } from "quasar";
 const $q = useQuasar();
 const requestStore = useRequestStore();
 const { rows, loading, filter, pagination } = storeToRefs(requestStore);
+
+// Helper de permisos
+const userStr = localStorage.getItem("user");
+const userData = userStr ? JSON.parse(userStr) : null;
+const can = (permission) => hasPermission(userData, permission);
 
 const isFormDialogVisible = ref(false);
 //const isTicketVisible = ref(false);

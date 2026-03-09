@@ -13,6 +13,7 @@
         </div>
         <div class="col-12 col-md-auto q-mt-sm q-mt-md-none">
           <q-btn
+            v-if="can(PERMISSIONS.MANAGE_OPERACIONES_TANQUES)"
             color="primary"
             icon="add"
             label="Generar Cierre"
@@ -412,7 +413,8 @@
 </template>
 
 <script setup>
-import { computed } from "vue";
+import { computed, onMounted } from "vue";
+import { PERMISSIONS, hasPermission } from "../../utils/permissions";
 import { useCierreTurnoPage } from "../../components/closings/composables/useCierreTurnoPage.js";
 import GenerarCierreDialog from "../../components/closings/GenerarCierreDialog.vue";
 import ActaViewerDialog from "../../components/closings/ActaViewerDialog.vue";
@@ -429,6 +431,12 @@ const {
   onLlenaderoChanged, onGenerarCierre,
   openDetalle, verReporte, verActa,
 } = useCierreTurnoPage();
+
+const can = (permission) => {
+  const stored = localStorage.getItem("user");
+  const user = stored ? JSON.parse(stored) : null;
+  return hasPermission(user, permission);
+};
 
 // Encabezado legible del reporte
 const encabezadoResumen = computed(() => {

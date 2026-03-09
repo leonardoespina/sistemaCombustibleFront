@@ -11,7 +11,7 @@
     <!--          CONFIGURACIÓN             -->
     <!-- ================================== -->
     <q-expansion-item
-      v-if="isAdmin"
+      v-if="can(PERMISSIONS.MANAGE_SYSTEM)"
       expand-separator
       icon="settings"
       label="Configuración"
@@ -109,7 +109,7 @@
       </q-list>
     </q-expansion-item>
 
-    <q-item clickable v-ripple to="/solicitudes">
+    <q-item v-if="can(PERMISSIONS.VIEW_SOLICITUDES)" clickable v-ripple to="/solicitudes">
       <q-item-section avatar
         ><q-icon name="local_gas_station"
       /></q-item-section>
@@ -117,9 +117,7 @@
     </q-item>
 
     <q-item
-      v-if="
-        isAdmin || (userTipoMenu !== 'ESTANDAR' && userTipoMenu !== 'SEGURIDAD')
-      "
+      v-if="can(PERMISSIONS.APPROVE_DISPATCHES) && (props.isAdmin || !['ESTANDAR', 'INSPECTOR', 'SEGURIDAD'].includes(userData?.rol_sistema))"
       clickable
       v-ripple
       to="/despacho"
@@ -128,37 +126,8 @@
       <q-item-section>Despacho</q-item-section>
     </q-item>
 
-    <!-- ================================== -->
-    <!--          INVENTARIO                -->
-    <!-- ================================== -->
-    <q-expansion-item
-      v-if="canAccess('INVENTARIO')"
-      expand-separator
-      icon="inventory"
-      label="Inventario"
-      class="text-grey-8"
-    >
-      <q-list class="q-pl-md">
-        <q-item clickable v-ripple to="/movimientos-llenadero">
-          <q-item-section avatar
-            ><q-icon name="compare_arrows" size="xs"
-          /></q-item-section>
-          <q-item-section>Movimiento de Inventario</q-item-section>
-        </q-item>
-
-        <q-item clickable v-ripple to="/evaporaciones">
-          <q-item-section avatar
-            ><q-icon name="opacity" size="xs"
-          /></q-item-section>
-          <q-item-section>Gestión de Evaporización</q-item-section>
-        </q-item>
-      </q-list>
-    </q-expansion-item>
-
     <q-item
-      v-if="
-        isAdmin || (userTipoMenu !== 'ESTANDAR' && userTipoMenu !== 'ALMACEN')
-      "
+      v-if="can(PERMISSIONS.VIEW_VALIDACION_CIERRE)"
       clickable
       v-ripple
       to="/validacion"
@@ -171,7 +140,7 @@
     <!--      OPERACIONES TANQUES           -->
     <!-- ================================== -->
     <q-expansion-item
-      v-if="canAccess('OPERATIVO')"
+      v-if="can(PERMISSIONS.VIEW_OPERACIONES_TANQUES)"
       expand-separator
       icon="oil_barrel"
       label="Operaciones de Tanques"
@@ -212,35 +181,38 @@
     <!--          REPORTES                  -->
     <!-- ================================== -->
     <q-expansion-item
+      v-if="can(PERMISSIONS.VIEW_MIS_CUPOS) || can(PERMISSIONS.VIEW_MIS_DESPACHOS) || can(PERMISSIONS.VIEW_REPORTE_DIARIO) || can(PERMISSIONS.VIEW_REPORTE_DESPACHOS) || can(PERMISSIONS.VIEW_REPORTE_CONSUMO)"
       expand-separator
       icon="analytics"
       label="Reportes"
       class="text-grey-8"
     >
       <q-list class="q-pl-md">
-        <q-item clickable v-ripple to="/reportes/mis-cupos">
+        <q-item v-if="can(PERMISSIONS.VIEW_MIS_CUPOS)" clickable v-ripple to="/reportes/mis-cupos">
           <q-item-section avatar
             ><q-icon name="assignment_ind" size="xs"
           /></q-item-section>
           <q-item-section>Mis Cupos</q-item-section>
         </q-item>
 
-        <q-item clickable v-ripple to="/reportes/mis-despachos">
+        <q-item v-if="can(PERMISSIONS.VIEW_MIS_DESPACHOS)" clickable v-ripple to="/reportes/mis-despachos">
           <q-item-section avatar
             ><q-icon name="receipt_long" size="xs"
           /></q-item-section>
           <q-item-section>Mis Despachos</q-item-section>
         </q-item>
 
-        <q-item clickable v-ripple to="/reportes/diario">
+        <q-item v-if="can(PERMISSIONS.VIEW_REPORTE_DIARIO)"
+          clickable
+          v-ripple to="/reportes/diario">
           <q-item-section avatar
             ><q-icon name="today" size="xs"
           /></q-item-section>
           <q-item-section>Reporte Diario</q-item-section>
-        </q-item>
+        </q-item> 
 
         <q-item
-          v-if="isAdmin || userTipoMenu !== 'ESTANDAR'"
+          v-if="can(PERMISSIONS.VIEW_REPORTE_DESPACHOS)"
           clickable
           v-ripple
           to="/reportes/despachos"
@@ -252,7 +224,7 @@
         </q-item>
 
         <q-item
-          v-if="isAdmin || userTipoMenu !== 'ESTANDAR'"
+          v-if="can(PERMISSIONS.VIEW_REPORTE_CONSUMO)"
           clickable
           v-ripple
           to="/reportes/consumo-dependencia"
@@ -268,12 +240,27 @@
 </template>
 
 <script setup>
-defineProps({
+import { computed } from "vue";
+import { PERMISSIONS, hasPermission } from "../../../utils/permissions";
+
+const props = defineProps({
   isAdmin: Boolean,
   canAccess: Function,
   userTipoMenu: {
     type: String,
     default: "ESTANDAR",
   },
+  userRole: {
+    type: String,
+    default: "",
+  },
+  userData: {
+    type: Object,
+    default: () => ({}),
+  }
 });
+
+const can = (permission) => {
+  return hasPermission(props.userData, permission);
+};
 </script>

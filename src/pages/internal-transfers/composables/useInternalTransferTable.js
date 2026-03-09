@@ -1,6 +1,7 @@
 import { ref, onMounted, onUnmounted } from "vue";
 import { storeToRefs } from "pinia";
 import { useInternalTransferStore } from "../../../stores/internalTransferStore.js";
+import { hasPermission } from "../../../utils/permissions";
 import socket from "../../../services/socket";
 
 export function useInternalTransferTable() {
@@ -101,6 +102,10 @@ export function useInternalTransferTable() {
     sourceTankDetail, destinationTankDetail, destinationTankAforo,
     isFormDialogVisible, isDetailDialogVisible, isEditing, isReadOnly, selectedItem, filters,
     handleRequest, openAddDialog, openViewDialog, openEditDialog, handleLlenaderoChange,
-    onFormSave, applyFilters, clearFilters, initSocketListeners, removeSocketListeners, transferStore
+    onFormSave,
+    applyFilters,
+    clearFilters,
+    initSocketListeners, removeSocketListeners, transferStore,
+    can: (p) => hasPermission(JSON.parse(localStorage.getItem("user") || "{}"), p)
   };
 }

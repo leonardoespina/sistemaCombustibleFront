@@ -1,6 +1,7 @@
 import { ref, onMounted, onUnmounted } from "vue";
 import { storeToRefs } from "pinia";
 import { useMeasurementStore } from "../../../stores/measurementStore.js";
+import { hasPermission } from "../../../utils/permissions";
 
 export function useMeasurementTable() {
   const measStore = useMeasurementStore();
@@ -103,7 +104,7 @@ export function useMeasurementTable() {
     isReadOnly,
     selectedItem,
     filters,
-    
+
     // Methods
     handleRequest,
     openAddDialog,
@@ -114,6 +115,7 @@ export function useMeasurementTable() {
     onFormSave,
     applyFilters,
     clearFilters,
-    measStore
+    measStore,
+    can: (p) => hasPermission(JSON.parse(localStorage.getItem("user") || "{}"), p)
   };
 }

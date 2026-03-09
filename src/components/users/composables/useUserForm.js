@@ -43,6 +43,8 @@ export function useUserForm(props, emit) {
       (val) => !val || val.length <= 50 || "Máximo 50 caracteres",
     ],
     tipo_usuario: [(val) => !!val || "El tipo de usuario es requerido"],
+    rol_sistema: [(val) => !!val || "El rol del sistema es requerido"],
+    capacidad_solicitudes: [(val) => !!val || "La capacidad de solicitudes es requerida"],
     estado: [(val) => !!val || "El estado es requerido"],
   };
 
@@ -64,6 +66,8 @@ export function useUserForm(props, emit) {
       cedula: data.cedula?.trim() || "",
       password: "", // Siempre vacío por seguridad
       tipo_usuario: data.tipo_usuario || "INSPECTOR",
+      rol_sistema: data.rol_sistema || "ESTANDAR",
+      capacidad_solicitudes: data.capacidad_solicitudes || "SOLICITANTE",
       estado: data.estado || "ACTIVO",
       id_categoria: data.id_categoria || null,
       id_dependencia: data.id_dependencia || null,
@@ -86,6 +90,8 @@ export function useUserForm(props, emit) {
       cedula: formData.value.cedula.trim().toUpperCase(),
       password: formData.value.password, // Solo se envía si tiene valor
       tipo_usuario: formData.value.tipo_usuario,
+      rol_sistema: formData.value.rol_sistema,
+      capacidad_solicitudes: formData.value.capacidad_solicitudes,
       estado: formData.value.estado,
       id_categoria: formData.value.id_categoria,
       id_dependencia: formData.value.id_dependencia,

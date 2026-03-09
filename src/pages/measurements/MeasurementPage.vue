@@ -12,6 +12,7 @@
         </div>
         <div class="col-12 col-md-auto q-mt-sm q-mt-md-none">
           <q-btn
+            v-if="can(PERMISSIONS.MANAGE_OPERACIONES_TANQUES)"
             color="primary"
             icon="add"
             label="Nueva Medición"
@@ -93,7 +94,7 @@
           </q-td>
         </template>
 
-        <!-- ACCIONES -->
+        
         <template v-slot:body-cell-actions="props">
           <q-td :props="props" class="q-gutter-x-sm">
             <q-btn
@@ -106,6 +107,7 @@
             >
               <q-tooltip>Ver Detalles</q-tooltip>
             </q-btn>
+             <!--
             <q-btn
               dense
               round
@@ -115,7 +117,7 @@
               @click="openEditDialog(props.row)"
             >
               <q-tooltip>Modificar</q-tooltip>
-            </q-btn>
+            </q-btn> -->
           </q-td>
         </template>
       </q-table>
@@ -146,6 +148,7 @@
 <script setup>
 import { onMounted, onUnmounted, ref } from "vue";
 import { date } from "quasar";
+import { PERMISSIONS } from "../../utils/permissions";
 import { useMeasurementTable } from "./composables/useMeasurementTable.js";
 import MeasurementFormDialog from "../../components/measurements/MeasurementFormDialog.vue";
 import MeasurementDetailDialog from "../../components/measurements/MeasurementDetailDialog.vue";
@@ -173,7 +176,8 @@ const {
   onFormSave,
   applyFilters,
   clearFilters,
-  measStore
+  measStore,
+  can
 } = useMeasurementTable();
 
 const columns = [

@@ -1,6 +1,7 @@
 // src/router/index.js
 
 import { createRouter, createWebHistory } from "vue-router";
+import { PERMISSIONS, hasPermission } from "../utils/permissions";
 
 // Definición de las rutas de la aplicación
 const routes = [
@@ -83,25 +84,19 @@ const routes = [
       {
         path: "measurements",
         name: "measurement-list",
-        meta: {
-          allowedRoles: ["ADMIN", "GERENTE", "JEFE DIVISION", "ALMACENISTA"],
-        },
+        meta: { requiresPermission: PERMISSIONS.VIEW_OPERACIONES_TANQUES },
         component: () => import("../pages/measurements/MeasurementPage.vue"),
       },
       {
         path: "loads",
         name: "cistern-loads",
-        meta: {
-          allowedRoles: ["ADMIN", "GERENTE", "JEFE DIVISION", "ALMACENISTA"],
-        },
+        meta: { requiresPermission: PERMISSIONS.VIEW_OPERACIONES_TANQUES },
         component: () => import("../pages/loads/CisternLoadPage.vue"),
       },
       {
         path: "internal-transfers",
         name: "internal-transfers",
-        meta: {
-          allowedRoles: ["ADMIN", "GERENTE", "JEFE DIVISION", "ALMACENISTA"],
-        },
+        meta: { requiresPermission: PERMISSIONS.VIEW_OPERACIONES_TANQUES },
         component: () =>
           import("../pages/internal-transfers/InternalTransferPage.vue"),
       },
@@ -139,18 +134,14 @@ const routes = [
       {
         path: "movimientos-llenadero",
         name: "movimiento-llenadero-list",
-        meta: {
-          allowedRoles: ["ADMIN", "GERENTE", "JEFE DIVISION", "ALMACENISTA", 'COORDINADOR'],
-        },
+        meta: { requiresPermission: PERMISSIONS.VIEW_INVENTARIO },
         component: () =>
           import("../pages/llenaderos/MovimientosLlenaderoPage.vue"),
       },
       {
         path: "evaporaciones",
         name: "evaporacion-list",
-        meta: {
-          allowedRoles: ["ADMIN", "GERENTE", "JEFE DIVISION", "ALMACENISTA", "COORDINADOR"],
-        },
+        meta: { requiresPermission: PERMISSIONS.VIEW_INVENTARIO },
         component: () =>
           import("../pages/llenaderos/GestionEvaporacionPage.vue"),
       },
@@ -167,30 +158,25 @@ const routes = [
       {
         path: "validacion",
         name: "validation-page",
+        meta: { requiresPermission: PERMISSIONS.VIEW_VALIDACION_CIERRE },
         component: () => import("../pages/dispatches/ValidationPage.vue"),
       },
       {
         path: "reportes/diario",
         name: "reporte-diario",
-        meta: {
-          allowedRoles: ["ADMIN", "GERENTE", "JEFE DIVISION", "ALMACENISTA", "ESTANDAR", 'COORDINADOR'],
-        },
+        meta: { requiresPermission: PERMISSIONS.VIEW_REPORTE_DIARIO },
         component: () => import("../pages/reports/ReporteDiarioPage.vue"),
       },
       {
         path: "reportes/despachos",
         name: "reporte-despachos",
-        meta: {
-          allowedRoles: ["ADMIN", "GERENTE", "JEFE DIVISION", "ALMACENISTA", 'COORDINADOR'],
-        },
+        meta: { requiresPermission: PERMISSIONS.VIEW_REPORTE_DESPACHOS },
         component: () => import("../pages/reports/ReporteDespachosPage.vue"),
       },
       {
         path: "reportes/consumo-dependencia",
         name: "reporte-consumo-dependencia",
-        meta: {
-          allowedRoles: ["ADMIN", "GERENTE", "JEFE DIVISION", "ALMACENISTA", 'COORDINADOR'],
-        },
+        meta: { requiresPermission: PERMISSIONS.VIEW_REPORTE_CONSUMO },
         component: () =>
           import("../pages/reports/DependenciaConsumptionPage.vue"),
       },
@@ -211,9 +197,7 @@ const routes = [
       {
         path: "cierre-turno",
         name: "cierre-turno",
-        meta: {
-          allowedRoles: ["ADMIN", "GERENTE", "JEFE DIVISION", "ALMACENISTA"],
-        },
+        meta: { requiresPermission: PERMISSIONS.VIEW_OPERACIONES_TANQUES },
         component: () => import("../pages/closings/CierreTurnoPage.vue"),
       },
 
@@ -264,22 +248,20 @@ router.beforeEach((to, from, next) => {
     return next("/login");
   }
 
-  // 3. Protección por Roles
-  // 3.1 Soporte para múltiples roles permitidos (allowedRoles)
-  if (to.meta.allowedRoles) {
-    if (!to.meta.allowedRoles.includes(user.tipo_usuario)) {
+  // 3. Protección por RBAC Capacidades
+  if (to.meta.requiresPermission) {
+    if (!hasPermission(user, to.meta.requiresPermission)) {
       return next({ name: "home" });
     }
-    return next();
   }
 
-  // 3.2 Retrocompatibilidad con requiresAdmin
+  // 4. Mantenemos el soporte obsoleto temporal para "requiresAdmin"
   if (to.meta.requiresAdmin && user.tipo_usuario !== "ADMIN") {
     return next({ name: "home" });
   }
 
-  next();
+  // Si pasa todas las reglas, permitir
+  return next();
 });
-
 // Exportación del router para ser usado en main.js
 export default router;

@@ -68,6 +68,27 @@
           />
           <q-select
             dense
+            v-model="formData.rol_sistema"
+            :options="[
+              'ADMIN',
+              'ESTANDAR',
+              'ALMACEN',
+              'SEGURIDAD',
+              'INSPECTOR',
+              'PRESIDENCIA',
+            ]"
+            label="Rol del Sistema (Permisología)"
+            :rules="validationRules.rol_sistema"
+          />
+          <q-select
+            dense
+            v-model="formData.capacidad_solicitudes"
+            :options="['SOLICITANTE', 'APROBADOR', 'AMBOS', 'NINGUNO']"
+            label="Capacidad de Solicitudes"
+            :rules="validationRules.capacidad_solicitudes"
+          />
+          <q-select
+            dense
             v-model="formData.estado"
             :options="['ACTIVO', 'INACTIVO']"
             label="Estado"

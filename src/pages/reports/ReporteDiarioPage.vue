@@ -148,6 +148,21 @@
                       <tbody>
                         <tr><td class="text-left text-weight-bold">Total Litros Institucional</td><td class="text-right text-teal text-h6">{{ store.reportData.totales.litros_institucional }} L</td></tr>
                         <tr><td class="text-left text-weight-bold">Total Litros Venta</td><td class="text-right text-orange-9 text-h6">{{ store.reportData.totales.litros_venta }} L</td></tr>
+                        
+                        <!-- DESGLOSE POR COMBUSTIBLE -->
+                        <template v-for="(item, index) in store.reportData.totales.por_combustible" :key="index">
+                          <tr>
+                            <td class="text-left q-pl-lg" style="border-top: 1px dashed #ccc;">
+                              <q-icon name="local_gas_station" class="q-mr-xs text-grey-6" />
+                              <span class="text-weight-bold">{{ item.combustible }}</span>
+                              <div class="text-caption text-grey-7">Inst: {{ item.institucional }} L | Venta: {{ item.venta }} L</div>
+                            </td>
+                            <td class="text-right text-h6" style="border-top: 1px dashed #ccc;">
+                              {{ item.total }} L
+                            </td>
+                          </tr>
+                        </template>
+
                         <tr class="bg-grey-3"><td class="text-left text-weight-bolder text-h6">TOTAL GENERAL LITROS</td><td class="text-right text-primary text-h5 text-weight-bolder">{{ store.reportData.totales.total_litros }} L</td></tr>
                       </tbody>
                     </q-markup-table>

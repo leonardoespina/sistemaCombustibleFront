@@ -12,9 +12,10 @@
         </div>
         <div class="col-12 col-md-auto q-mt-sm q-mt-md-none">
           <q-btn
+            v-if="can(PERMISSIONS.MANAGE_OPERACIONES_TANQUES)"
             color="primary"
             icon="add"
-            label="Registrar Carga"
+            label="Nueva Carga"
             unelevated
             @click="openAddDialog"
           />
@@ -93,16 +94,17 @@
             </q-badge>
           </q-td>
         </template>
-
-        <!-- ACCIONES -->
+ 
         <template v-slot:body-cell-actions="props">
           <q-td :props="props" class="q-gutter-x-sm">
             <q-btn dense round flat color="primary" icon="visibility" @click="openViewDialog(props.row)">
               <q-tooltip>Ver Detalles</q-tooltip>
             </q-btn>
+          <!--   
             <q-btn dense round flat color="warning" icon="edit" @click="openEditDialog(props.row)">
               <q-tooltip>Editar</q-tooltip>
             </q-btn>
+            -->
           </q-td>
         </template>
       </q-table>
@@ -134,6 +136,7 @@
 <script setup>
 import { onMounted, onUnmounted } from "vue";
 import { date } from "quasar";
+import { PERMISSIONS } from "../../utils/permissions";
 import { useCisternLoadTable } from "./composables/useCisternLoadTable";
 import CisternLoadFormDialog from "../../components/loads/CisternLoadFormDialog.vue";
 import CisternLoadDetailDialog from "../../components/loads/CisternLoadDetailDialog.vue";
@@ -142,7 +145,7 @@ const {
   rows, loading, filter, pagination, llenaderosList, tanksList, 
   selectedTankAforo, selectedTankDetail, isFormDialogVisible, isDetailDialogVisible, isEditing, isReadOnly, selectedItem, filters,
   handleRequest, openAddDialog, openViewDialog, openEditDialog, handleLlenaderoChange, handleTankChange, onFormSave,
-  applyFilters, clearFilters, initSocketListeners, removeSocketListeners
+  applyFilters, clearFilters, initSocketListeners, removeSocketListeners, can
 } = useCisternLoadTable();
 
 const columns = [

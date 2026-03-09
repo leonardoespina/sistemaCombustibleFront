@@ -16,6 +16,7 @@ export function useReporteDiarioPage() {
         { name: 'placa', label: 'Placa', field: 'placa', align: 'left' },
         { name: 'dependencia', label: 'Dependencia', field: 'dependencia', align: 'left' },
         { name: 'subdependencia', label: 'Subdependencia', field: 'subdependencia', align: 'left' },
+        { name: 'tipo_combustible', label: 'Combustible', field: 'tipo_combustible', align: 'left' },
         { name: 'cant_solic', label: 'Cant. Solic', field: 'cant_solic', align: 'right' },
         { name: 'cant_desp', label: 'Cant. Desp', field: 'cant_desp', align: 'right' },
     ];

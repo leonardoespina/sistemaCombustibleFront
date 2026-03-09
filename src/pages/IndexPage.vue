@@ -155,7 +155,7 @@
       </q-card>
 
       <!-- ACCESOS RÁPIDOS -->
-      <q-card flat bordered class="bg-white">
+      <q-card v-if="userRole !== 'INSPECTOR'" flat bordered class="bg-white">
         <q-card-section>
           <div class="text-h6 text-weight-bold q-mb-md">
             <q-icon name="bolt" color="primary" class="q-mr-xs" />
@@ -370,6 +370,7 @@ const {
   isAlmacenOrSeguridad,
   userName,
   userDependency,
+  userRole,
   loading,
   stats,
   fetchStats,

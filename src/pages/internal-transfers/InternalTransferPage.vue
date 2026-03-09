@@ -12,6 +12,7 @@
         </div>
         <div class="col-12 col-md-auto q-mt-sm q-mt-md-none">
           <q-btn
+            v-if="can(PERMISSIONS.MANAGE_OPERACIONES_TANQUES)"
             color="primary"
             icon="add"
             label="Nueva Transferencia"
@@ -90,15 +91,17 @@
           </q-td>
         </template>
 
-        <!-- ACCIONES -->
+       
         <template v-slot:body-cell-actions="props">
           <q-td :props="props" class="q-gutter-x-sm">
             <q-btn dense round flat color="primary" icon="visibility" @click="openViewDialog(props.row)">
               <q-tooltip>Ver Detalles</q-tooltip>
             </q-btn>
+              <!-- ACCIONES  
             <q-btn dense round flat color="warning" icon="edit" @click="openEditDialog(props.row)">
               <q-tooltip>Editar</q-tooltip>
             </q-btn>
+            -->
           </q-td>
         </template>
       </q-table>
@@ -132,6 +135,7 @@
 <script setup>
 import { onMounted, onUnmounted } from "vue";
 import { date } from "quasar";
+import { PERMISSIONS } from "../../utils/permissions";
 import { useInternalTransferTable } from "./composables/useInternalTransferTable";
 import InternalTransferFormDialog from "../../components/internal-transfers/InternalTransferFormDialog.vue";
 import InternalTransferDetailDialog from "../../components/internal-transfers/InternalTransferDetailDialog.vue";
@@ -141,7 +145,8 @@ const {
   sourceTankDetail, destinationTankDetail, destinationTankAforo,
   isFormDialogVisible, isDetailDialogVisible, isEditing, isReadOnly, selectedItem, filters,
   handleRequest, openAddDialog, openViewDialog, openEditDialog, handleLlenaderoChange,
-  onFormSave, applyFilters, clearFilters, initSocketListeners, removeSocketListeners, transferStore
+  onFormSave, applyFilters, clearFilters, initSocketListeners, removeSocketListeners, transferStore,
+  can
 } = useInternalTransferTable();
 
 const columns = [

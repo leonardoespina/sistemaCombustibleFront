@@ -1,6 +1,7 @@
 import { ref } from "vue";
 import { storeToRefs } from "pinia";
 import { useCisternLoadStore } from "../../../stores/cisternLoadStore.js";
+import { hasPermission } from "../../../utils/permissions";
 import socket from "../../../services/socket";
 
 export function useCisternLoadTable() {
@@ -99,6 +100,7 @@ export function useCisternLoadTable() {
     rows, loading, filter, pagination, llenaderosList, tanksList,
     selectedTankAforo, selectedTankDetail, isFormDialogVisible, isDetailDialogVisible, isEditing, isReadOnly, selectedItem, filters,
     handleRequest, openAddDialog, openViewDialog, openEditDialog, handleLlenaderoChange, handleTankChange, onFormSave,
-    applyFilters, clearFilters, initSocketListeners, removeSocketListeners
+    applyFilters, clearFilters, initSocketListeners, removeSocketListeners,
+    can: (p) => hasPermission(JSON.parse(localStorage.getItem("user") || "{}"), p)
   };
 }

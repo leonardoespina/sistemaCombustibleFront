@@ -12,17 +12,18 @@ export function useIndexPage() {
     const userData = ref(null);
 
     const isEstandar = computed(() => {
-        const tipoMenu = userData.value?.Dependencia?.tipo_acceso_menu;
-        const tipoUsuario = userData.value?.tipo_usuario;
-        if (tipoUsuario === "ADMIN") return false;
-        return !tipoMenu || tipoMenu === "ESTANDAR";
+        const role = userData.value?.rol_sistema;
+        const legacyType = userData.value?.tipo_usuario;
+        if (role === "ADMIN" || legacyType === "ADMIN") return false;
+        // Usuarios Estándar e Inspectores ven el dashboard resumido (cupos)
+        return role === "ESTANDAR" || role === "INSPECTOR";
     });
 
     const isAlmacenOrSeguridad = computed(() => {
-        const tipoMenu = userData.value?.Dependencia?.tipo_acceso_menu;
-        const tipoUsuario = userData.value?.tipo_usuario;
-        if (tipoUsuario === "ADMIN") return false;
-        return tipoMenu === "ALMACEN" || tipoMenu === "SEGURIDAD";
+        const role = userData.value?.rol_sistema || "ESTANDAR";
+        if (role === "ADMIN") return true;
+        // Roles con visión operativa del almacén
+        return ["ALMACEN", "ALMACENISTA", "SEGURIDAD", "PRESIDENCIA"].includes(role);
     });
 
     // Módulos de acceso rápido para ALMACEN
@@ -127,8 +128,8 @@ export function useIndexPage() {
 
     // Selecciona el conjunto de módulos según el tipo de usuario
     const modulosDashboard = computed(() => {
-        const tipoMenu = userData.value?.Dependencia?.tipo_acceso_menu;
-        return tipoMenu === "SEGURIDAD" ? modulosSeguridad : modulosAlmacen;
+        const role = userData.value?.rol_sistema || userData.value?.tipo_usuario || "ESTANDAR";
+        return (role === "SEGURIDAD") ? modulosSeguridad : modulosAlmacen;
     });
 
     const userName = computed(() => {
@@ -139,6 +140,8 @@ export function useIndexPage() {
     const userDependency = computed(
         () => userData.value?.Dependencia?.nombre_dependencia || "Sin Dependencia"
     );
+
+    const userRole = computed(() => userData.value?.rol_sistema || "");
 
     // ------------------------------------------------------------------
     // DASHBOARD OPERATIVO — Estado de llenaderos
@@ -308,6 +311,7 @@ export function useIndexPage() {
         isAlmacenOrSeguridad,
         userName,
         userDependency,
+        userRole,
         // Dashboard operativo / almacen / seguridad
         loading,
         stats,

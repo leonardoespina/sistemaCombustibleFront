@@ -41,7 +41,6 @@ export function useDependenciaForm(props, emit) {
         codigo: props.initialData.codigo?.trim() || "",
         tipo_venta: props.initialData.tipo_venta || "INSTITUCIONAL",
         estatus: props.initialData.estatus || "ACTIVO",
-        tipo_acceso_menu: props.initialData.tipo_acceso_menu || "ESTANDAR",
       };
     } else {
       formData.value = {
@@ -50,7 +49,6 @@ export function useDependenciaForm(props, emit) {
         codigo: "",
         tipo_venta: "INSTITUCIONAL",
         estatus: "ACTIVO",
-        tipo_acceso_menu: "ESTANDAR",
       };
     }
   }
@@ -66,7 +64,6 @@ export function useDependenciaForm(props, emit) {
       codigo: formData.value.codigo?.trim().toUpperCase() || null,
       tipo_venta: formData.value.tipo_venta,
       estatus: formData.value.estatus,
-      tipo_acceso_menu: formData.value.tipo_acceso_menu,
     };
 
     emit("save", payload);

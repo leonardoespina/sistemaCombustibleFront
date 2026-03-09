@@ -16,10 +16,11 @@ export function useMainLayout() {
   const showChangePassword = ref(false);
 
   // --- COMPUTED ---
-  const isAdmin = computed(() => userData.value?.tipo_usuario === "ADMIN");
+  const isAdmin = computed(() => userData.value?.rol_sistema === "ADMIN" || userData.value?.tipo_usuario === "ADMIN");
 
   const userTipoMenu = computed(() => {
-    return userData.value?.Dependencia?.tipo_acceso_menu || "ESTANDAR";
+    // Si ya existe rol_sistema, lo usamos como tipo de menú para compatibilidad
+    return userData.value?.rol_sistema || userData.value?.tipo_usuario || "ESTANDAR";
   });
 
   const userName = computed(() => {
@@ -65,21 +66,21 @@ export function useMainLayout() {
    * Control de Acceso por Tipo de Dependencia
    */
   const canAccess = (moduleName) => {
-    // Si es admin o almacenista, entran a Operativo directamente
     if (isAdmin.value) return true;
-    if (userData.value?.tipo_usuario === "ALMACENISTA" && moduleName === "OPERATIVO") return true;
-    const tipoMenu =
-      userData.value?.Dependencia?.tipo_acceso_menu || "ESTANDAR";
+
+    // Simplificamos: Si tiene rol del sistema, dejamos que SidebarMenu maneje con PERMISSIONS
+    // Este método canAccess quedará para compatibilidad o lógica muy genérica
+    const role = userTipoMenu.value;
 
     const rules = {
-      OPERATIVO: ["ALMACEN", "SEGURIDAD", "PRESIDENCIA"],
-      SEGURIDAD: ["SEGURIDAD"],
-      INVENTARIO: ["ALMACEN", "PRESIDENCIA"],
-      CONFIG: ["ALMACEN", "SEGURIDAD"],
+      OPERATIVO: ["ADMIN", "ALMACEN", "ALMACENISTA", "SEGURIDAD", "PRESIDENCIA", "INSPECTOR"],
+      SEGURIDAD: ["ADMIN", "SEGURIDAD"],
+      INVENTARIO: ["ADMIN", "ALMACEN", "ALMACENISTA", "PRESIDENCIA"],
+      CONFIG: ["ADMIN"],
     };
 
     if (!rules[moduleName]) return true;
-    return rules[moduleName].includes(tipoMenu);
+    return rules[moduleName].includes(role);
   };
 
   // --- LIFECYCLE & WATCHERS ---
