@@ -6,7 +6,7 @@
 *.zip
 *.7z
 *.tar.gz
-
+.env
 # Producción y Caché
 .cache/
 .parcel-cache/
