@@ -19,17 +19,8 @@
         <!-- MODO CONFIRMACIÓN -->
         <div v-if="mode === 'CONFIRMATION'">
           <div class="q-mb-md text-body2">
-            Por favor, ingrese su contraseña para confirmar que la carga fue realizada exitosamente por la cantidad total aprobada ({{ ticket?.cantidad_litros }} Lts).
+            Por favor, confirme que la carga fue realizada exitosamente por la cantidad total aprobada ({{ ticket?.cantidad_litros }} Lts).
           </div>
-          <q-input
-            v-model="password"
-            label="Contraseña de Confirmación"
-            type="password"
-            outlined
-            dense
-            autofocus
-            :rules="[val => !!val || 'Contraseña requerida']"
-          />
         </div>
 
         <!-- MODO DIFERENCIA -->
@@ -139,7 +130,7 @@ watch(() => props.modelValue, (val) => {
 
 const isValid = computed(() => {
   if (props.mode === 'CONFIRMATION') {
-    return !!password.value;
+    return true;
   } else {
     return (
       cantidadReal.value !== null &&

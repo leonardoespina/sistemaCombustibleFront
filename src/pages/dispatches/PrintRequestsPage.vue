@@ -393,36 +393,27 @@ const handleSocketUpdate = (data) => {
     // Estrategia simple: Si es 'APROBADA', recargar la página actual para ver si entra.
     // O si es IMPORTANTE la inmediatez, insertarla manualmente si cabe.
     
-    // Como es "Despacho", la velocidad importa.
-    // Si llega una nueva aprobada, la ponemos arriba si estamos en pag 1.
-    if (data.estado === 'APROBADA' && statusFilter.value !== 'IMPRESA') {
-        if (pagination.value.page === 1) {
-             const idx = rows.value.findIndex(r => r.id_solicitud === data.id_solicitud);
-             if (idx >= 0) {
-                 Object.assign(rows.value[idx], data);
-             } else {
-                 rows.value.unshift(data);
-                 if (rows.value.length > pagination.value.rowsPerPage) rows.value.pop();
-                 pagination.value.rowsNumber++;
-             }
-        }
-    } else if (data.estado === 'IMPRESA') {
-        // Actualizar si está en la lista (independientemente del filtro activo, si existe se actualiza)
-        const idx = rows.value.findIndex(r => r.id_solicitud === data.id_solicitud);
-        if (idx >= 0) {
-            if (statusFilter.value === 'APROBADA') {
-                rows.value.splice(idx, 1);
-                pagination.value.rowsNumber--;
-            } else {
-                Object.assign(rows.value[idx], data);
-            }
-        }
-    } else {
-        // DESPACHADA, ANULADA, etc -> Quitar siempre
-        const idx = rows.value.findIndex(r => r.id_solicitud === data.id_solicitud);
+    const idx = rows.value.findIndex(r => r.id_solicitud === data.id_solicitud);
+    
+    // Si el filtro no es 'TODAS' y el estado nuevo no coincide con el filtro, lo quitamos de la vista
+    if (statusFilter.value !== 'TODAS' && statusFilter.value !== data.estado) {
         if (idx >= 0) {
             rows.value.splice(idx, 1);
             pagination.value.rowsNumber--;
+        }
+        return;
+    }
+
+    // Si coincide con el filtro o estamos en 'TODAS'
+    if (idx >= 0) {
+        // Actualizar datos
+        Object.assign(rows.value[idx], data);
+    } else {
+        // Entró una nueva que coincide con el filtro, insertar al principio
+        if (pagination.value.page === 1) {
+            rows.value.unshift(data);
+            if (rows.value.length > pagination.value.rowsPerPage) rows.value.pop();
+            pagination.value.rowsNumber++;
         }
     }
 };

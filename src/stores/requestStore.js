@@ -235,15 +235,15 @@ export const useRequestStore = defineStore("requests", () => {
     socket.on("solicitud:creada", () => fetchRequests());
     socket.on("solicitud:actualizada", () => fetchRequests());
     socket.on("solicitud:despachada", () => fetchRequests());
+    socket.on("solicitud:finalizada", () => fetchRequests());
     socket.on("solicitud:rechazada", () => fetchRequests());
-
-    //solicitud: rechazada;
   }
 
   function cleanupSocket() {
     socket.off("solicitud:creada");
     socket.off("solicitud:actualizada");
     socket.off("solicitud:despachada");
+    socket.off("solicitud:finalizada");
     socket.off("solicitud:rechazada");
   }
 
