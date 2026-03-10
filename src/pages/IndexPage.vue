@@ -7,30 +7,34 @@
     <div v-if="isEstandar" class="q-gutter-y-md">
 
       <!-- HEADER -->
-      <div class="row items-center q-mb-md">
-        <q-icon name="home" size="3rem" color="primary" class="q-mr-md" />
-        <div class="col">
-          <h4 class="text-h4 q-my-none text-weight-bold text-primary">
-            Mi Panel de Combustible
-          </h4>
-          <p class="text-grey-7 q-mb-none">
-            Bienvenido, <strong>{{ userName }}</strong> — {{ userDependency }}
-          </p>
+      <div class="row items-center justify-between q-mb-md">
+        <div class="row items-center col-12 col-sm-auto q-mb-sm q-sm-mb-none">
+          <q-icon name="home" size="3rem" color="primary" class="q-mr-md" />
+          <div>
+            <div class="text-h5 text-sm-h4 q-my-none text-weight-bold text-primary">
+              Mi Panel de Combustible
+            </div>
+            <p class="text-grey-7 q-mb-none text-caption text-sm-body1">
+              Bienvenido, <strong>{{ userName }}</strong> — {{ userDependency }}
+            </p>
+          </div>
         </div>
-        <q-btn
-          flat
-          icon="refresh"
-          color="primary"
-          label="Actualizar"
-          @click="fetchCupos"
-          :loading="loadingCupos"
-        />
+        <div class="col-12 col-sm-auto text-right text-sm-left">
+          <q-btn
+            unelevated
+            icon="refresh"
+            color="primary"
+            label="Actualizar"
+            @click="fetchCupos"
+            :loading="loadingCupos"
+          />
+        </div>
       </div>
 
       <!-- TARJETAS RESUMEN -->
       <div class="row q-col-gutter-md">
         <div class="col-12 col-sm-6 col-md-3">
-          <q-card flat bordered class="bg-white text-center q-pa-md summary-card">
+          <q-card flat bordered class="bg-white text-center q-pa-md rounded-borders">
             <q-icon name="local_gas_station" size="2.5rem" color="primary" />
             <div class="text-h5 text-weight-bold text-primary q-mt-sm">
               {{ totalAsignado }} L
@@ -40,7 +44,7 @@
         </div>
 
         <div class="col-12 col-sm-6 col-md-3">
-          <q-card flat bordered class="bg-white text-center q-pa-md summary-card">
+          <q-card flat bordered class="bg-white text-center q-pa-md rounded-borders">
             <q-icon name="show_chart" size="2.5rem" color="orange" />
             <div class="text-h5 text-weight-bold text-orange q-mt-sm">
               {{ totalConsumido }} L
@@ -50,7 +54,7 @@
         </div>
 
         <div class="col-12 col-sm-6 col-md-3">
-          <q-card flat bordered class="bg-white text-center q-pa-md summary-card">
+          <q-card flat bordered class="bg-white text-center q-pa-md rounded-borders">
             <q-icon name="savings" size="2.5rem" color="positive" />
             <div class="text-h5 text-weight-bold text-positive q-mt-sm">
               {{ totalDisponible }} L
@@ -60,7 +64,7 @@
         </div>
 
         <div class="col-12 col-sm-6 col-md-3">
-          <q-card flat bordered class="bg-white text-center q-pa-md summary-card">
+          <q-card flat bordered class="bg-white text-center q-pa-md rounded-borders">
             <q-icon name="donut_large" size="2.5rem" :color="colorUsoPorcentaje" />
             <div
               class="text-h5 text-weight-bold q-mt-sm"
@@ -214,24 +218,28 @@
     <div v-else-if="isAlmacenOrSeguridad" class="q-gutter-y-md">
 
       <!-- HEADER -->
-      <div class="row items-center q-mb-md">
-        <q-icon name="warehouse" size="3rem" color="brown" class="q-mr-md" />
-        <div class="col">
-          <h4 class="text-h4 q-my-none text-weight-bold" style="color: #5D4037">
-            Dashboard de Almacén
-          </h4>
-          <p class="text-grey-7 q-mb-none">
-            Bienvenido, <strong>{{ userName }}</strong> — {{ userDependency }}
-          </p>
+      <div class="row items-center justify-between q-mb-md">
+        <div class="row items-center col-12 col-sm-auto q-mb-sm q-sm-mb-none">
+          <q-icon name="warehouse" size="3rem" color="brown" class="q-mr-md" />
+          <div>
+            <div class="text-h5 text-sm-h4 q-my-none text-weight-bold" style="color: #5D4037">
+              Dashboard de Almacén
+            </div>
+            <p class="text-grey-7 q-mb-none text-caption text-sm-body1">
+              Bienvenido, <strong>{{ userName }}</strong> — {{ userDependency }}
+            </p>
+          </div>
         </div>
-        <q-btn
-          flat
-          icon="refresh"
-          color="brown"
-          label="Actualizar"
-          @click="fetchStats"
-          :loading="loading"
-        />
+        <div class="col-12 col-sm-auto text-right text-sm-left">
+          <q-btn
+            unelevated
+            icon="refresh"
+            color="brown"
+            label="Actualizar"
+            @click="fetchStats"
+            :loading="loading"
+          />
+        </div>
       </div>
 
       <!-- ESTADO DE TANQUES (LLENADEROS) -->
@@ -248,7 +256,7 @@
               :key="ll.id_llenadero"
               class="col-12 col-sm-6 col-md-3 col-lg-2"
             >
-              <LiquidLlenadero :llenadero="ll" class="tank-card-compact" />
+              <LiquidLlenadero :llenadero="ll" class="q-mx-auto" style="max-width: 300px" />
             </div>
           </div>
 
@@ -274,7 +282,7 @@
           :key="modulo.titulo"
           class="col-12 col-sm-6 col-md-4"
         >
-          <q-card flat bordered class="bg-white modulo-card full-height">
+          <q-card flat bordered class="bg-white rounded-borders full-height">
             <q-card-section class="row items-center no-wrap q-pb-xs">
               <q-avatar
                 :color="modulo.color"
@@ -323,17 +331,19 @@
 
         <!-- HEADER -->
         <div class="col-12 row items-center justify-between q-mb-sm">
-          <div class="text-h4 text-weight-bold text-primary">
+          <div class="text-h5 text-sm-h4 text-weight-bold text-primary q-mb-sm q-sm-mb-none">
             Estado de Llenaderos SIRECC
           </div>
-          <q-btn
-            flat
-            icon="refresh"
-            color="primary"
-            label="Actualizar"
-            @click="fetchStats"
-            :loading="loading"
-          />
+          <div class="col-12 col-sm-auto text-right text-sm-left">
+            <q-btn
+              unelevated
+              icon="refresh"
+              color="primary"
+              label="Actualizar"
+              @click="fetchStats"
+              :loading="loading"
+            />
+          </div>
         </div>
 
         <!-- LLENADEROS -->
@@ -342,7 +352,7 @@
           :key="ll.id_llenadero"
           class="col-12 col-sm-6 col-md-3 col-lg-2"
         >
-          <LiquidLlenadero :llenadero="ll" class="tank-card-compact" />
+          <LiquidLlenadero :llenadero="ll" class="q-mx-auto" style="max-width: 300px" />
         </div>
 
         <!-- SIN DATOS -->
@@ -390,27 +400,3 @@ const {
   getEstadoColor,
 } = useIndexPage();
 </script>
-
-<style scoped>
-.tank-card-compact {
-  max-width: 300px;
-  margin: 0 auto;
-}
-
-.summary-card {
-  border-radius: 12px;
-  transition: box-shadow 0.2s;
-}
-.summary-card:hover {
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.12);
-}
-
-.modulo-card {
-  border-radius: 12px;
-  transition: box-shadow 0.2s, transform 0.15s;
-}
-.modulo-card:hover {
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
-  transform: translateY(-2px);
-}
-</style>
