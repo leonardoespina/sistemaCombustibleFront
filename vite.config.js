@@ -7,6 +7,23 @@ import { quasar, transformAssetUrls } from '@quasar/vite-plugin'
 
 // https://vitejs.dev/config/
 export default defineConfig({
+  server: {
+    host: true, // Permite conexiones desde la red
+    proxy: {
+      // Redirigir llamadas de Axios (/api)
+      '/api': {
+        target: 'http://10.60.0.21:3000',
+        changeOrigin: true,
+        secure: false, // Ignorar certificados autofirmados si los hubiera
+      },
+      // Redirigir llamadas de Websockets (/socket.io)
+      '/socket.io': {
+        target: 'http://10.60.0.21:3000',
+        ws: true,
+        changeOrigin: true
+      }
+    }
+  },
   plugins: [
     vue({
       template: { transformAssetUrls }
