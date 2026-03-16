@@ -1,20 +1,21 @@
 <template>
-  <q-page class="q-pa-md">
+  <q-page :class="$q.screen.lt.sm ? 'q-pa-sm' : 'q-pa-md'">
     <div class="q-gutter-y-md">
-      <!-- HEADER -->
-      <div class="row items-center q-mb-md">
-        <img src="/logo.png" style="height: 60px" class="q-mr-md" alt="Logo" />
+
+      <!-- HEADER RESPONSIVE -->
+      <div class="row items-center q-col-gutter-sm">
+        <div class="col-auto">
+          <q-icon name="local_shipping" size="2rem" color="primary" />
+        </div>
         <div class="col">
-          <h4 class="text-h4 q-my-none text-weight-bold text-primary">
+          <div :class="$q.screen.lt.sm ? 'text-h6' : 'text-h5'" class="text-weight-bold text-primary q-mb-none">
             Reporte de Despachos
-          </h4>
-          <p class="text-grey-7 q-mb-none">
-            Consulta detallada por dependencia y fecha
-          </p>
+          </div>
+          <div class="text-caption text-grey-7">Consulta detallada por dependencia y fecha</div>
         </div>
       </div>
 
-      <!-- SECCIÓN DE FILTROS (ESTILO MEASUREMENT) -->
+      <!-- FILTROS -->
       <q-card flat bordered class="bg-grey-1">
         <q-expansion-item
           icon="filter_list"
@@ -22,10 +23,10 @@
           header-class="text-weight-medium"
           default-opened
         >
-          <q-card-section>
-            <div class="row q-col-gutter-lg">
-              <!-- COLUMNA 1: JERARQUÍA -->
-              <div class="col-12 col-md-4 border-right-md">
+          <q-card-section :class="$q.screen.lt.sm ? 'q-pa-sm' : 'q-pa-md'">
+            <div class="row q-col-gutter-md">
+              <!-- Jerarquía organizacional -->
+              <div class="col-12 col-md-4">
                 <OrganizationalHierarchy
                   v-if="!isInitializing"
                   :key="mountKey"
@@ -35,74 +36,48 @@
                 />
               </div>
 
-              <!-- COLUMNA 2: OTROS FILTROS Y ACCIÓN -->
-              <div class="col-12 col-md-8 column justify-between">
-                <div class="row q-col-gutter-md">
-                  <!-- Tipo Combustible -->
+              <!-- Otros filtros -->
+              <div class="col-12 col-md-8">
+                <div class="row q-col-gutter-sm">
                   <div class="col-12 col-sm-6">
                     <q-select
-                      outlined
-                      dense
+                      outlined dense bg-color="white"
                       v-model="store.filters.fuelTypeId"
                       :options="fuelTypeOptions"
                       option-label="nombre"
                       option-value="id_tipo_combustible"
-                      emit-value
-                      map-options
+                      emit-value map-options
                       label="Tipo de Combustible"
-                      bg-color="white"
                       clearable
                     >
-                      <template v-slot:prepend>
-                        <q-icon name="local_gas_station" />
-                      </template>
+                      <template v-slot:prepend><q-icon name="local_gas_station" /></template>
                     </q-select>
                   </div>
-
-                  <!-- Rango de Fechas -->
                   <div class="col-12 col-sm-3">
-                    <q-input
-                      outlined
-                      dense
+                    <q-input outlined dense bg-color="white"
                       v-model="store.filters.fechaDesde"
-                      type="date"
-                      label="Fecha Desde"
-                      bg-color="white"
+                      type="date" label="Desde"
                     />
                   </div>
                   <div class="col-12 col-sm-3">
-                    <q-input
-                      outlined
-                      dense
+                    <q-input outlined dense bg-color="white"
                       v-model="store.filters.fechaHasta"
-                      type="date"
-                      label="Fecha Hasta"
-                      bg-color="white"
+                      type="date" label="Hasta"
                     />
                   </div>
-                </div>
 
-                <!-- Botones de Acción -->
-                <div class="row justify-end q-mt-md q-gutter-x-sm">
-                  <q-btn
-                    flat
-                    color="grey-7"
-                    label="Limpiar"
-                    @click="store.resetFilters"
-                  />
-                  <q-btn
-                    color="secondary"
-                    icon="search"
-                    label="Filtrar"
-                    unelevated
-                    @click="handleSearch"
-                    :loading="store.loading"
-                    :disable="
-                      !store.filters.dependencyId ||
-                      !store.filters.fechaDesde ||
-                      !store.filters.fechaHasta
-                    "
-                  />
+                  <!-- Acciones -->
+                  <div class="col-12">
+                    <q-separator class="q-my-sm" />
+                    <div class="row justify-end q-gutter-x-sm">
+                      <q-btn flat color="grey-7" label="Limpiar" @click="store.resetFilters" />
+                      <q-btn
+                        color="secondary" icon="search" label="Filtrar" unelevated
+                        @click="handleSearch" :loading="store.loading"
+                        :disable="!store.filters.dependencyId || !store.filters.fechaDesde || !store.filters.fechaHasta"
+                      />
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>
@@ -110,7 +85,7 @@
         </q-expansion-item>
       </q-card>
 
-      <!-- DIALOGO DE RESULTADOS (Componente Externo) -->
+      <!-- DIÁLOGO DE RESULTADOS -->
       <DispatchReportDialog
         v-model="showResultsDialog"
         :data="store.reportData"
@@ -136,14 +111,8 @@ const store = useReporteDespachoStore();
 const $q = useQuasar();
 const showResultsDialog = ref(false);
 const fuelTypeOptions = ref([]);
-
-// Key que cambia en cada visita para forzar re-montaje limpio del OrganizationalHierarchy
 const mountKey = ref(0);
-
-// Flag de inicialización para evitar efectos secundarios en la jerarquía
 const isInitializing = ref(false);
-
-// Para mantener una copia de los filtros usados en la consulta (para el encabezado del diálogo)
 const reportFilters = ref({});
 
 const loadFuelTypes = async () => {
@@ -157,12 +126,9 @@ const loadFuelTypes = async () => {
 
 const handleSearch = async () => {
   await store.fetchReport(1, store.pagination.rowsPerPage);
-
   if (store.reportData.length > 0) {
-    // Guardamos copia de filtros para el reporte ANTES de limpiar
     reportFilters.value = { ...store.filters };
     showResultsDialog.value = true;
-    // Limpiamos filtros
     store.resetFilters();
   } else {
     $q.notify({ type: "warning", message: "No se encontraron registros." });
@@ -175,15 +141,12 @@ const onRequest = async (props) => {
 };
 
 onMounted(async () => {
-  // Limpiar filtros y datos al entrar: el store persiste entre navegaciones
   store.resetFilters();
   store.clearReportData();
-  mountKey.value++; // fuerza re-montaje limpio del OrganizationalHierarchy
-
+  mountKey.value++;
   isInitializing.value = true;
   store.initSocket();
   await loadFuelTypes();
-
   await nextTick();
   isInitializing.value = false;
 });
@@ -192,17 +155,3 @@ onUnmounted(() => {
   store.destroySocket();
 });
 </script>
-
-<style scoped>
-.border-right-md {
-  border-right: 1px solid #e0e0e0;
-}
-@media (max-width: 1023px) {
-  .border-right-md {
-    border-right: none;
-    border-bottom: 1px solid #e0e0e0;
-    padding-bottom: 20px;
-    margin-bottom: 20px;
-  }
-}
-</style>

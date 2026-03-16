@@ -11,23 +11,28 @@
         <q-btn flat round dense icon="arrow_back" v-close-popup>
           <q-tooltip>Volver a filtros</q-tooltip>
         </q-btn>
-        <q-toolbar-title>Mis Despachos</q-toolbar-title>
+        <q-toolbar-title class="text-body1">Mis Despachos</q-toolbar-title>
         <q-space />
-        <ExportExcelBtn
-          :rows="data"
-          :columns="columns"
-          :filename="`MisDespachos_${filters.fechaDesde}_${filters.fechaHasta}`"
-          sheet-name="Mis Despachos"
-          :meta="[
-            'MIS DESPACHOS',
-            `Periodo: ${formatDate(filters.fechaDesde)} - ${formatDate(filters.fechaHasta)}`,
-            `Total General: ${total} L`,
-          ]"
-          label="Exportar Excel"
-          flat
-          class="q-mr-sm"
-        />
-        <q-btn flat label="Imprimir" icon="print" @click="() => window.print()" />
+        <template v-if="$q.screen.gt.xs">
+          <ExportExcelBtn
+            :rows="data" :columns="columns"
+            :filename="`MisDespachos_${filters.fechaDesde}_${filters.fechaHasta}`"
+            sheet-name="Mis Despachos"
+            :meta="['MIS DESPACHOS', `Periodo: ${formatDate(filters.fechaDesde)} - ${formatDate(filters.fechaHasta)}`, `Total General: ${total} L`]"
+            label="Excel" flat class="q-mr-xs"
+          />
+          <q-btn flat icon="print" label="Imprimir" @click="() => window.print()" />
+        </template>
+        <q-btn v-else flat round icon="more_vert">
+          <q-menu>
+            <q-list style="min-width: 150px">
+              <q-item clickable v-close-popup @click="() => window.print()">
+                <q-item-section avatar><q-icon name="print" /></q-item-section>
+                <q-item-section>Imprimir</q-item-section>
+              </q-item>
+            </q-list>
+          </q-menu>
+        </q-btn>
       </q-toolbar>
 
       <q-card-section class="q-pa-lg scroll" style="height: calc(100vh - 50px)">
@@ -36,22 +41,20 @@
           class="bg-white q-pa-lg shadow-3 rounded-borders"
           style="max-width: 1100px; margin: 0 auto"
         >
-          <!-- ENCABEZADO -->
-          <div class="row items-center q-mb-lg border-bottom q-pb-md">
-            <div class="col-auto q-mr-md">
-              <img src="/logo.png" style="height: 70px" alt="Logo" />
-            </div>
-            <div class="col text-center">
-              <div class="text-h5 text-weight-bold text-uppercase text-secondary">Mis Despachos</div>
-              <div class="text-subtitle2 text-grey-8">
+          <!-- ENCABEZADO RESPONSIVE -->
+          <div class="column items-center q-mb-md q-pb-sm" style="border-bottom: 1px solid #e0e0e0">
+            <img src="/logo.png" style="height: 55px" alt="Logo" class="q-mb-xs" />
+            <div class="text-center">
+              <div :class="$q.screen.lt.sm ? 'text-subtitle1' : 'text-h5'" class="text-weight-bold text-uppercase text-secondary">
+                Mis Despachos
+              </div>
+              <div class="text-caption text-grey-8">
                 Periodo:
                 <span class="text-weight-bold">{{ formatDate(filters.fechaDesde) }}</span>
                 —
                 <span class="text-weight-bold">{{ formatDate(filters.fechaHasta) }}</span>
               </div>
-            </div>
-            <div class="col-auto">
-              <q-chip color="secondary" text-color="white" icon="local_gas_station" size="lg">
+              <q-chip color="secondary" text-color="white" icon="local_gas_station" size="sm" class="q-mt-xs">
                 Total: {{ total }} L
               </q-chip>
             </div>

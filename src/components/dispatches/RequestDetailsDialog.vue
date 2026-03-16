@@ -62,7 +62,10 @@
           </div>
 
           <!-- SECCIÓN: VEHÍCULO -->
+          <!-- Se oculta SOLO cuando es Venta por Bidón (no requiere vehículo). -->
+          <!-- En Institucional por Bidón sí se muestra, ya que el vehículo es relevante. -->
           <div
+            v-if="!(requestData?.tipo_solicitud === 'VENTA' && requestData?.tipo_suministro === 'BIDON')"
             class="q-pa-xs rounded-borders bg-blue-1 border-blue-2"
             style="border: 1px solid #bbdefb"
           >
