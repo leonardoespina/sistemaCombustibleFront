@@ -147,6 +147,13 @@
       class="text-grey-8"
     >
       <q-list class="q-pl-md">
+        <q-item clickable v-ripple to="/consultar-tanques">
+          <q-item-section avatar
+            ><q-icon name="inventory" size="xs"
+          /></q-item-section>
+          <q-item-section>Disponibilidad de Tanques</q-item-section>
+        </q-item>
+        
         <q-item clickable v-ripple to="/measurements">
           <q-item-section avatar
             ><q-icon name="straighten" size="xs"

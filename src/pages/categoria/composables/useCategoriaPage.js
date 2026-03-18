@@ -1,9 +1,10 @@
-import { ref, onMounted, onUnmounted } from "vue";
+import { ref } from "vue";
 import { useQuasar } from "quasar";
 import socket from "../../../services/socket.js";
 
 /**
- * Composable para gestión de la página de categorías
+ * Composable para gestión de la página de categorías.
+ * Es el único responsable de los listeners de Socket.io del módulo.
  * @param {Object} categoriaStore - Store de Pinia para categorías
  * @returns {Object} Estado y métodos de la página
  */
@@ -15,36 +16,34 @@ export function useCategoriaPage(categoriaStore) {
   const isDeleteDialogVisible = ref(false);
   const editingItem = ref(null);
 
-  /**
-   * Abre el diálogo para agregar nueva categoría
-   */
+  // Indica que el item en edición fue modificado por otro usuario
+  const concurrentEditWarning = ref(false);
+
+  // ---------------------------------------------------------------------------
+  // Gestión de diálogos
+  // ---------------------------------------------------------------------------
+
   function openAddDialog() {
     editingItem.value = null;
+    concurrentEditWarning.value = false;
     isFormDialogVisible.value = true;
   }
 
-  /**
-   * Abre el diálogo para editar una categoría existente
-   * @param {Object} item - Categoría a editar
-   */
   function openEditDialog(item) {
     editingItem.value = { ...item };
+    concurrentEditWarning.value = false;
     isFormDialogVisible.value = true;
   }
 
-  /**
-   * Abre el diálogo de confirmación para eliminar
-   * @param {Object} item - Categoría a eliminar
-   */
   function openDeleteDialog(item) {
     editingItem.value = item;
     isDeleteDialogVisible.value = true;
   }
 
-  /**
-   * Maneja el guardado del formulario (crear o editar)
-   * @param {Object} formData - Datos del formulario
-   */
+  // ---------------------------------------------------------------------------
+  // Operaciones CRUD
+  // ---------------------------------------------------------------------------
+
   async function onFormSave(formData) {
     let success = false;
     const isEditing = !!editingItem.value;
@@ -86,9 +85,6 @@ export function useCategoriaPage(categoriaStore) {
     }
   }
 
-  /**
-   * Confirma y ejecuta la eliminación (cambio de estado)
-   */
   async function confirmDelete() {
     try {
       await categoriaStore.deleteCategoria(editingItem.value.id_categoria);
@@ -110,9 +106,37 @@ export function useCategoriaPage(categoriaStore) {
     }
   }
 
+  // ---------------------------------------------------------------------------
+  // Paginación / filtro
+  // ---------------------------------------------------------------------------
+
   /**
-   * Configura listeners de Socket.io para sincronización en tiempo real
+   * Manejador de peticiones de la q-table (sort, pagination, filter)
    */
+  function handleRequest({ pagination: pag, filter: f }) {
+    categoriaStore.pagination = pag;
+    categoriaStore.filter = f;
+    categoriaStore.fetchCategorias();
+  }
+
+  /**
+   * Reinicia el estado de paginación y filtro al desmontar la página
+   */
+  function resetPageState() {
+    categoriaStore.filter = "";
+    categoriaStore.pagination = {
+      page: 1,
+      rowsPerPage: 10,
+      sortBy: "id_categoria",
+      descending: false,
+      rowsNumber: 0,
+    };
+  }
+
+  // ---------------------------------------------------------------------------
+  // Socket.io — punto único de escucha para todo el módulo
+  // ---------------------------------------------------------------------------
+
   function setupSocketListeners() {
     socket.on("categoria:creado", (data) => {
       categoriaStore.fetchCategorias();
@@ -127,6 +151,13 @@ export function useCategoriaPage(categoriaStore) {
 
     socket.on("categoria:actualizado", (data) => {
       categoriaStore.fetchCategorias();
+      // Marcar advertencia si el usuario tiene ese item abierto en el dialog
+      if (
+        isFormDialogVisible.value &&
+        editingItem.value?.id_categoria === data.id_categoria
+      ) {
+        concurrentEditWarning.value = true;
+      }
       $q.notify({
         type: "info",
         message: `Categoría "${data.nombre}" actualizada`,
@@ -148,9 +179,6 @@ export function useCategoriaPage(categoriaStore) {
     });
   }
 
-  /**
-   * Limpia listeners de Socket.io al desmontar
-   */
   function cleanupSocketListeners() {
     socket.off("categoria:creado");
     socket.off("categoria:actualizado");
@@ -158,18 +186,22 @@ export function useCategoriaPage(categoriaStore) {
   }
 
   return {
-    // Estados
+    // Estado de diálogos
     isFormDialogVisible,
     isDeleteDialogVisible,
     editingItem,
-    // Métodos de diálogos
+    concurrentEditWarning,
+    // Diálogos
     openAddDialog,
     openEditDialog,
     openDeleteDialog,
-    // Métodos de operaciones
+    // CRUD
     onFormSave,
     confirmDelete,
-    // Socket.io
+    // Página
+    handleRequest,
+    resetPageState,
+    // Socket
     setupSocketListeners,
     cleanupSocketListeners,
   };

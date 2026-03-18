@@ -10,7 +10,9 @@ export const useTankStore = defineStore("tanks", () => {
 
   // --- STATE ---
   const rows = ref([]);
+  const tanquesLista = ref([]);
   const loading = ref(false);
+  const loadingLista = ref(false);
   const filter = ref("");
   const pagination = ref({
     page: 1,
@@ -43,6 +45,18 @@ export const useTankStore = defineStore("tanks", () => {
       console.error("Error al obtener tanques:", error);
     } finally {
       loading.value = false;
+    }
+  }
+
+  async function fetchTanksList() {
+    loadingLista.value = true;
+    try {
+      const response = await api.get("/tanques/lista");
+      tanquesLista.value = response.data || [];
+    } catch (error) {
+      console.error("Error al obtener lista simplificada de tanques:", error);
+    } finally {
+      loadingLista.value = false;
     }
   }
 
@@ -112,8 +126,14 @@ export const useTankStore = defineStore("tanks", () => {
   // --- SOCKET IO ---
 
   function initSocket() {
-    socket.on("tanque:creado", () => fetchTanks());
-    socket.on("tanque:actualizado", () => fetchTanks());
+    socket.on("tanque:creado", () => {
+      fetchTanks();
+      fetchTanksList();
+    });
+    socket.on("tanque:actualizado", () => {
+      fetchTanks();
+      fetchTanksList();
+    });
   }
 
   function cleanupSocket() {
@@ -123,12 +143,15 @@ export const useTankStore = defineStore("tanks", () => {
 
   return {
     rows,
+    tanquesLista,
     loading,
+    loadingLista,
     filter,
     pagination,
     llenaderos,
     tiposCombustible,
     fetchTanks,
+    fetchTanksList,
     createTank,
     updateTank,
     deleteTank,

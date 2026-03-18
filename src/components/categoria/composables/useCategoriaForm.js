@@ -9,7 +9,7 @@ import { ref, watch } from "vue";
 export function useCategoriaForm(props, emit) {
   const formData = ref({});
 
-  // Validaciones mejoradas
+  // Validaciones
   const validationRules = {
     nombre: [
       (val) => !!val || "El nombre es requerido",
@@ -43,12 +43,10 @@ export function useCategoriaForm(props, emit) {
    * Prepara el payload y emite el evento de guardado
    */
   function handleSave() {
-    // Sanitizar datos antes de enviar
     const payload = {
       nombre: formData.value.nombre.trim(),
       estado: formData.value.estado,
     };
-
     emit("save", payload);
   }
 

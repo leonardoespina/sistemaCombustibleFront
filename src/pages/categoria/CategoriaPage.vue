@@ -60,8 +60,8 @@
       v-model="isFormDialogVisible"
       :initial-data="editingItem"
       :is-editing="!!editingItem"
+      :concurrent-edit-warning="concurrentEditWarning"
       @save="onFormSave"
-      @dataUpdated="() => categoriaStore.fetchCategorias()"
     />
 
     <q-dialog v-model="isDeleteDialogVisible" persistent>
@@ -71,7 +71,7 @@
           <span class="q-ml-sm"
             >¿Seguro que deseas desactivar la categoría
             <strong>{{ editingItem?.nombre }}</strong>
-            >?</span
+            ?</span
           >
         </q-card-section>
         <q-card-actions align="right">
@@ -99,16 +99,18 @@ import CategoriaFormDialog from "../../components/categoria/CategoriaFormDialog.
 const categoriaStore = useCategoriaStore();
 const { rows, loading, filter, pagination } = storeToRefs(categoriaStore);
 
-// Composable de la página
 const {
   isFormDialogVisible,
   isDeleteDialogVisible,
   editingItem,
+  concurrentEditWarning,
   openAddDialog,
   openEditDialog,
   openDeleteDialog,
   onFormSave,
   confirmDelete,
+  handleRequest,
+  resetPageState,
   setupSocketListeners,
   cleanupSocketListeners,
 } = useCategoriaPage(categoriaStore);
@@ -131,26 +133,13 @@ const columns = ref([
   { name: "actions", label: "Acciones", align: "right" },
 ]);
 
-function handleRequest(props) {
-  pagination.value = props.pagination;
-  filter.value = props.filter;
-  categoriaStore.fetchCategorias();
-}
-
 onMounted(() => {
   categoriaStore.fetchCategorias();
   setupSocketListeners();
 });
 
 onUnmounted(() => {
-  categoriaStore.filter = "";
-  categoriaStore.pagination = {
-    page: 1,
-    rowsPerPage: 10,
-    sortBy: "id_categoria",
-    descending: false,
-    rowsNumber: 0,
-  };
+  resetPageState();
   cleanupSocketListeners();
 });
 </script>

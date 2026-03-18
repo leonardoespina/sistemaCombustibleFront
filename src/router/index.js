@@ -139,6 +139,12 @@ const routes = [
           import("../pages/llenaderos/MovimientosLlenaderoPage.vue"),
       },
       {
+        path: "consultar-tanques",
+        name: "consult-tanks",
+        meta: { requiresPermission: PERMISSIONS.VIEW_OPERACIONES_TANQUES },
+        component: () => import("../pages/tanks/ConsultTanksPage.vue"),
+      },
+      {
         path: "evaporaciones",
         name: "evaporacion-list",
         meta: { requiresPermission: PERMISSIONS.VIEW_INVENTARIO },

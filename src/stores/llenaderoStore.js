@@ -3,6 +3,7 @@ import { defineStore } from "pinia";
 import { ref } from "vue";
 import { useQuasar } from "quasar";
 import api from "../api/index.js";
+import socket from "../services/socket";
 
 export const useLlenaderoStore = defineStore("llenaderos", () => {
   const $q = useQuasar();
@@ -88,6 +89,26 @@ export const useLlenaderoStore = defineStore("llenaderos", () => {
     }
   }
 
+  // --- SOCKET IO ---
+  function initSocket() {
+    socket.on("llenadero:creado", () => fetchLlenaderos());
+    socket.on("llenadero:actualizado", () => fetchLlenaderos());
+    // Es crítico escuchar eventos de tanques aquí, porque el volumen de un tanque 
+    // modifica directamente las "estadisticas" del llenadero consultado en el API.
+    socket.on("tanque:actualizado", () => fetchLlenaderos());
+  }
+
+  function cleanupSocket() {
+    socket.off("llenadero:creado");
+    socket.off("llenadero:actualizado");
+    // Al limpiar, ten cuidado de no des-suscribir globalmente "tanque:actualizado" 
+    // Si otros stores lo usan, esto puede causar bugs si no consideramos que socket.off
+    // sin el callback remueve TODOS los listeners. 
+    // Lo ideal en Socket.IO es pasar la referencia exacta, pero si el flujo permite
+    // montado/desmontado global, lo dejamos o no lo desmontamos para no afectar 
+    // components hijos o paralelos. Vamos a omitir el off de "tanque:actualizado" 
+    // aquí para evitar side-effects en tankStore.
+  }
 
   return {
     rows,
@@ -98,5 +119,7 @@ export const useLlenaderoStore = defineStore("llenaderos", () => {
     createLlenadero,
     updateLlenadero,
     deleteLlenadero,
+    initSocket,
+    cleanupSocket
   };
 });
