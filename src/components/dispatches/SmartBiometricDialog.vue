@@ -378,28 +378,65 @@ const proceedDualAuth = async () => {
     await finalizeTicketGeneration();
 };
 
+const PRINT_SERVER_URL = 'http://localhost:3001';
+
 const finalizeTicketGeneration = async () => {
     step.value = 4;
     generatingTicket.value = true;
-    
+
     try {
+        // 1. Generar ticket en el backend (valida huellas, graba en BD, construye snapshot)
         const response = await api.post(`/despacho/imprimir/${props.requestData.id_solicitud}`, {
-           huella_almacenista: rawFingerprintAlmacenista.value, 
+           huella_almacenista: rawFingerprintAlmacenista.value,
            huella_receptor: rawFingerprintSolicitante.value,
            cedula_receptor: usuarioIdentificado.value.cedula,
            cedula_almacenista: cedulaAlmacenistaInput.value || usuarioIdentificado.value.cedula
         });
-        
-        $q.notify({type:'positive', message: 'Ticket generado exitosamente'});
-        emit("ticketGenerated", response.data.ticket);
+
+        const ticket = response.data.ticket;
+        emit("ticketGenerated", ticket);
         visible.value = false;
+
+        // 2. Imprimir automáticamente Original + Copia usando el snapshot inmutable
+        const snapshot = ticket.snapshot;
+        if (snapshot) {
+            try {
+                const printRes = await fetch(`${PRINT_SERVER_URL}/print-both`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(snapshot),
+                });
+
+                if (printRes.ok) {
+                    $q.notify({
+                        type: 'positive',
+                        icon: 'print',
+                        message: `Ticket ${ticket.codigo} impreso: Original + Copia`,
+                        timeout: 4000,
+                    });
+                } else {
+                    const errData = await printRes.json().catch(() => ({}));
+                    throw new Error(errData.error || 'Error del servidor de impresión');
+                }
+            } catch (printError) {
+                console.error('Error de impresión:', printError);
+                $q.notify({
+                    type: 'warning',
+                    icon: 'print_disabled',
+                    message: 'Ticket generado, pero no se pudo imprimir automáticamente. Verifique que el servidor de impresión (.exe) esté activo.',
+                    timeout: 7000,
+                });
+            }
+        } else {
+            $q.notify({ type: 'positive', message: 'Ticket generado exitosamente' });
+        }
 
     } catch (error) {
         const errorMsg = error.response?.data?.msg || "Error generando ticket";
         const details = error.response?.data?.details || error.response?.data?.error || "";
         $q.notify({
-            type:'negative', 
-            message: `${errorMsg} ${details ? ': ' + details : ''}`,
+            type: 'negative',
+            message: `${errorMsg}${details ? ': ' + details : ''}`,
             timeout: 5000
         });
         step.value = (biometriaAlmacenista.value === biometriaSolicitante.value) ? 2 : 3;

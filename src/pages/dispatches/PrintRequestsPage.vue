@@ -210,9 +210,22 @@
                 color="indigo"
                 icon="print"
                 class="q-mr-xs"
+                @click="onDirectPrint(props.row)"
+              >
+                <q-tooltip>Imprimir y Ver Ticket</q-tooltip>
+              </q-btn>
+
+              <q-btn
+                v-if="['IMPRESA', 'FINALIZADA', 'DESPACHADA'].includes(props.row.estado)"
+                dense
+                round
+                flat
+                color="cyan"
+                icon="visibility"
+                class="q-mr-xs"
                 @click="onViewTicket(props.row)"
               >
-                <q-tooltip>Ver/Imprimir Ticket Original</q-tooltip>
+                <q-tooltip>Solo Vista Previa (No imprime)</q-tooltip>
               </q-btn>
 
               <q-btn
@@ -450,6 +463,63 @@ const onViewTicket = async (request) => {
     $q.loading.hide();
   }
 }
+
+const onDirectPrint = async (request) => {
+  try {
+    $q.loading.show({ message: 'Imprimiendo ticket...' });
+    const response = await requestStore.reprintTicket(request.id_solicitud);
+    
+    if (response && response.ticket) {
+      // 1. Mostrar Diálogo de Forma Inmediata:
+      selectedTicket.value = response.ticket;
+      isTicketVisible.value = true;
+      
+      // 2. Ejecutar impresión paralela
+      const t = response.ticket;
+      const s = t.solicitud || t;
+      const normalizedData = {
+        codigo: t.codigo || s.codigo_ticket || "S/C",
+        fecha_impresion: s.fecha_impresion || s.fecha_solicitud,
+        beneficiario_codigo: s.Dependencia?.codigo || "S/C",
+        dependencia_nombre: s.Dependencia?.nombre_dependencia || "S/D",
+        solicitante_nombre: s.Solicitante ? `${s.Solicitante.nombre} ${s.Solicitante.apellido}` : "S/S",
+        renglon: s.TipoCombustible?.nombre || "S/R",
+        litros: s.cantidad_litros || "0",
+        precio: s.PrecioCombustible?.precio || 0,
+        moneda: s.PrecioCombustible?.Moneda?.nombre || "USD",
+        hasPrice: !!s.PrecioCombustible,
+        llenadero: s.Llenadero?.nombre_llenadero || "S/L",
+        flota: s.flota || "NO APLICA",
+        placa: s.placa || "NO APLICA",
+        suministro: s.tipo_suministro === "BIDON" ? "Bidon" : "Regular",
+        autorizacion: s.Aprobador ? `${s.Aprobador.nombre} ${s.Aprobador.apellido}` : "S/A",
+        recibido: t.receptor?.nombre || s.Receptor?.nombre || "S/R",
+        cedula: t.receptor?.cedula || s.Receptor?.cedula || "S/I",
+        almacen: t.almacenista?.nombre || (s.Almacenista ? `${s.Almacenista.nombre} ${s.Almacenista.apellido}` : "S/A"),
+        operacion: s.Dependencia?.tipo_venta === "VENTA" ? "VENTA" : "LOCAL",
+        es_copia: !!t.es_copia || s.numero_impresiones > 1,
+      };
+
+      const printRes = await fetch("http://localhost:3001/print", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(normalizedData),
+      });
+
+      if (printRes.ok) {
+        $q.notify({ color: "positive", message: "Ticket enviado a la impresora", icon: "print" });
+      } else {
+        const errorData = await printRes.json();
+        throw new Error(errorData.error || "Error al imprimir");
+      }
+    }
+  } catch (error) {
+    console.error("Error en impresión directa", error);
+    $q.notify({ color: "negative", message: "No se pudo conectar a la impresora local o hubo un error.", icon: "error" });
+  } finally {
+    $q.loading.hide();
+  }
+};
 
 const handleTicketGenerated = (ticket) => {
     // 1. Quitar de la lista (ya no está APROBADA)

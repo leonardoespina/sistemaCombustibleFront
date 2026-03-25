@@ -1,14 +1,17 @@
 <template>
-  <q-dialog v-model="visible" persistent>
-    <q-card style="width: 350px; max-width: 90vw">
+  <q-dialog v-model="visible">
+    <q-card style="width: 450px; max-width: 90vw" class="q-pa-sm">
       <q-card-section class="row items-center q-pb-none">
-        <div class="text-h6">Vista Previa de Ticket</div>
+        <div class="text-h6 text-primary row items-center">
+          <q-icon name="receipt_long" size="md" class="q-mr-sm" />
+          Vista Previa de Ticket
+        </div>
         <q-space />
         <q-btn icon="close" flat round dense v-close-popup />
       </q-card-section>
 
       <q-card-section class="q-pa-md overflow-hidden">
-        <!-- Contenedor del Ticket (Estilo Térmico) -->
+        <!-- Contenedor del Ticket (Estilo Térmico Original) -->
         <div
           class="ticket-container bg-white q-pa-sm text-mono shadow-2 text-black"
           style="font-size: 11px"
@@ -17,9 +20,9 @@
           <div class="text-center">
             <div class="text-weight-bold">MIBITURVEN, S.A.</div>
             <div>El Dorado, Edo Bolivar</div>
-            <div>{{ formatDateTime(normalized.fecha_impresion) }}</div>
+            <div>{{ displayData.fecha_impresion_string || formatDateTime(displayData.fecha_impresion) }}</div>
             <div class="divider">
-              ***********************************************
+              ********************************
             </div>
             <div class="text-weight-bold">SGC: Modulo Combustible</div>
             <div class="divider">
@@ -29,26 +32,26 @@
 
           <!-- Cuerpo del Ticket -->
           <div class="q-mt-sm">
-            <div>Solicitud No: {{ normalized.codigo }}</div>
-            <div>Codigo Beneficiario: {{ normalized.beneficiario_codigo }}</div>
+            <div>Solicitud No: {{ displayData.codigo }}</div>
+            <div>Codigo Beneficiario: {{ displayData.beneficiario_codigo }}</div>
             <div class="text-weight-bold">
-              {{ normalized.dependencia_nombre }}
+              {{ displayData.dependencia_nombre }}
             </div>
-            <div>Solicitante: {{ normalized.solicitante_nombre }}</div>
-            <div>Renglon: {{ normalized.renglon }}</div>
-            <div>LTS: {{ normalized.litros }}</div>
+            <div>Solicitante: {{ displayData.solicitante_nombre }}</div>
+            <div>Renglon: {{ displayData.renglon }}</div>
+            <div>LTS: {{ displayData.litros }}</div>
 
             <!-- Datos de Venta (Solo si aplica) -->
-            <div v-if="normalized.hasPrice">
+            <div v-if="displayData.hasPrice">
               <div>
-                Precio x LTS {{ Number(normalized.precio).toFixed(2) }} ({{
-                  normalized.moneda
+                Precio x LTS {{ Number(displayData.precio).toFixed(2) }} ({{
+                  displayData.moneda
                 }})
               </div>
               <div>
                 Total a pagar:
-                {{ (normalized.litros * normalized.precio).toFixed(2) }} ({{
-                  normalized.moneda
+                {{ (displayData.litros * displayData.precio).toFixed(2) }} ({{
+                  displayData.moneda
                 }})
               </div>
             </div>
@@ -57,17 +60,17 @@
               <div>Total a pagar: 0 (0)</div>
             </div>
 
-            <div>Llenadero: {{ normalized.llenadero }}</div>
-            <div>Flota: {{ normalized.flota }}</div>
-            <div>Placa: {{ normalized.placa }}</div>
-            <div>Despacho: {{ normalized.suministro }}</div>
+            <div>Llenadero: {{ displayData.llenadero }}</div>
+            <div>Flota: {{ displayData.flota }}</div>
+            <div>Placa: {{ displayData.placa }}</div>
+            <div>Despacho: {{ displayData.suministro }}</div>
 
             <div class="q-mt-sm">
-              <div>Autorizacion: {{ normalized.autorizacion }}</div>
-              <div>Recibido: {{ normalized.recibido }}</div>
-              <div>C.I.: {{ normalized.cedula }}</div>
-              <div>Almacen: {{ normalized.almacen }}</div>
-              <div>Operacion: {{ normalized.operacion }}</div>
+              <div>Autorizacion: {{ displayData.autorizacion }}</div>
+              <div>Recibido: {{ displayData.recibido }}</div>
+              <div>C.I.: {{ displayData.cedula }}</div>
+              <div>Almacen: {{ displayData.almacen }}</div>
+              <div>Operacion: {{ displayData.operacion }}</div>
             </div>
           </div>
 
@@ -82,7 +85,7 @@
           <div class="text-center q-mt-sm">
             <div>
               {{
-                normalized.es_copia
+                displayData.es_copia
                   ? "Copia (Re-Impresion)"
                   : "Original (Impresion)"
               }}
@@ -96,30 +99,40 @@
             </div>
             <div class="text-caption" style="font-size: 8px">
               <div class="divider">
-                ***********************************************
+                ********************************
               </div>
             </div>
           </div>
         </div>
       </q-card-section>
 
-      <q-card-actions align="right" class="bg-grey-1">
+      <q-card-actions align="right" class="bg-white q-px-md q-pb-md">
         <q-btn
-          flat
-          label="Descargar PDF (Simulado)"
-          color="grey-7"
-          icon="download"
-          @click="simulateDownload"
+          unelevated
+          label="Reimprimir (Original + Copia)"
+          color="indigo"
+          icon="print"
+          :loading="isPrinting"
+          @click="printBoth"
         />
-        <q-btn unelevated label="Cerrar" color="primary" v-close-popup />
+        <q-btn
+          outline
+          label="Solo Original"
+          color="indigo-7"
+          icon="receipt"
+          :loading="isPrinting"
+          @click="printTicket"
+        />
+        <q-btn flat label="Cerrar" color="grey-8" v-close-popup />
       </q-card-actions>
     </q-card>
   </q-dialog>
 </template>
 
 <script setup>
-import { computed } from "vue";
-import { date } from "quasar";
+import { computed, ref, watch, nextTick } from "vue";
+import { date, useQuasar } from "quasar";
+import QRCode from "qrcode";
 
 const props = defineProps({
   modelValue: Boolean,
@@ -138,8 +151,14 @@ const visible = computed({
 
 const ticketData = computed(() => props.ticket || {});
 
-// Normalizar datos para que el template funcione con Solicitud directa (Lista)
-// o con objeto Ticket (Acción Impresión)
+// Usar snapshot inmutable del backend si existe; si no, normalizar datos relacionales (fallback retrocompatible)
+const displayData = computed(() => {
+  const snap = ticketData.value?.snapshot;
+  if (snap) return snap;
+  // --- Fallback: normalización desde datos relacionales ---
+  return normalized.value;
+});
+
 const normalized = computed(() => {
   const t = ticketData.value;
   // Si tiene la propiedad 'solicitud', es el formato de impresión. Si no, es la solicitud directa.
@@ -148,8 +167,9 @@ const normalized = computed(() => {
   return {
     codigo: t.codigo || s.codigo_ticket || "S/C",
     fecha_impresion: s.fecha_impresion || s.fecha_solicitud,
+    fecha_impresion_string: "", // Se llenará en tiempo de visualización si no viene en el snapshot
     beneficiario_codigo: s.Dependencia?.codigo || "S/C",
-    dependencia_nombre: s.Dependencia?.nombre_dependencia || "S/D",
+    dependencia_nombre: s.Subdependencia?.nombre ? s.Subdependencia.nombre : (s.Dependencia?.nombre_dependencia || "S/D"),
     solicitante_nombre: s.Solicitante
       ? `${s.Solicitante.nombre} ${s.Solicitante.apellido}`
       : "S/S",
@@ -183,8 +203,8 @@ const formatDate = (val) => {
 };
 
 const formatDateTime = (val) => {
-  if (!val) return date.formatDate(new Date(), "YYYY-MM-DD h:mm:ss A");
-  return date.formatDate(val, "YYYY-MM-DD h:mm:ss A");
+  if (!val) return date.formatDate(new Date(), "DD/MM/YYYY hh:mm:ss A");
+  return date.formatDate(val, "DD/MM/YYYY hh:mm:ss A");
 };
 
 const simulateDownload = () => {
@@ -194,9 +214,69 @@ const simulateDownload = () => {
   );
 };
 
-// Generación de QR
-import QRCode from "qrcode";
-import { ref, watch, nextTick } from "vue";
+const $q = useQuasar();
+
+const PRINT_SERVER_URL = 'http://localhost:3001';
+
+const isPrinting = ref(false);
+
+// Re-impresión: solo Original usando snapshot o datos actuales
+const printTicket = async () => {
+  isPrinting.value = true;
+  try {
+    const data = { ...displayData.value, es_copia: false };
+    const response = await fetch(`${PRINT_SERVER_URL}/print`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(data),
+    });
+    if (response.ok) {
+      $q.notify({ color: "positive", message: "Original enviado a la impresora", icon: "print" });
+    } else {
+      const errorData = await response.json();
+      throw new Error(errorData.error || "Error al imprimir");
+    }
+  } catch (error) {
+    console.error("Error conectando con el servidor de impresión", error);
+    $q.notify({
+      color: "negative",
+      message: "No se pudo conectar a la impresora local. Verifique que el servidor de impresión (.exe) esté en ejecución.",
+      icon: "error",
+      timeout: 5000
+    });
+  } finally {
+    isPrinting.value = false;
+  }
+};
+
+// Re-impresión: Original + Copia
+const printBoth = async () => {
+  isPrinting.value = true;
+  try {
+    const data = { ...displayData.value };
+    const response = await fetch(`${PRINT_SERVER_URL}/print-both`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(data),
+    });
+    if (response.ok) {
+      $q.notify({ color: "positive", message: "Original + Copia enviados a la impresora", icon: "print" });
+    } else {
+      const errorData = await response.json();
+      throw new Error(errorData.error || "Error al imprimir");
+    }
+  } catch (error) {
+    console.error("Error conectando con el servidor de impresión", error);
+    $q.notify({
+      color: "negative",
+      message: "No se pudo conectar a la impresora local. Verifique que el servidor de impresión (.exe) esté en ejecución.",
+      icon: "error",
+      timeout: 5000
+    });
+  } finally {
+    isPrinting.value = false;
+  }
+};
 
 const qrCodeDataUrl = ref("");
 
@@ -204,7 +284,7 @@ const generateQR = async () => {
   if (!normalized.value.codigo) return;
   try {
     qrCodeDataUrl.value = await QRCode.toDataURL(normalized.value.codigo, {
-      width: 100,
+      width: 150, // Aumentado para mejor legibilidad en térmica
       margin: 1,
     });
   } catch (err) {
