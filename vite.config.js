@@ -15,7 +15,7 @@ export default defineConfig({
       // - Desarrollo local:  'http://localhost:3000'
       // - Desarrollo en red: 'http://10.60.0.21:3000'  (IP del servidor backend en la red)
       '/api': {
-        target: 'http://localhost:3000',
+        target: 'http://10.60.0.21:3000',
         changeOrigin: true,
         secure: false, // Ignorar certificados autofirmados si los hubiera
       },
@@ -24,7 +24,7 @@ export default defineConfig({
       // - Desarrollo local:  'http://localhost:3000'
       // - Desarrollo en red: 'http://10.60.0.21:3000'
       '/socket.io': {
-        target: 'http://localhost:3000',
+        target: 'http://10.60.0.21:3000',
         ws: true,          // Habilita el soporte para WebSocket
         changeOrigin: true
       }
