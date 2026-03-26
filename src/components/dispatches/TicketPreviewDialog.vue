@@ -77,9 +77,6 @@
           <!-- Líneas de Conformidad -->
           <div class="q-mt-md">
             <div>Conformidad PCP: ___________________________</div>
-            <div class="q-mt-xs">
-              Conformidad DGCIM: _________________________
-            </div>
           </div>
 
           <div class="text-center q-mt-sm">
@@ -106,24 +103,31 @@
         </div>
       </q-card-section>
 
-      <q-card-actions align="right" class="bg-white q-px-md q-pb-md">
+      <q-card-actions align="right" class="bg-white q-px-md q-pb-md row items-center">
+        <div class="row items-center q-mr-auto">
+          <q-input
+            v-model.number="numCopias"
+            type="number"
+            label="Copias Extras"
+            outlined
+            dense
+            min="0"
+            max="10"
+            style="width: 130px"
+          >
+            <template v-slot:prepend><q-icon name="content_copy" size="xs" /></template>
+          </q-input>
+        </div>
+        <q-btn flat label="Cerrar" color="grey-8" v-close-popup />
         <q-btn
           unelevated
-          label="Reimprimir (Original + Copia)"
+          label="Imprimir"
           color="indigo"
           icon="print"
           :loading="isPrinting"
-          @click="printBoth"
-        />
-        <q-btn
-          outline
-          label="Solo Original"
-          color="indigo-7"
-          icon="receipt"
-          :loading="isPrinting"
           @click="printTicket"
+          class="q-ml-sm"
         />
-        <q-btn flat label="Cerrar" color="grey-8" v-close-popup />
       </q-card-actions>
     </q-card>
   </q-dialog>
@@ -219,50 +223,26 @@ const $q = useQuasar();
 const PRINT_SERVER_URL = 'http://localhost:3001';
 
 const isPrinting = ref(false);
+const numCopias = ref(1);
 
-// Re-impresión: solo Original usando snapshot o datos actuales
+// Re-impresión interactiva
 const printTicket = async () => {
   isPrinting.value = true;
   try {
-    const data = { ...displayData.value, es_copia: false };
-    const response = await fetch(`${PRINT_SERVER_URL}/print`, {
+    const data = { ...displayData.value, numCopias: numCopias.value };
+    const response = await fetch(`${PRINT_SERVER_URL}/print-multiple`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(data),
     });
     if (response.ok) {
-      $q.notify({ color: "positive", message: "Original enviado a la impresora", icon: "print" });
+      $q.notify({ 
+        color: "positive", 
+        message: `Ticket enviado a impresión (Original + ${numCopias.value} copias)`, 
+        icon: "print" 
+      });
     } else {
-      const errorData = await response.json();
-      throw new Error(errorData.error || "Error al imprimir");
-    }
-  } catch (error) {
-    console.error("Error conectando con el servidor de impresión", error);
-    $q.notify({
-      color: "negative",
-      message: "No se pudo conectar a la impresora local. Verifique que el servidor de impresión (.exe) esté en ejecución.",
-      icon: "error",
-      timeout: 5000
-    });
-  } finally {
-    isPrinting.value = false;
-  }
-};
-
-// Re-impresión: Original + Copia
-const printBoth = async () => {
-  isPrinting.value = true;
-  try {
-    const data = { ...displayData.value };
-    const response = await fetch(`${PRINT_SERVER_URL}/print-both`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(data),
-    });
-    if (response.ok) {
-      $q.notify({ color: "positive", message: "Original + Copia enviados a la impresora", icon: "print" });
-    } else {
-      const errorData = await response.json();
+      const errorData = await response.json().catch(() => ({}));
       throw new Error(errorData.error || "Error al imprimir");
     }
   } catch (error) {
@@ -291,6 +271,13 @@ const generateQR = async () => {
     console.error("Error generando QR", err);
   }
 };
+
+watch(
+  () => props.modelValue,
+  (newVal) => {
+    if (newVal) numCopias.value = 1;
+  }
+);
 
 watch(
   () => props.ticket,
