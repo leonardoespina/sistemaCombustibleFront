@@ -167,8 +167,8 @@ export const pdfService = {
 
     // ── Iterar grupos ────────────────────────────────────────────────────────
     groups.forEach((group, gIdx) => {
-      // Espacio mínimo para el banner + al menos 2 filas de datos
-      if (currentY > pageHeight - 50 && gIdx > 0) {
+      // Cada grupo de combustible en una página nueva para evitar cortes, excepto el primero
+      if (gIdx > 0) {
         doc.addPage();
         currentY = drawDocHeader(12);
       }
