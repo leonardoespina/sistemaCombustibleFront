@@ -253,7 +253,6 @@ export function useCierreTurnoPage() {
                 { label: "Fecha/Hora", dataKey: "fecha" },
                 { label: "Solicitante", dataKey: "nombre_apellido" },
                 { label: "Placa", dataKey: "placa" },
-                { label: "Dependencia", dataKey: "dependencia" },
                 { label: "Sub-dep.", dataKey: "subdependencia" },
                 { label: "Solicitado", field: (r) => Number(r.cant_solicitada || 0).toLocaleString() },
                 { label: "Despachado", field: (r) => r.es_ingreso ? `+${Number(r.cant_despachada).toLocaleString()}` : Number(r.cant_despachada).toLocaleString() },
@@ -262,11 +261,15 @@ export function useCierreTurnoPage() {
 
             const stockCols = tanquesGrupo.map(t => ({
                 label: `Stock ${t.codigo}`,
+                cellWidth: 18,
+                halign: "right",
                 field: (r) => r.stock_tanques?.[t.codigo] != null ? Number(r.stock_tanques[t.codigo]).toLocaleString() : "—"
             }));
 
             const totalStockCol = {
                 label: `Total ${grupo.title}`,
+                cellWidth: 22,
+                halign: "right",
                 field: (r) => {
                     let sum = 0;
                     tanquesGrupo.forEach(t => {
@@ -280,8 +283,8 @@ export function useCierreTurnoPage() {
                 ...baseColumns,
                 ...stockCols,
                 totalStockCol,
-                { label: "Almacén", dataKey: "almacen" },
-                { label: "PCP", dataKey: "pcp" },
+                { label: "Almacén", dataKey: "almacen", cellWidth: 20, halign: "left" },
+                { label: "PCP",     dataKey: "pcp",     cellWidth: 22, halign: "left" },
             ];
 
             return {

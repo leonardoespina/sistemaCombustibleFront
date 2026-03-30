@@ -76,108 +76,255 @@ export const pdfService = {
 
   /**
    * Genera un reporte tabular (Landscape) con múltiples tablas agrupadas (ej. por combustible).
+   * Diseño premium: banda corporativa, metadata estructurada, tablas con estilo, footer con timestamp.
    */
   exportReporteAgrupado({
     orientation = "l",
     title = "Reporte de Sistema",
     subtitle = "",
-    groups = [], // [{ title: "GASOIL", columns: [], data: [], total: X }]
+    groups = [],
     fileName = "reporte_agrupado.pdf",
     logo = null,
     metadata = {},
   }) {
+    // ── Paleta corporativa ───────────────────────────────────────────────────
+    const BLUE_DARK   = [18,  65, 120];   // Encabezado tabla
+    const BLUE_MID    = [30, 116, 200];   // Banner grupo
+    const BLUE_LIGHT  = [210, 228, 255];  // Filas alternas
+    const ACCENT_RED  = [196,  30,  58];  // Total Despachado
+    const GRAY_TEXT   = [60,  60,  60];
+    const WHITE       = [255, 255, 255];
+
     const doc = new jsPDF({ orientation, unit: "mm", format: "letter" });
-    const pageWidth = doc.internal.pageSize.width;
+    const pageWidth  = doc.internal.pageSize.width;
+    const pageHeight = doc.internal.pageSize.height;
     const margin = 14;
-    let currentY = 15;
 
-    // --- ENCABEZADO GLOBAL ---
-    if (logo) {
-      try { doc.addImage(logo, "PNG", pageWidth - 45, margin - 5, 30, 20); } catch (e) { }
-    }
+    // ── Función helper: dibuja el encabezado del documento ──────────────────
+    const drawDocHeader = (startY) => {
+      let y = startY;
 
-    doc.setFont("helvetica", "bold");
-    doc.setFontSize(18);
-    doc.setTextColor(0);
-    doc.text(title.toUpperCase(), margin, currentY);
-    currentY += 8;
+      // Banda superior decorativa
+      doc.setFillColor(...BLUE_DARK);
+      doc.rect(0, 0, pageWidth, 7, "F");
 
-    if (subtitle) {
-      doc.setFontSize(11);
-      doc.setFont("helvetica", "normal");
-      doc.setTextColor(100);
-      doc.text(subtitle, margin, currentY);
-      currentY += 10;
-    }
+      // Logo (si existe)
+      if (logo) {
+        try { doc.addImage(logo, "PNG", pageWidth - 47, y, 32, 18); } catch (_) {}
+      }
 
-    doc.setFontSize(11);
-    doc.setTextColor(0);
-    Object.entries(metadata).forEach(([key, value], index) => {
-      const x = index % 2 === 0 ? margin : pageWidth / 2;
-      doc.text(`${key}: ${value}`, x, currentY);
-      if (index % 2 !== 0) currentY += 5;
-    });
-
-    currentY += 5;
-
-    // --- ITERAR POR GRUPOS (TABLAS INDEPENDIENTES) ---
-    groups.forEach((group) => {
-      // Dibujar cabecera azul del grupo
-      doc.setFillColor(30, 116, 200);
-      doc.rect(margin, currentY, pageWidth - (margin * 2), 8, "F");
+      // Título principal
       doc.setFont("helvetica", "bold");
-      doc.setFontSize(11);
-      doc.setTextColor(255, 255, 255);
-      doc.text(group.title.toUpperCase(), margin + 5, currentY + 5.5);
+      doc.setFontSize(20);
+      doc.setTextColor(...BLUE_DARK);
+      doc.text(title.toUpperCase(), margin, y + 3);
+      y += 9;
 
-      currentY += 8;
+      // Subtítulo
+      if (subtitle) {
+        doc.setFontSize(10);
+        doc.setFont("helvetica", "italic");
+        doc.setTextColor(...GRAY_TEXT);
+        doc.text(subtitle, margin, y);
+        y += 6;
+      }
 
+      // Línea separadora
+      doc.setDrawColor(...BLUE_MID);
+      doc.setLineWidth(0.5);
+      doc.line(margin, y, pageWidth - margin, y);
+      y += 5;
+
+      // Metadata en dos columnas
+      const entries = Object.entries(metadata);
+      doc.setFontSize(10);
+      entries.forEach(([key, value], idx) => {
+        const col = idx % 2;
+        const x   = col === 0 ? margin : pageWidth / 2 + 5;
+        const row = Math.floor(idx / 2);
+        const fy  = y + row * 6;
+
+        // Etiqueta en negrita
+        doc.setFont("helvetica", "bold");
+        doc.setTextColor(...BLUE_DARK);
+        doc.text(`${key}:`, x, fy);
+        const labelW = doc.getTextWidth(`${key}: `);
+
+        // Valor normal
+        doc.setFont("helvetica", "normal");
+        doc.setTextColor(...GRAY_TEXT);
+        doc.text(String(value), x + labelW, fy);
+      });
+
+      const metaRows = Math.ceil(entries.length / 2);
+      y += metaRows * 6 + 6;
+
+      return y;
+    };
+
+    // ── Renderizar encabezado en la primera página ───────────────────────────
+    let currentY = drawDocHeader(12);
+
+    // ── Iterar grupos ────────────────────────────────────────────────────────
+    groups.forEach((group, gIdx) => {
+      // Espacio mínimo para el banner + al menos 2 filas de datos
+      if (currentY > pageHeight - 50 && gIdx > 0) {
+        doc.addPage();
+        currentY = drawDocHeader(12);
+      }
+
+      // Banner del grupo
+      const bannerH = 9;
+      doc.setFillColor(...BLUE_MID);
+      doc.roundedRect(margin, currentY, pageWidth - margin * 2, bannerH, 1.5, 1.5, "F");
+
+      // Indicador lateral más oscuro
+      doc.setFillColor(...BLUE_DARK);
+      doc.roundedRect(margin, currentY, 4, bannerH, 1, 1, "F");
+
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(10.5);
+      doc.setTextColor(...WHITE);
+      doc.text(group.title.toUpperCase(), margin + 8, currentY + 6);
+      currentY += bannerH + 1;
+
+      // ── Tabla del grupo ──────────────────────────────────────────────────
       autoTable(doc, {
         startY: currentY,
         head: [group.columns.map(col => col.label)],
-        body: group.data.map((row, rIdx) => group.columns.map(col => {
-          let val = typeof col.field === 'function' ? col.field(row) : row[col.dataKey];
-          if (col.label === "#") val = rIdx + 1;
-          return val != null ? val : "—";
-        })),
-        theme: "grid",
-        headStyles: { fillColor: [240, 240, 240], fontSize: 8, halign: "center", textColor: [0, 0, 0], lineWidth: 0.1, lineColor: [200, 200, 200] },
-        bodyStyles: { fontSize: 8.5, cellPadding: 1.5, textColor: [40, 40, 40] },
-        columnStyles: {
-          0: { cellWidth: 8, halign: "center" },
-          1: { cellWidth: 22 },
+        body: group.data.map((row, rIdx) =>
+          group.columns.map(col => {
+            let val = typeof col.field === "function" ? col.field(row) : row[col.dataKey];
+            if (col.label === "#") val = rIdx + 1;
+            return val != null ? val : "—";
+          })
+        ),
+        theme: "plain",
+        styles: {
+          font: "helvetica",
+          fontSize: 8,
+          cellPadding: { top: 2, right: 1.5, bottom: 2, left: 1.5 }, // ← Reducido para ganar milímetros valiosos
+          textColor: [...GRAY_TEXT],
+          lineWidth: 0.1,
+          lineColor: [200, 210, 225],
+          valign: "middle",
+          overflow: "linebreak",     // ← NUNCA cortar texto con "...", envolver a la siguiente línea
         },
-        margin: { left: margin, right: margin, bottom: 20 },
-        didDrawPage: (data) => {
-          currentY = data.cursor.y;
-        }
+        headStyles: {
+          fillColor: [...BLUE_DARK],
+          textColor: [...WHITE],
+          fontStyle: "bold",
+          fontSize: 7.8,
+          halign: "center",
+          valign: "middle",
+          overflow: "linebreak",
+          cellPadding: { top: 2.5, right: 1.5, bottom: 2.5, left: 1.5 },
+        },
+        alternateRowStyles: {
+          fillColor: [...BLUE_LIGHT],
+        },
+        columnStyles: (() => {
+          // ── Anchos fijos reajustados. Total fijo: ~146 mm ────────────────
+          // Ajustado para que quepan palabras clave completas ("Despachado") sin acaparar
+          const cs = {
+            0: { cellWidth: 5,  halign: "center", fontStyle: "bold" },
+            1: { cellWidth: 20, halign: "left"   },  // Fecha/Hora
+            2: { cellWidth: 25, halign: "left"   },  // Solicitante
+            3: { cellWidth: 21, halign: "center" },  // Placa
+            4: { cellWidth: 26, halign: "left"   },  // Sub-dep.
+            5: { cellWidth: 15, halign: "right"  },  // Solicitado
+            6: { cellWidth: 18, halign: "right"  },  // Despachado (necesita algo más para que quepa el título)
+            7: { cellWidth: 16, halign: "right"  },  // Diferencia
+          };
+          // ── Anchos dinámicos para Stock / Total / Almacén / PCP ────────────
+          group.columns.forEach((col, idx) => {
+            if (idx >= 8) {
+              cs[idx] = {
+                // Dejamos que jsPDF decida el ancho en las dinámicas 
+                // para que NUNCA desborde el margen derecho (suma >251mm)
+                halign: col.halign || "right"
+              };
+            }
+          });
+          return cs;
+        })(),
+        margin: { left: margin, right: margin, bottom: 22 },
+        tableWidth: pageWidth - 2 * margin,  // ← Fuerza la justificación perfecta, autotable encoje las dinámicas para que quepa
+        didDrawPage: (hookData) => {
+          if (hookData.pageNumber > 1) {
+            doc.setFillColor(...BLUE_DARK);
+            doc.rect(0, 0, pageWidth, 4, "F");
+          }
+        },
       });
 
-      currentY = doc.lastAutoTable.finalY + 5;
+      currentY = doc.lastAutoTable.finalY;
 
-      // Total Despachado en rojo al pie de cada tabla
+      // ── Línea separadora bajo la tabla ──────────────────────────────────
+      doc.setDrawColor(...BLUE_MID);
+      doc.setLineWidth(0.3);
+      doc.line(margin, currentY + 1, pageWidth - margin, currentY + 1);
+      currentY += 4;
+
+      // ── Total Despachado ─────────────────────────────────────────────────
       if (group.total != null) {
+        const totalLabel = `Total Despachado ${group.title.toUpperCase()}:`;
+        const totalValue = `  ${Number(group.total).toLocaleString("es-VE", { minimumFractionDigits: 2 })} L`;
+
+        // Caja de total
+        const boxW  = 90;
+        const boxH  = 8;
+        const boxX  = pageWidth - margin - boxW;
+        doc.setFillColor(255, 245, 247);
+        doc.setDrawColor(...ACCENT_RED);
+        doc.setLineWidth(0.4);
+        doc.roundedRect(boxX, currentY, boxW, boxH, 1.5, 1.5, "FD");
+
         doc.setFont("helvetica", "bold");
-        doc.setFontSize(10);
-        doc.setTextColor(220, 53, 69);
-        const textRight = `Total Despachado ${group.title}: ${group.total.toLocaleString()} L`;
-        const textW = doc.getTextWidth(textRight);
-        doc.text(textRight, pageWidth - margin - textW, currentY);
-        currentY += 10;
+        doc.setFontSize(9);
+        doc.setTextColor(...ACCENT_RED);
+        const fullText = totalLabel + totalValue;
+        const textW = doc.getTextWidth(fullText);
+        doc.text(fullText, pageWidth - margin - 3 - textW, currentY + 5.5);
+
+        currentY += boxH + 6;
       } else {
         currentY += 5;
       }
     });
 
-    // --- FOOTER GLOBAL DE PÁGINAS ---
+    // ── Footer en cada página ────────────────────────────────────────────────
     const pageCount = doc.internal.getNumberOfPages();
+    const now = new Date();
+    const timestamp = now.toLocaleDateString("es-VE", {
+      day: "2-digit", month: "2-digit", year: "numeric",
+    }) + " " + now.toLocaleTimeString("es-VE", { hour: "2-digit", minute: "2-digit" });
+
     for (let i = 1; i <= pageCount; i++) {
       doc.setPage(i);
-      const str = `Página ${i} de ${pageCount}`;
+      const footerY = pageHeight - 8;
+
+      // Línea del footer
+      doc.setDrawColor(180, 190, 210);
+      doc.setLineWidth(0.3);
+      doc.line(margin, footerY - 3, pageWidth - margin, footerY - 3);
+
+      // Timestamp izquierda
       doc.setFont("helvetica", "normal");
-      doc.setFontSize(10);
-      doc.setTextColor(100);
-      doc.text(str, margin, doc.internal.pageSize.height - 10);
+      doc.setFontSize(8);
+      doc.setTextColor(130, 130, 140);
+      doc.text(`Generado: ${timestamp}`, margin, footerY);
+
+      // Página derecha
+      const pageStr = `Página ${i} de ${pageCount}`;
+      const pageStrW = doc.getTextWidth(pageStr);
+      doc.text(pageStr, pageWidth - margin - pageStrW, footerY);
+
+      // Centro: nombre del sistema
+      doc.setFont("helvetica", "italic");
+      const centerStr = "Sistema de Control de Combustible";
+      const centerW   = doc.getTextWidth(centerStr);
+      doc.text(centerStr, (pageWidth - centerW) / 2, footerY);
     }
 
     doc.save(fileName);
