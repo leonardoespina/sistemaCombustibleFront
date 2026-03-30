@@ -75,6 +75,115 @@ export const pdfService = {
   },
 
   /**
+   * Genera un reporte tabular (Landscape) con múltiples tablas agrupadas (ej. por combustible).
+   */
+  exportReporteAgrupado({
+    orientation = "l",
+    title = "Reporte de Sistema",
+    subtitle = "",
+    groups = [], // [{ title: "GASOIL", columns: [], data: [], total: X }]
+    fileName = "reporte_agrupado.pdf",
+    logo = null,
+    metadata = {},
+  }) {
+    const doc = new jsPDF({ orientation, unit: "mm", format: "letter" });
+    const pageWidth = doc.internal.pageSize.width;
+    const margin = 14;
+    let currentY = 15;
+
+    // --- ENCABEZADO GLOBAL ---
+    if (logo) {
+      try { doc.addImage(logo, "PNG", pageWidth - 45, margin - 5, 30, 20); } catch (e) { }
+    }
+
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(18);
+    doc.setTextColor(0);
+    doc.text(title.toUpperCase(), margin, currentY);
+    currentY += 8;
+
+    if (subtitle) {
+      doc.setFontSize(11);
+      doc.setFont("helvetica", "normal");
+      doc.setTextColor(100);
+      doc.text(subtitle, margin, currentY);
+      currentY += 10;
+    }
+
+    doc.setFontSize(11);
+    doc.setTextColor(0);
+    Object.entries(metadata).forEach(([key, value], index) => {
+      const x = index % 2 === 0 ? margin : pageWidth / 2;
+      doc.text(`${key}: ${value}`, x, currentY);
+      if (index % 2 !== 0) currentY += 5;
+    });
+
+    currentY += 5;
+
+    // --- ITERAR POR GRUPOS (TABLAS INDEPENDIENTES) ---
+    groups.forEach((group) => {
+      // Dibujar cabecera azul del grupo
+      doc.setFillColor(30, 116, 200);
+      doc.rect(margin, currentY, pageWidth - (margin * 2), 8, "F");
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(11);
+      doc.setTextColor(255, 255, 255);
+      doc.text(group.title.toUpperCase(), margin + 5, currentY + 5.5);
+
+      currentY += 8;
+
+      autoTable(doc, {
+        startY: currentY,
+        head: [group.columns.map(col => col.label)],
+        body: group.data.map((row, rIdx) => group.columns.map(col => {
+          let val = typeof col.field === 'function' ? col.field(row) : row[col.dataKey];
+          if (col.label === "#") val = rIdx + 1;
+          return val != null ? val : "—";
+        })),
+        theme: "grid",
+        headStyles: { fillColor: [240, 240, 240], fontSize: 8, halign: "center", textColor: [0, 0, 0], lineWidth: 0.1, lineColor: [200, 200, 200] },
+        bodyStyles: { fontSize: 8.5, cellPadding: 1.5, textColor: [40, 40, 40] },
+        columnStyles: {
+          0: { cellWidth: 8, halign: "center" },
+          1: { cellWidth: 22 },
+        },
+        margin: { left: margin, right: margin, bottom: 20 },
+        didDrawPage: (data) => {
+          currentY = data.cursor.y;
+        }
+      });
+
+      currentY = doc.lastAutoTable.finalY + 5;
+
+      // Total Despachado en rojo al pie de cada tabla
+      if (group.total != null) {
+        doc.setFont("helvetica", "bold");
+        doc.setFontSize(10);
+        doc.setTextColor(220, 53, 69);
+        const textRight = `Total Despachado ${group.title}: ${group.total.toLocaleString()} L`;
+        const textW = doc.getTextWidth(textRight);
+        doc.text(textRight, pageWidth - margin - textW, currentY);
+        currentY += 10;
+      } else {
+        currentY += 5;
+      }
+    });
+
+    // --- FOOTER GLOBAL DE PÁGINAS ---
+    const pageCount = doc.internal.getNumberOfPages();
+    for (let i = 1; i <= pageCount; i++) {
+      doc.setPage(i);
+      const str = `Página ${i} de ${pageCount}`;
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(10);
+      doc.setTextColor(100);
+      doc.text(str, margin, doc.internal.pageSize.height - 10);
+    }
+
+    doc.save(fileName);
+  },
+
+  /**
    * Genera el Acta de Cierre con FIDELIDAD TOTAL al diseño del componente Vue.
    * Asegura que el PDF sea idéntico a la vista previa en ActaViewerDialog.vue.
    */

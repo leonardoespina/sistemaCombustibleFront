@@ -218,7 +218,7 @@ export function useCierreTurnoPage() {
         }
     }
 
-    /** Exporta el reporte actual a PDF (Landscape + Filtro) */
+    /** Exporta el reporte actual a PDF (Agrupado por Combustible) */
     function exportarReportePDF() {
         if (!reporteActual.value) {
             $q.notify({ type: "warning", message: "No hay datos de reporte para exportar." });
@@ -226,55 +226,78 @@ export function useCierreTurnoPage() {
         }
 
         const e = reporteActual.value.encabezado;
-        const filas = reporteActual.value.filas;
+        const filas = reporteActual.value.filas || [];
+        const tanquesGlobal = e.tanques || [];
 
-        // 1. Definición de Columnas (Excluyendo 'dependencia' por requerimiento)
-        const baseColumns = [
-            { label: "#", dataKey: "item" },
-            { label: "Fecha/Hora", dataKey: "fecha" },
-            { label: "Placa", dataKey: "placa" },
-            // { label: "Solicitante", dataKey: "nombre_apellido" }, // ELIMINADO por requerimiento del usuario
-            // { label: "Dependencia", dataKey: "dependencia" }, // EXCLUIDO para optimizar espacio en Landscape
-            { label: "Sub-dep.", dataKey: "subdependencia" },
-            {
-                label: "Sol.",
-                field: (r) => Number(r.cant_solicitada || 0).toLocaleString()
-            },
-            {
-                label: "Desp.",
-                field: (r) => r.es_ingreso ? `+${Number(r.cant_despachada).toLocaleString()}` : Number(r.cant_despachada).toLocaleString()
-            },
-            {
-                label: "Dif.",
-                field: (r) => r.es_ingreso ? "—" : (parseFloat(r.cant_solicitada) - parseFloat(r.cant_despachada)).toLocaleString()
-            },
-        ];
-
-        // Columnas dinámicas de tanques
-        const tanques = [...(e.tanques || [])].sort((a, b) => {
-            if (a.combustible === b.combustible) return a.codigo.localeCompare(b.codigo);
-            return (a.combustible || "").localeCompare(b.combustible || "");
+        // 1. Agrupar filas por combustible_despacho
+        const gruposObj = {};
+        filas.forEach(row => {
+            const comb = row.combustible_despacho || "Sin Especificar";
+            if (!gruposObj[comb]) {
+                gruposObj[comb] = { title: comb, data: [], totalDespachado: 0 };
+            }
+            gruposObj[comb].data.push(row);
+            if (!row.es_ingreso) {
+                gruposObj[comb].totalDespachado += parseFloat(row.cant_despachada || 0);
+            }
         });
 
-        const stockCols = tanques.map(t => ({
-            label: `Stock ${t.codigo}`,
-            field: (r) => r.stock_tanques?.[t.codigo] != null ? Number(r.stock_tanques[t.codigo]).toLocaleString() : "—"
-        }));
+        // 2. Transformar en Array y generar columnas dinámicas por grupo
+        const groupsArray = Object.values(gruposObj).map(grupo => {
+            const tanquesGrupo = tanquesGlobal
+                .filter(t => (t.combustible || "Sin Especificar") === grupo.title)
+                .sort((a, b) => a.codigo.localeCompare(b.codigo));
 
-        const finalColumns = [
-            ...baseColumns,
-            ...stockCols,
-            { label: "Alm.", dataKey: "almacen" },
-            { label: "PCP", dataKey: "pcp" },
-        ];
+            const baseColumns = [
+                { label: "#", dataKey: "item" },
+                { label: "Fecha/Hora", dataKey: "fecha" },
+                { label: "Solicitante", dataKey: "nombre_apellido" },
+                { label: "Placa", dataKey: "placa" },
+                { label: "Dependencia", dataKey: "dependencia" },
+                { label: "Sub-dep.", dataKey: "subdependencia" },
+                { label: "Solicitado", field: (r) => Number(r.cant_solicitada || 0).toLocaleString() },
+                { label: "Despachado", field: (r) => r.es_ingreso ? `+${Number(r.cant_despachada).toLocaleString()}` : Number(r.cant_despachada).toLocaleString() },
+                { label: "Diferencia", field: (r) => r.es_ingreso ? "—" : (parseFloat(r.cant_solicitada || 0) - parseFloat(r.cant_despachada || 0)).toLocaleString() },
+            ];
 
-        // 2. Invocar servicio
-        pdfService.exportTable({
-            orientation: "l", // Landscape
+            const stockCols = tanquesGrupo.map(t => ({
+                label: `Stock ${t.codigo}`,
+                field: (r) => r.stock_tanques?.[t.codigo] != null ? Number(r.stock_tanques[t.codigo]).toLocaleString() : "—"
+            }));
+
+            const totalStockCol = {
+                label: `Total ${grupo.title}`,
+                field: (r) => {
+                    let sum = 0;
+                    tanquesGrupo.forEach(t => {
+                        sum += parseFloat(r.stock_tanques?.[t.codigo] || 0);
+                    });
+                    return Number(sum.toFixed(2)).toLocaleString();
+                }
+            };
+
+            const finalColumns = [
+                ...baseColumns,
+                ...stockCols,
+                totalStockCol,
+                { label: "Almacén", dataKey: "almacen" },
+                { label: "PCP", dataKey: "pcp" },
+            ];
+
+            return {
+                title: grupo.title,
+                columns: finalColumns,
+                data: grupo.data,
+                total: grupo.totalDespachado
+            };
+        });
+
+        // 3. Invocar servicio agrupado
+        pdfService.exportReporteAgrupado({
+            orientation: "l",
             title: "Reporte de Cierre de Turno",
             subtitle: `Conciliación de Inventario y Despachos — Cierre #${cierreSeleccionado.value?.id_cierre}`,
-            columns: finalColumns,
-            data: filas,
+            groups: groupsArray,
             fileName: `Reporte_Cierre_${cierreSeleccionado.value?.id_cierre}_${e.fecha_lote}.pdf`,
             metadata: {
                 "Llenadero": e.llenadero || "—",
