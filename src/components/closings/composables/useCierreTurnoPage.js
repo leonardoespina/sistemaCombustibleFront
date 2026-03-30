@@ -236,17 +236,17 @@ export function useCierreTurnoPage() {
             // { label: "Solicitante", dataKey: "nombre_apellido" }, // ELIMINADO por requerimiento del usuario
             // { label: "Dependencia", dataKey: "dependencia" }, // EXCLUIDO para optimizar espacio en Landscape
             { label: "Sub-dep.", dataKey: "subdependencia" },
-            { 
-                label: "Sol.", 
-                field: (r) => Number(r.cant_solicitada || 0).toLocaleString() 
+            {
+                label: "Sol.",
+                field: (r) => Number(r.cant_solicitada || 0).toLocaleString()
             },
-            { 
-                label: "Desp.", 
-                field: (r) => r.es_ingreso ? `+${Number(r.cant_despachada).toLocaleString()}` : Number(r.cant_despachada).toLocaleString() 
+            {
+                label: "Desp.",
+                field: (r) => r.es_ingreso ? `+${Number(r.cant_despachada).toLocaleString()}` : Number(r.cant_despachada).toLocaleString()
             },
-            { 
-                label: "Dif.", 
-                field: (r) => r.es_ingreso ? "—" : (parseFloat(r.cant_solicitada) - parseFloat(r.cant_despachada)).toLocaleString() 
+            {
+                label: "Dif.",
+                field: (r) => r.es_ingreso ? "—" : (parseFloat(r.cant_solicitada) - parseFloat(r.cant_despachada)).toLocaleString()
             },
         ];
 
@@ -286,7 +286,7 @@ export function useCierreTurnoPage() {
         });
     }
 
-    // ─── SOCKET ──────────────────────────────────────────────
+    // ─── SOCKET ────//──────────────────────────────────────────
 
     function _onCierreCreado(data) {
         $q.notify({

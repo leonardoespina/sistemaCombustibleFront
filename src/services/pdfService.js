@@ -3,7 +3,7 @@ import autoTable from "jspdf-autotable";
 
 /**
  * Servicio centralizado para la generación de reportes en PDF.
- * Optimizado para alta fidelidad visual (Quasar Theme / Estilo Documento Formal).
+ * Optimizado para alta fidelidad visual (Quasar Theme / Estilo Documento Formal).  //
  */
 export const pdfService = {
   /**
