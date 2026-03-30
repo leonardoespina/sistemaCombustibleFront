@@ -18,7 +18,7 @@
       </q-bar>
 
       <q-card-section class="col q-pa-lg scroll flex flex-center">
-        <!-- ESTADO 1: AUTENTICACIÓN INICIAL -->
+        <!-- ESTADO 1: AUTENTICACIÓN INICIAL (Solicitante) -->
         <div v-if="step === 1" class="column items-center q-gutter-y-md" style="max-width: 500px">
           <div class="text-h5 text-primary text-weight-bold">Firma del Solicitante</div>
           <div class="text-subtitle1 text-grey-7 text-center">
@@ -44,22 +44,33 @@
                <q-circular-progress
                   show-value
                   :value="progress"
-                  size="120px"
-                  :thickness="0.2"
-                  color="primary"
+                  size="140px"
+                  :thickness="0.15"
+                  :color="statusColor"
                   track-color="grey-3"
-                  class="q-mb-md cursor-pointer"
+                  class="q-mb-md cursor-pointer shadow-2"
                   @click="captureFingerprint(1)"
                >
+                 <!-- Previsualización de huella -->
+                 <div v-if="capturedImageSolicitante" class="flex flex-center overflow-hidden" style="width: 100px; height: 100px; border-radius: 50%">
+                    <img :src="`data:image/png;base64,${capturedImageSolicitante}`" style="width: 100%; height: 100%; object-fit: cover; opacity: 0.8" />
+                 </div>
                  <q-icon 
-                   :name="capturing ? 'fingerprint' : 'touch_app'" 
+                   v-else
+                   :name="statusIcon" 
                    size="50px" 
-                   :color="capturing ? 'primary' : 'grey-8'"
+                   :color="statusColor"
                  />
                </q-circular-progress>
                <div class="text-caption text-grey-8">
-                 {{ capturing ? 'Escaneando huella...' : 'Haga clic o presione ENTER para escanear' }}
-               </div>
+                  <template v-if="validating">
+                    <q-spinner-dots :color="statusColor" size="20px" class="q-mr-xs" />
+                    {{ statusMessage }}
+                  </template>
+                  <template v-else>
+                    {{ statusMessage }}
+                  </template>
+                </div>
             </div>
           </q-card>
         </div>
@@ -82,33 +93,23 @@
           </q-card>
         </div>
 
-        <!-- ESTADO 3: ESPERANDO ALMACENISTA (Flujo normal) -->
+        <!-- ESTADO 3: AUTENTICACIÓN ALMACENISTA (Segundo Rol) -->
         <div v-if="step === 3" class="column items-center q-gutter-y-md" style="max-width: 500px">
-          <div class="text-h5 text-orange-9 text-weight-bold">Firma del Almacenista</div>
+          <div class="text-h5 text-primary text-weight-bold">Firma del Almacenista</div>
           <div class="text-subtitle1 text-grey-7 text-center">
             <strong>(Rol Almacén)</strong><br>
-            Solicitante Validado. Ahora se requiere la cédula y huella del Almacenista para autorizar.
+            Debe autorizar el despacho con su huella dactilar.
           </div>
 
-          <q-card flat bordered class="bg-white full-width q-pa-md row items-center no-wrap q-mb-md">
-            <q-icon name="check_circle" color="positive" size="md" class="q-mr-md" />
-            <div>
-              <div class="text-weight-bold">Solicitante Validado</div>
-              <div class="text-caption">{{ usuarioIdentificado?.nombre }} {{ usuarioIdentificado?.apellido }}</div>
-            </div>
-          </q-card>
-          
           <q-card flat bordered class="bg-white full-width q-pa-md text-center">
-            <div class="text-subtitle2 q-mb-sm text-left">Almacenista:</div>
-            
              <div class="q-mb-md">
                <q-input 
                  v-model="cedulaAlmacenistaInput" 
-                 label="Cédula del Almacenista (Usuario en Sesión)" 
+                 label="Cédula del Almacenista" 
                  outlined 
                  dense 
-                 readonly
-                 bg-color="grey-2"
+                 :readonly="!!currentUser"
+                 :bg-color="currentUser ? 'grey-2' : 'white'"
                >
                  <template v-slot:prepend><q-icon name="badge" /></template>
                </q-input>
@@ -117,22 +118,32 @@
              <q-circular-progress
                   show-value
                   :value="progress"
-                  size="120px"
-                  :thickness="0.2"
-                  color="orange-9"
+                  size="140px"
+                  :thickness="0.15"
+                  :color="statusColor"
                   track-color="grey-3"
-                  class="cursor-pointer"
+                  class="cursor-pointer shadow-2"
                   @click="captureFingerprint(2)"
                >
-                 <q-icon name="fingerprint" size="50px" color="orange-9" />
-               </q-circular-progress>
-                <div class="text-caption text-grey-8 q-mt-sm">
-                  Coloque la huella del Almacenista
-                </div>
-                
-                <div v-if="currentUser" class="text-caption text-primary q-mt-md">
-                   Usuario en sesión: {{ currentUser.nombre }} {{ currentUser.apellido }}
-                </div>
+                 <div v-if="capturedImageAlmacenista" class="flex flex-center overflow-hidden" style="width: 100px; height: 100px; border-radius: 50%">
+                    <img :src="`data:image/png;base64,${capturedImageAlmacenista}`" style="width: 100%; height: 100%; object-fit: cover; opacity: 0.8" />
+                 </div>
+                 <q-icon v-else :name="statusIcon" size="50px" :color="statusColor" />
+              </q-circular-progress>
+              
+              <div class="text-caption text-grey-8 q-mt-sm">
+                 <template v-if="validating">
+                   <q-spinner-dots :color="statusColor" size="20px" class="q-mr-xs" />
+                   {{ statusMessage }}
+                 </template>
+                 <template v-else>
+                   {{ statusMessage }}
+                 </template>
+               </div>
+               
+               <div v-if="currentUser" class="text-caption text-primary q-mt-md">
+                  Usuario en sesión: {{ currentUser.nombre }} {{ currentUser.apellido }}
+               </div>
           </q-card>
         </div>
 
@@ -151,8 +162,7 @@
 import { ref, computed, onMounted, onBeforeUnmount, watch } from "vue";
 import { useQuasar } from "quasar";
 import api from "../../api";
-import websdkUrl from "../fingerprint/websdk.client.ui.js?url";
-import fingerprintSdkUrl from "../fingerprint/fingerprint.sdk.min.js?url";
+import axios from "axios";
 
 const props = defineProps({
   modelValue: Boolean,
@@ -163,7 +173,7 @@ const emit = defineEmits(["update:modelValue", "ticketGenerated"]);
 const $q = useQuasar();
 
 // --- STATE ---
-const step = ref(1); // 1: Inicio, 2: Dual Prompt, 3: Almacenista, 4: Generando
+const step = ref(1); 
 const visible = computed({
   get: () => props.modelValue,
   set: (val) => emit("update:modelValue", val)
@@ -171,46 +181,86 @@ const visible = computed({
 
 const progress = ref(0);
 const capturing = ref(false);
+const validating = ref(false); 
 const generatingTicket = ref(false);
+
+// Feedback Visual Dinámico
+const statusColor = ref("primary");
+const statusIcon = ref("fingerprint");
+const statusMessage = ref("Inicie la captura...");
 
 const cedulaInput = ref("");
 const cedulaAlmacenistaInput = ref("");
 const usuarioIdentificado = ref(null);
-const biometriaSolicitante = ref(null); // ID Biometria o Data
+const biometriaSolicitante = ref(null); 
 const biometriaAlmacenista = ref(null);
 
 const rawFingerprintSolicitante = ref(null);
 const rawFingerprintAlmacenista = ref(null);
+const capturedImageSolicitante = ref(null); 
+const capturedImageAlmacenista = ref(null); 
 
-const currentUser = ref(null); // Usuario logueado (Almacenista potencial)
+const currentUser = ref(null); 
 
-// SDK
-let fingerprintApi = null;
-let Fingerprint = null;
+// Control de cancelación para peticiones Axios
+let captureAbortController = null;
+const LOCAL_BIO_API = "http://localhost:8081/api";
+let retryTimer = null;
+
+const clearPendingTimers = () => {
+    if (retryTimer) {
+        clearTimeout(retryTimer);
+        retryTimer = null;
+    }
+};
 
 const resetState = () => {
+  clearPendingTimers();
   step.value = 1;
   progress.value = 0;
   capturing.value = false;
-  generatingTicket.value = false;
+  validating.value = false;
+  statusColor.value = "primary";
+  statusIcon.value = "fingerprint";
+  statusMessage.value = "Inicie la captura...";
+  
   cedulaInput.value = "";
   usuarioIdentificado.value = null;
   biometriaSolicitante.value = null;
   biometriaAlmacenista.value = null;
   rawFingerprintSolicitante.value = null;
   rawFingerprintAlmacenista.value = null;
+  capturedImageSolicitante.value = null;
+  capturedImageAlmacenista.value = null;
   
   if (currentUser.value) {
     cedulaAlmacenistaInput.value = currentUser.value.cedula;
-  } else {
-    cedulaAlmacenistaInput.value = "";
   }
 };
+
+// Auto-captura al cambiar de paso
+watch(() => step.value, (newStep) => {
+  if (!props.modelValue) return;
+  clearPendingTimers();
+  if (newStep === 1) {
+      retryTimer = setTimeout(() => captureFingerprint(1), 500);
+  } else if (newStep === 3) {
+      retryTimer = setTimeout(() => captureFingerprint(2), 500);
+  }
+});
 
 // Reiniciar cuando el diálogo se abre
 watch(() => props.modelValue, (newVal) => {
   if (newVal) {
     resetState();
+    checkBiometricReader();
+    retryTimer = setTimeout(() => captureFingerprint(1), 800);
+  } else {
+    clearPendingTimers();
+    if (captureAbortController) {
+      captureAbortController.abort();
+      captureAbortController = null;
+    }
   }
 });
 
@@ -221,84 +271,82 @@ onMounted(async () => {
     currentUser.value = JSON.parse(userStr);
     cedulaAlmacenistaInput.value = currentUser.value.cedula; 
   }
-  await initFingerprintSDK();
+  await checkBiometricReader();
 });
 
 onBeforeUnmount(() => {
-  if (fingerprintApi) fingerprintApi.stopAcquisition();
+  clearPendingTimers();
+  if (captureAbortController) {
+    captureAbortController.abort();
+    captureAbortController = null;
+  }
 });
 
 // --- LOGIC ---
-
-const initFingerprintSDK = async () => {
+const checkBiometricReader = async () => {
     try {
-        if (!window.WebSdk) await loadScript(websdkUrl);
-        if (!window.Fingerprint) await loadScript(fingerprintSdkUrl);
-        Fingerprint = window.Fingerprint;
-        if (!Fingerprint) throw new Error("SDK no disponible");
-        
-        if (!window.fingerprintApiInstance) window.fingerprintApiInstance = new Fingerprint.WebApi();
-        fingerprintApi = window.fingerprintApiInstance;
-        
-        fingerprintApi.onSamplesAcquired = handleSample;
-        fingerprintApi.onAcquisitionStopped = () => { capturing.value = false; };
+        await axios.get(`${LOCAL_BIO_API}/status`, { timeout: 3000 });
     } catch (e) {
-        console.error("SDK Error", e);
-        $q.notify({type:'negative', message: 'Error cargando lector de huellas'});
+        $q.notify({
+            type:'warning', 
+            message: 'No se detecta el servicio biométrico. Verifique que BioMiddleware esté activo.',
+            timeout: 3000
+        });
     }
-};
-
-const loadScript = (src) => {
-  return new Promise((resolve, reject) => {
-    const script = document.createElement("script");
-    script.src = src;
-    script.onload = resolve;
-    script.onerror = reject;
-    document.head.appendChild(script);
-  });
 };
 
 const captureFingerprint = async (phase) => {
-    if (!fingerprintApi) return;
-    
-    if (phase === 1 && !cedulaInput.value) {
-        return $q.notify({type:'warning', message: 'Ingrese la cédula primero'});
-    }
-    if (phase === 2 && !cedulaAlmacenistaInput.value && !currentUser.value) {
-        return $q.notify({type:'warning', message: 'Se requiere cédula de almacenista'});
-    }
+    if (!props.modelValue || capturing.value || validating.value) return;
 
+    if (phase === 1 && !cedulaInput.value) {
+        return $q.notify({type:'warning', message: 'Ingrese la cédula del solicitante'});
+    }
+    
     try {
+        statusColor.value = "primary";
+        statusIcon.value = "fingerprint";
+        statusMessage.value = "Coloque su dedo en el lector...";
         capturing.value = true;
-        progress.value = 50;
-        await fingerprintApi.startAcquisition(Fingerprint.SampleFormat.PngImage);
+        progress.value = 30;
+        
+        captureAbortController = new AbortController();
+        const res = await axios.get(`${LOCAL_BIO_API}/capture`, {
+            signal: captureAbortController.signal
+        });
+        
+        if (res.data && res.data.success) {
+             const imageData = res.data.base64Image;
+             statusMessage.value = "Huella capturada. Procesando...";
+             progress.value = 70;
+             
+             if (step.value === 1) {
+                 capturedImageSolicitante.value = imageData;
+                 await validarFase1(imageData); 
+             } else if (step.value === 3) {
+                 capturedImageAlmacenista.value = imageData;
+                 await validarFase3(imageData); 
+             }
+        } else {
+             throw new Error(res.data?.message || "Error al capturar");
+        }
     } catch (e) {
-        console.error(e);
+        if (axios.isCancel(e)) return;
+        statusColor.value = "warning";
+        statusIcon.value = "error_outline";
+        statusMessage.value = "Intente de nuevo...";
+        if (props.modelValue) {
+            retryTimer = setTimeout(() => captureFingerprint(phase), 1000);
+        }
+    } finally {
         capturing.value = false;
-        progress.value = 0;
+        captureAbortController = null;
     }
 };
 
-const handleSample = async (event) => {
-    try {
-        const samples = JSON.parse(event.samples);
-        if (samples.length > 0) {
-            const rawData = typeof samples[0] === "string" ? samples[0] : samples[0].Data;
-            await fingerprintApi.stopAcquisition();
-            
-            if (step.value === 1) {
-                await validarFase1(rawData);
-            } else if (step.value === 3) {
-                await validarFase3(rawData);
-            }
-        }
-    } catch (e) {
-        console.error(e);
-    }
-}
-
 const validarFase1 = async (huellaBase64) => {
     progress.value = 75;
+    validating.value = true;
+    statusMessage.value = "Validando Solicitante...";
     try {
         const res = await api.post("/despacho/validar-firma", {
             cedula: cedulaInput.value,
@@ -311,32 +359,35 @@ const validarFase1 = async (huellaBase64) => {
         usuarioIdentificado.value = res.data.usuario;
         biometriaSolicitante.value = res.data.id_biometria;
         rawFingerprintSolicitante.value = huellaBase64;
-
-        const rol = res.data.usuario.rol_biometrico;
         
-        if (rol === "AMBOS") {
-            step.value = 2;
-        } else if (rol === "RETIRO") {
-            proceedAsSolicitante();
-        } else {
-            $q.notify({
-                type: 'warning', 
-                message: 'La primera huella debe ser del Solicitante (Rol Retiro). Usted tiene Rol Almacén.'
-            });
-            progress.value = 0;
-        }
-
+        statusColor.value = "positive";
+        statusIcon.value = "check_circle";
+        statusMessage.value = "¡Identidad Confirmada!";
+        progress.value = 100;
+        
+        const rol = res.data.usuario.rol_biometrico;
+        setTimeout(() => {
+            if (rol === "AMBOS") step.value = 2;
+            else if (rol === "RETIRO") proceedAsSolicitante();
+            else {
+                $q.notify({type:'warning', message: 'Se requiere rol Retiro/Solicitante'});
+                resetState();
+            }
+        }, 800);
     } catch (error) {
-        const msg = error.response?.data?.msg || "Error de autenticación";
-        $q.notify({type: 'negative', message: msg});
-        progress.value = 0;
+        statusColor.value = "negative";
+        statusMessage.value = "No autorizado. Reintentando...";
+        $q.notify({type: 'negative', message: error.response?.data?.msg || 'Error'});
+        if (props.modelValue) retryTimer = setTimeout(() => captureFingerprint(1), 1000);
     } finally {
-        capturing.value = false;
+        validating.value = false;
     }
 };
 
 const validarFase3 = async (huellaBase64) => {
     progress.value = 75;
+    validating.value = true;
+    statusMessage.value = "Validando Almacenista...";
     const cedula = cedulaAlmacenistaInput.value || currentUser.value?.cedula;
     
     try {
@@ -348,66 +399,48 @@ const validarFase3 = async (huellaBase64) => {
         
         const rol = res.data.usuario.rol_biometrico;
         if (rol === "ALMACEN" || rol === "AMBOS") {
+            statusColor.value = "positive";
+            statusIcon.value = "check_circle";
+            statusMessage.value = "¡Autorización Concedida!";
             biometriaAlmacenista.value = res.data.id_biometria;
             rawFingerprintAlmacenista.value = huellaBase64;
             await finalizeTicketGeneration();
         } else {
-            $q.notify({
-                type: 'negative', 
-                message: 'No autorizado: Se requiere la huella de un Almacenista (Rol Almacén).'
-            });
+            throw new Error("Se requiere rol Almacén");
         }
-
     } catch (error) {
-         const msg = error.response?.data?.msg || "Error de autorización";
-        $q.notify({type: 'negative', message: msg});
+        statusColor.value = "negative";
+        statusMessage.value = "Error. Reintentando...";
+        $q.notify({type: 'negative', message: error.response?.data?.msg || 'Fallo de validación'});
+        if (props.modelValue) retryTimer = setTimeout(() => captureFingerprint(2), 1000);
     } finally {
-        capturing.value = false;
-        progress.value = 0;
+        validating.value = false;
     }
 };
 
-const proceedAsSolicitante = () => {
-    step.value = 3;
-    progress.value = 0;
-};
-
+const proceedAsSolicitante = () => { step.value = 3; progress.value = 0; };
 const proceedDualAuth = async () => {
     biometriaAlmacenista.value = biometriaSolicitante.value;
     rawFingerprintAlmacenista.value = rawFingerprintSolicitante.value;
     await finalizeTicketGeneration();
 };
 
-const PRINT_SERVER_URL = 'http://localhost:3001';
-
 const finalizeTicketGeneration = async () => {
     step.value = 4;
     generatingTicket.value = true;
-
     try {
-        // 1. Generar ticket en el backend (valida huellas, graba en BD, construye snapshot)
         const response = await api.post(`/despacho/imprimir/${props.requestData.id_solicitud}`, {
            huella_almacenista: rawFingerprintAlmacenista.value,
            huella_receptor: rawFingerprintSolicitante.value,
            cedula_receptor: usuarioIdentificado.value.cedula,
-           cedula_almacenista: cedulaAlmacenistaInput.value || usuarioIdentificado.value.cedula
+           cedula_almacenista: cedulaAlmacenistaInput.value || currentUser.value?.cedula
         });
-
-        const ticket = response.data.ticket;
-        emit("ticketGenerated", ticket);
+        emit("ticketGenerated", response.data.ticket);
         visible.value = false;
-
-        $q.notify({ type: 'positive', message: 'Ticket generado exitosamente' });
-
+        $q.notify({ type: 'positive', message: 'Despacho procesado con éxito' });
     } catch (error) {
-        const errorMsg = error.response?.data?.msg || "Error generando ticket";
-        const details = error.response?.data?.details || error.response?.data?.error || "";
-        $q.notify({
-            type: 'negative',
-            message: `${errorMsg}${details ? ': ' + details : ''}`,
-            timeout: 5000
-        });
-        step.value = (biometriaAlmacenista.value === biometriaSolicitante.value) ? 2 : 3;
+        $q.notify({ type: 'negative', message: 'Error al finalizar ticket' });
+        step.value = 3;
     } finally {
         generatingTicket.value = false;
     }
