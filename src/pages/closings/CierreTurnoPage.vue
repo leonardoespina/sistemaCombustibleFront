@@ -305,6 +305,13 @@
             Reporte Final — Cierre #{{ cierreSeleccionado?.id_cierre }}
           </div>
           <q-space />
+          <q-btn
+            dense flat icon="picture_as_pdf"
+            label="Exportar PDF"
+            class="q-mr-sm"
+            @click="exportarReportePDF"
+            v-if="reporteActual"
+          />
           <q-btn dense flat icon="close" v-close-popup />
         </q-bar>
 
@@ -429,7 +436,7 @@ const {
   columns,
   onRequest, applyFilters, clearFilters,
   onLlenaderoChanged, onGenerarCierre,
-  openDetalle, verReporte, verActa,
+  openDetalle, verReporte, verActa, exportarReportePDF,
 } = useCierreTurnoPage();
 
 const can = (permission) => {

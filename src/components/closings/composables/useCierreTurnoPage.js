@@ -3,6 +3,7 @@ import { useQuasar, date } from "quasar";
 import { useCierreTurnoStore } from "../../../stores/cierreTurnoStore.js";
 import socket from "../../../services/socket";
 import api from "../../../api/index.js";
+import { pdfService } from "../../../services/pdfService";
 
 export function useCierreTurnoPage() {
     const $q = useQuasar();
@@ -217,6 +218,74 @@ export function useCierreTurnoPage() {
         }
     }
 
+    /** Exporta el reporte actual a PDF (Landscape + Filtro) */
+    function exportarReportePDF() {
+        if (!reporteActual.value) {
+            $q.notify({ type: "warning", message: "No hay datos de reporte para exportar." });
+            return;
+        }
+
+        const e = reporteActual.value.encabezado;
+        const filas = reporteActual.value.filas;
+
+        // 1. Definición de Columnas (Excluyendo 'dependencia' por requerimiento)
+        const baseColumns = [
+            { label: "#", dataKey: "item" },
+            { label: "Fecha/Hora", dataKey: "fecha" },
+            { label: "Placa", dataKey: "placa" },
+            // { label: "Solicitante", dataKey: "nombre_apellido" }, // ELIMINADO por requerimiento del usuario
+            // { label: "Dependencia", dataKey: "dependencia" }, // EXCLUIDO para optimizar espacio en Landscape
+            { label: "Sub-dep.", dataKey: "subdependencia" },
+            { 
+                label: "Sol.", 
+                field: (r) => Number(r.cant_solicitada || 0).toLocaleString() 
+            },
+            { 
+                label: "Desp.", 
+                field: (r) => r.es_ingreso ? `+${Number(r.cant_despachada).toLocaleString()}` : Number(r.cant_despachada).toLocaleString() 
+            },
+            { 
+                label: "Dif.", 
+                field: (r) => r.es_ingreso ? "—" : (parseFloat(r.cant_solicitada) - parseFloat(r.cant_despachada)).toLocaleString() 
+            },
+        ];
+
+        // Columnas dinámicas de tanques
+        const tanques = [...(e.tanques || [])].sort((a, b) => {
+            if (a.combustible === b.combustible) return a.codigo.localeCompare(b.codigo);
+            return (a.combustible || "").localeCompare(b.combustible || "");
+        });
+
+        const stockCols = tanques.map(t => ({
+            label: `Stock ${t.codigo}`,
+            field: (r) => r.stock_tanques?.[t.codigo] != null ? Number(r.stock_tanques[t.codigo]).toLocaleString() : "—"
+        }));
+
+        const finalColumns = [
+            ...baseColumns,
+            ...stockCols,
+            { label: "Alm.", dataKey: "almacen" },
+            { label: "PCP", dataKey: "pcp" },
+        ];
+
+        // 2. Invocar servicio
+        pdfService.exportTable({
+            orientation: "l", // Landscape
+            title: "Reporte de Cierre de Turno",
+            subtitle: `Conciliación de Inventario y Despachos — Cierre #${cierreSeleccionado.value?.id_cierre}`,
+            columns: finalColumns,
+            data: filas,
+            fileName: `Reporte_Cierre_${cierreSeleccionado.value?.id_cierre}_${e.fecha_lote}.pdf`,
+            metadata: {
+                "Llenadero": e.llenadero || "—",
+                "Turno": e.turno || "—",
+                "Fecha Lote": e.fecha_lote || "—",
+                "Período": `${e.hora_inicio || "—"} → ${e.hora_cierre || "—"}`,
+                "Almacenista": e.almacenista || "—",
+            }
+        });
+    }
+
     // ─── SOCKET ──────────────────────────────────────────────
 
     function _onCierreCreado(data) {
@@ -268,6 +337,6 @@ export function useCierreTurnoPage() {
         // methods
         onRequest, applyFilters, clearFilters,
         onLlenaderoChanged, onGenerarCierre,
-        openDetalle, verReporte, verActa,
+        openDetalle, verReporte, verActa, exportarReportePDF,
     };
 }

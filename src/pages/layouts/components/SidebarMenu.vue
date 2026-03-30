@@ -117,7 +117,7 @@
     </q-item>
 
     <q-item
-      v-if="can(PERMISSIONS.APPROVE_DISPATCHES) && (props.isAdmin || !['ESTANDAR', 'INSPECTOR', 'SEGURIDAD'].includes(userData?.rol_sistema))"
+      v-if="props.isAdmin || ['ALMACEN', 'ALMACENISTA', 'PRESIDENCIA'].includes(userData?.rol_sistema) || ['ADMIN'].includes(userData?.tipo_usuario)"
       clickable
       v-ripple
       to="/despacho"

@@ -16,6 +16,15 @@
           label="Imprimir"
           class="q-mr-sm"
         />
+        <q-btn
+          flat
+          round
+          dense
+          icon="picture_as_pdf"
+          @click="downloadPDF"
+          label="PDF"
+          class="q-mr-sm"
+        />
         <q-btn flat round dense icon="close" v-close-popup />
       </q-toolbar>
 
@@ -317,6 +326,7 @@
 <script setup>
 import { computed } from "vue";
 import { date } from "quasar";
+import { pdfService } from "../../services/pdfService";
 
 const props = defineProps({
   modelValue: Boolean,
@@ -502,6 +512,73 @@ function formatDia(fechaStr) {
 
 function print() {
   window.print();
+}
+
+/** Genera la exportación formal a PDF con FIDELIDAD TOTAL */
+async function downloadPDF() {
+  if (!props.acta) return;
+
+  // Intentamos obtener el logo en base64
+  let logoBase64 = null;
+  try {
+    const response = await fetch('/logo.png');
+    const blob = await response.blob();
+    logoBase64 = await new Promise((resolve) => {
+      const reader = new FileReader();
+      reader.onloadBase64 = () => resolve(reader.result); // Fallback logic depends on reader
+      reader.onloadend = () => resolve(reader.result);
+      reader.readAsDataURL(blob);
+    });
+  } catch (e) {
+    console.warn("No se pudo cargar el logo para el PDF", e);
+  }
+
+  // 1. Texto narrativo con marcas de negrita (**)
+  const fechaCierre = props.acta?.datos_generales?.fecha_cierre;
+  const textoPrincipal = `Siendo las **${formatHora(fechaCierre)}** horas del día **${formatDia(fechaCierre)}**, fecha **${formatFechaCompleta(fechaCierre)}** se inició el turno con un volumen disponible de **${inicioTurnoTexto.value}**, con la finalidad de llevar un control del combustible suministrado. Durante el transcurso del turno se surtió la cantidad de **${formatNumber(props.acta?.seccion_principal?.consumo_planta)} Lts** de Gasoil para el consumo de la planta, y la cantidad de **${formatNumber(generadores.value)} Lts** de Gasoil para los Generadores Eléctricos. Así mismo, se registra un consumo de **${formatNumber(consumoVehiculosNeto.value)} Lts** de Gasoil para el despliegue de los Vehículos livianos y pesados que complementan las operaciones; quedando un stock final disponible de **${formatNumber(props.acta?.seccion_principal?.total_disponible)} Lts** de Gasoil.`;
+
+  // 2. Estructura de Inventario (Dos Columnas)
+  const gasolinaList = tanquesGasolina.value.map(t => ({
+    label: t.nombre,
+    value: formatNumber(t.nivel_final)
+  }));
+
+  const gasoilList = tanquesGasoil.value.map(t => ({
+    label: t.nombre,
+    value: formatNumber(t.nivel_final)
+  }));
+
+  const resumenGasolina = [
+    { label: "INICIO", value: formatNumber(totalGasolinaInicio.value) + " Lts" },
+    { label: "CONSUMO", value: formatNumber(totalGasolinaConsumo.value) + " Lts" },
+    { label: "STOCK", value: formatNumber(props.acta?.inventario_gasolina?.stock_total - props.acta?.inventario_gasolina?.evaporizacion_total) + " Lts" },
+    { label: "Total de Evaporizacion", value: formatNumber(props.acta?.inventario_gasolina?.evaporizacion_total) + " Lts" }
+  ];
+
+  const totalGasoilVal = formatNumber(props.acta?.inventario_gasoil?.stock_total) + " Lts";
+
+  // 3. Firmas
+  const signatures = [
+    { dept: "PCP", name: datosInspector.value.nombre, id: datosInspector.value.cedula },
+    { dept: "ALMACENISTA", name: datosAlmacenista.value.nombre, id: datosAlmacenista.value.cedula }
+  ];
+
+  // 4. Invocar servicio
+  pdfService.exportActa({
+    logo: logoBase64,
+    bodyText: textoPrincipal,
+    gasolina: gasolinaList,
+    gasoil: gasoilList,
+    resumenGasolina: resumenGasolina,
+    totalGasoil: totalGasoilVal,
+    signatureData: signatures,
+    observacion: props.acta?.observacion || "Sin observaciones registradas.",
+    fileName: `Acta_Cierre_${date.formatDate(fechaCierre, 'YYYYMMDD_HHmm')}.pdf`,
+    metadata: {
+      turno: props.acta?.datos_generales?.turno || "_________",
+      inspector: props.acta?.datos_generales?.inspector_servicio || "__________________"
+    }
+  });
 }
 </script>
 
