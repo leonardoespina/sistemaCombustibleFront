@@ -75,6 +75,200 @@ export const pdfService = {
   },
 
   /**
+   * Genera un reporte tabular (Landscape) con múltiples tablas agrupadas (ej. por combustible).
+   */
+  exportReporteAgrupado({
+    orientation = "l",
+    title = "Reporte de Sistema",
+    subtitle = "",
+    groups = [], // [{ title: "GASOIL", columns: [], data: [], total: X }]
+    fileName = "reporte_agrupado.pdf",
+    logo = null,
+    metadata = {},
+  }) {
+    const doc = new jsPDF({ orientation, unit: "mm", format: "letter" });
+    const pageWidth = doc.internal.pageSize.width;
+    const margin = 14;
+    let currentY = 15;
+
+    // --- TÍTULO ---
+    if (logo) {
+      try { doc.addImage(logo, "PNG", pageWidth - 45, margin - 5, 30, 20); } catch (e) { }
+    }
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(16);
+    doc.setTextColor(0);
+    doc.text(title.toUpperCase(), margin, currentY);
+    currentY += 7;
+
+    if (subtitle) {
+      doc.setFontSize(9);
+      doc.setFont("helvetica", "normal");
+      doc.setTextColor(100);
+      doc.text(subtitle, margin, currentY);
+      currentY += 7;
+    }
+
+    // --- METADATA EN 2 FILAS PARA EVITAR MONTAMIENTO ---
+    const metaEntries = Object.entries(metadata);
+    if (metaEntries.length) {
+      doc.setFontSize(9);
+      doc.setTextColor(40);
+
+      // Fila 1: primeros 3 campos (Llenadero, Turno, Fecha Lote)
+      const row1 = metaEntries.slice(0, 3);
+      const col1Width = (pageWidth - margin * 2) / row1.length;
+      row1.forEach(([key, value], idx) => {
+        doc.setFont("helvetica", "bold");
+        doc.text(`${key}: `, margin + idx * col1Width, currentY);
+        const labelW = doc.getTextWidth(`${key}: `);
+        doc.setFont("helvetica", "normal");
+        doc.text(String(value), margin + idx * col1Width + labelW, currentY);
+      });
+      currentY += 5;
+
+      // Fila 2: campos restantes (Período, Almacenista)
+      const row2 = metaEntries.slice(3);
+      if (row2.length) {
+        const col2Width = (pageWidth - margin * 2) / row2.length;
+        row2.forEach(([key, value], idx) => {
+          doc.setFont("helvetica", "bold");
+          doc.text(`${key}: `, margin + idx * col2Width, currentY);
+          const labelW = doc.getTextWidth(`${key}: `);
+          doc.setFont("helvetica", "normal");
+          doc.text(String(value), margin + idx * col2Width + labelW, currentY);
+        });
+        currentY += 5;
+      }
+      currentY += 4;
+    }
+
+    // --- ITERAR POR GRUPOS (una tabla por combustible) ---
+    groups.forEach((group) => {
+      // Verificar si hay espacio suficiente; si no, nueva página
+      if (currentY > doc.internal.pageSize.height - 40) {
+        doc.addPage();
+        currentY = 15;
+      }
+
+      // Banda azul de encabezado del grupo
+      doc.setFillColor(30, 116, 200);
+      doc.rect(margin, currentY, pageWidth - margin * 2, 8, "F");
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(10);
+      doc.setTextColor(255, 255, 255);
+      doc.text(group.title.toUpperCase(), margin + 5, currentY + 5.5);
+      currentY += 9;
+
+      // Calcular índice de columnas clave para colorear celdas
+      const colLabels = group.columns.map(c => c.label);
+      const idxDespachado = colLabels.indexOf("Despachado");
+      const idxDiferencia = colLabels.indexOf("Diferencia");
+      const idxSolicitado = colLabels.indexOf("Solicitado");
+      // Columnas de stock son las que empiezan con "Stock "
+      const idxStockStart = colLabels.findIndex(l => l.startsWith("Stock "));
+      const idxStockEnd = colLabels.reduce((last, l, i) => l.startsWith("Stock ") ? i : last, -1);
+      // Columna Total [combustible]
+      const idxTotal = colLabels.findIndex(l => l.startsWith("Total "));
+
+      autoTable(doc, {
+        startY: currentY,
+        head: [group.columns.map(col => col.label)],
+        body: group.data.map((row) =>
+          group.columns.map(col => {
+            // Usar el campo o dataKey, SIN sobreescribir el número de ítem original
+            const val = typeof col.field === "function" ? col.field(row) : row[col.dataKey];
+            return val != null ? val : "—";
+          })
+        ),
+        theme: "grid",
+        headStyles: {
+          fillColor: [240, 240, 240],
+          fontSize: 7.5,
+          halign: "center",
+          textColor: [0, 0, 0],
+          lineWidth: 0.1,
+          lineColor: [200, 200, 200],
+          fontStyle: "normal",
+        },
+        bodyStyles: {
+          fontSize: 7.5,
+          cellPadding: 1.2,
+          textColor: [40, 40, 40],
+          lineColor: [220, 220, 220],
+          lineWidth: 0.1,
+        },
+        columnStyles: {
+          0: { cellWidth: 7, halign: "center" },   // #
+          1: { cellWidth: 20 },                     // Fecha/Hora
+        },
+        margin: { left: margin, right: margin, bottom: 18 },
+        // Coloreo celda a celda igual que la vista web
+        didParseCell: (hookData) => {
+          if (hookData.section === "body") {
+            const col = hookData.column.index;
+            // Solicitado → alinear derecha
+            if (col === idxSolicitado) {
+              hookData.cell.styles.halign = "right";
+            }
+            // Despachado → azul negrita
+            if (col === idxDespachado) {
+              hookData.cell.styles.textColor = [25, 118, 210];
+              hookData.cell.styles.fontStyle = "bold";
+              hookData.cell.styles.halign = "right";
+            }
+            // Diferencia → verde
+            if (col === idxDiferencia) {
+              hookData.cell.styles.textColor = [46, 125, 50];
+              hookData.cell.styles.fontStyle = "bold";
+              hookData.cell.styles.halign = "right";
+            }
+            // Stock TQ* → naranja negrita
+            if (idxStockStart >= 0 && col >= idxStockStart && col <= idxStockEnd) {
+              hookData.cell.styles.textColor = [230, 100, 0];
+              hookData.cell.styles.fontStyle = "bold";
+              hookData.cell.styles.halign = "right";
+            }
+            // Total [combustible] → azul negrita
+            if (col === idxTotal) {
+              hookData.cell.styles.textColor = [25, 118, 210];
+              hookData.cell.styles.fontStyle = "bold";
+              hookData.cell.styles.halign = "right";
+            }
+          }
+        },
+      });
+
+      currentY = doc.lastAutoTable.finalY + 4;
+
+      // Total Despachado alineado a la derecha en rojo (igual que la imagen)
+      if (group.total != null) {
+        doc.setFont("helvetica", "bold");
+        doc.setFontSize(9);
+        doc.setTextColor(200, 40, 40);
+        const label = `Total Despachado ${group.title}: ${Number(group.total).toLocaleString()} L`;
+        const labelW = doc.getTextWidth(label);
+        doc.text(label, pageWidth - margin - labelW, currentY);
+        currentY += 10;
+      } else {
+        currentY += 6;
+      }
+    });
+
+    // --- FOOTER DE PÁGINAS ---
+    const pageCount = doc.internal.getNumberOfPages();
+    for (let i = 1; i <= pageCount; i++) {
+      doc.setPage(i);
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(9);
+      doc.setTextColor(150);
+      doc.text(`Página ${i} de ${pageCount}`, margin, doc.internal.pageSize.height - 8);
+    }
+
+    doc.save(fileName);
+  },
+
+  /**
    * Genera el Acta de Cierre con FIDELIDAD TOTAL al diseño del componente Vue.
    * Asegura que el PDF sea idéntico a la vista previa en ActaViewerDialog.vue.
    */
