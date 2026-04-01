@@ -92,16 +92,31 @@
         </template>
 
        
+        <!-- ESTADO BADGE -->
+        <template v-slot:body-cell-estado="props">
+          <q-td :props="props">
+            <q-badge
+              :color="props.value === 'ANULADA' ? 'red-7' : props.value === 'MODIFICADA' ? 'orange-7' : 'green-7'"
+              rounded
+            >
+              {{ props.value || 'PROCESADO' }}
+            </q-badge>
+          </q-td>
+        </template>
+
         <template v-slot:body-cell-actions="props">
           <q-td :props="props" class="q-gutter-x-sm">
             <q-btn dense round flat color="primary" icon="visibility" @click="openViewDialog(props.row)">
               <q-tooltip>Ver Detalles</q-tooltip>
             </q-btn>
-              <!-- ACCIONES  
-            <q-btn dense round flat color="warning" icon="edit" @click="openEditDialog(props.row)">
-              <q-tooltip>Editar</q-tooltip>
+
+            <q-btn
+              v-if="can(PERMISSIONS.MANAGE_OPERACIONES_TANQUES) && props.row.estado !== 'ANULADA'"
+              dense round flat color="deep-orange" icon="undo"
+              @click="confirmarRevertir(props.row)"
+            >
+              <q-tooltip>Revertir Transferencia</q-tooltip>
             </q-btn>
-            -->
           </q-td>
         </template>
       </q-table>
@@ -145,7 +160,8 @@ const {
   sourceTankDetail, destinationTankDetail, destinationTankAforo,
   isFormDialogVisible, isDetailDialogVisible, isEditing, isReadOnly, selectedItem, filters,
   handleRequest, openAddDialog, openViewDialog, openEditDialog, handleLlenaderoChange,
-  onFormSave, applyFilters, clearFilters, initSocketListeners, removeSocketListeners, transferStore,
+  onFormSave, applyFilters, clearFilters, confirmarRevertir,
+  initSocketListeners, removeSocketListeners, transferStore,
   can
 } = useInternalTransferTable();
 
@@ -156,6 +172,7 @@ const columns = [
   { name: "origen_final", label: "Nivel Origen Final", field: "nivel_origen_despues", align: "right", format: v => `${parseFloat(v).toLocaleString()} L` },
   { name: "destino_final", label: "Nivel Destino Final", field: "nivel_destino_despues", align: "right", format: v => `${parseFloat(v).toLocaleString()} L` },
   { name: "usuario", label: "Registrado Por", field: row => `${row.Almacenista?.nombre} ${row.Almacenista?.apellido}`, align: "left" },
+  { name: "estado", label: "Estado", field: "estado", align: "center" },
   { name: "actions", label: "Acciones", align: "right" }
 ];
 

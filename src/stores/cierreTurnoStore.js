@@ -77,8 +77,14 @@ export const useCierreTurnoStore = defineStore("cierreTurno", () => {
         return res.data;
     }
 
+    async function revertirCierre(id_cierre) {
+        const res = await api.put(`/cierres-turno/${id_cierre}/revertir`);
+        return res.data;
+    }
+
     return {
         rows, loading, pagination, filter, cierreActual, reporteActual, actaActual,
-        fetchCierres, fetchCierre, fetchTanquesLlenadero, generarCierre, fetchReporte, fetchActa,
+        fetchCierres, fetchCierre, fetchTanquesLlenadero, generarCierre,
+        fetchReporte, fetchActa, revertirCierre,
     };
 });

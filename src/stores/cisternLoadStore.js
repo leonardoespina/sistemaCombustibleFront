@@ -74,12 +74,17 @@ export const useCisternLoadStore = defineStore("cisternLoads", () => {
     }
   }
 
-  async function annulLoad(id) {
+  async function revertirCarga(id) {
     loading.value = true;
     try {
-      const response = await api.delete(`/cargas-cisterna/${id}`);
-      $q.notify({ type: "positive", message: response.data.msg });
+      const response = await api.put(`/cargas-cisterna/${id}/revertir`);
+      $q.notify({
+        type: "positive",
+        message: response.data.msg || "Carga revertida. Niveles de tanques restaurados.",
+        icon: "undo",
+      });
       await fetchLoads();
+      return response.data;
     } finally {
       loading.value = false;
     }
@@ -155,7 +160,7 @@ export const useCisternLoadStore = defineStore("cisternLoads", () => {
     fetchLoads,
     createLoad,
     updateLoad,
-    annulLoad,
+    revertirCarga,
     fetchLlenaderos,
     loadTanksList,
     fetchTankDetail,

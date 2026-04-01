@@ -76,6 +76,22 @@ export const useInternalTransferStore = defineStore("internalTransfers", () => {
     }
   }
 
+  async function revertirTransferencia(id) {
+    loading.value = true;
+    try {
+      const response = await api.put(`/transferencias-internas/${id}/revertir`);
+      $q.notify({
+        type: "positive",
+        message: response.data.msg || "Transferencia revertida. Niveles de ambos tanques restaurados.",
+        icon: "undo",
+      });
+      await fetchTransfers();
+      return response.data;
+    } finally {
+      loading.value = false;
+    }
+  }
+
   // --- CARGA DE LISTAS ---
   async function fetchLlenaderos() {
     try {
@@ -132,7 +148,7 @@ export const useInternalTransferStore = defineStore("internalTransfers", () => {
   return {
     rows, loading, filter, pagination, llenaderosList, tanksList,
     sourceTankDetail, destinationTankDetail, destinationTankAforo,
-    fetchTransfers, createTransfer, updateTransfer,
+    fetchTransfers, createTransfer, updateTransfer, revertirTransferencia,
     fetchLlenaderos, loadTanksList, fetchTankDetail
   };
 });

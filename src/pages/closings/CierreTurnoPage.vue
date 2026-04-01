@@ -47,7 +47,7 @@
                 <q-select
                   dense outlined clearable
                   v-model="filters.estado"
-                  :options="['CERRADO', 'PENDIENTE']"
+                  :options="['CERRADO', 'PENDIENTE', 'ANULADO']"
                   label="Estado"
                 />
               </div>
@@ -92,7 +92,7 @@
         <template #body-cell-estado="{ row }">
           <q-td auto-width>
             <q-badge
-              :color="row.estado === 'CERRADO' ? 'positive' : 'warning'"
+              :color="row.estado === 'CERRADO' ? 'positive' : row.estado === 'ANULADO' ? 'red-7' : 'warning'"
               :label="row.estado"
             />
           </q-td>
@@ -146,6 +146,14 @@
               @click="verActa(row)"
             >
               <q-tooltip>Acta de Cierre (PCP)</q-tooltip>
+            </q-btn>
+            <q-btn
+              v-if="can(PERMISSIONS.MANAGE_OPERACIONES_TANQUES) && row.estado === 'CERRADO'"
+              dense round flat
+              color="deep-orange" icon="undo"
+              @click="confirmarRevertirCierre(row)"
+            >
+              <q-tooltip>Revertir Cierre</q-tooltip>
             </q-btn>
           </q-td>
         </template>
@@ -437,6 +445,7 @@ const {
   onRequest, applyFilters, clearFilters,
   onLlenaderoChanged, onGenerarCierre,
   openDetalle, verReporte, verActa, exportarReportePDF,
+  confirmarRevertirCierre,
 } = useCierreTurnoPage();
 
 const can = (permission) => {

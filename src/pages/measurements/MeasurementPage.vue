@@ -107,17 +107,20 @@
             >
               <q-tooltip>Ver Detalles</q-tooltip>
             </q-btn>
-             <!--
+
             <q-btn
+              v-if="can(PERMISSIONS.MANAGE_OPERACIONES_TANQUES)
+                && props.row.estado !== 'ANULADO'
+                && props.row.tipo_medicion !== 'CIERRE'"
               dense
               round
               flat
-              color="warning"
-              icon="edit"
-              @click="openEditDialog(props.row)"
+              color="deep-orange"
+              icon="undo"
+              @click="confirmarRevertir(props.row)"
             >
-              <q-tooltip>Modificar</q-tooltip>
-            </q-btn> -->
+              <q-tooltip>Revertir Medición</q-tooltip>
+            </q-btn>
           </q-td>
         </template>
       </q-table>
@@ -176,6 +179,7 @@ const {
   onFormSave,
   applyFilters,
   clearFilters,
+  confirmarRevertir,
   measStore,
   can
 } = useMeasurementTable();

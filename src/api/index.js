@@ -67,13 +67,20 @@ api.interceptors.response.use(
     hideLoading();
     const message = error.response?.data?.msg || "Ocurrió un error inesperado.";
 
-    // No mostrar notificación de error para 409 (Sesión activa) ya que se maneja con diálogo interactivo
-    if (error.response?.status !== 409) {
+    // El 409 se silencia solo para rutas de sesión activa (manejo con diálogo interactivo).
+    // Para rutas /revertir el 409 SÍ debe mostrarse como warning visible al usuario.
+    const is409DeReversion = error.response?.status === 409 &&
+      error.config?.url?.includes("/revertir");
+
+    const is409Silenciado = error.response?.status === 409 && !is409DeReversion;
+
+    if (!is409Silenciado) {
       Notify.create({
-        type: "negative",
+        type: is409DeReversion ? "warning" : "negative",
         message: message,
         position: "top",
-        timeout: 3000,
+        timeout: is409DeReversion ? 6000 : 3000,
+        actions: is409DeReversion ? [{ label: "OK", color: "white" }] : undefined,
       });
     }
 

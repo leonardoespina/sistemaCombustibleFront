@@ -1,9 +1,11 @@
 import { ref, onMounted, onUnmounted } from "vue";
+import { useQuasar } from "quasar";
 import { storeToRefs } from "pinia";
 import { useMeasurementStore } from "../../../stores/measurementStore.js";
 import { hasPermission } from "../../../utils/permissions";
 
 export function useMeasurementTable() {
+  const $q = useQuasar();
   const measStore = useMeasurementStore();
   const { rows, loading, filter, pagination, llenaderosList, tanksList, selectedTankDetail } = storeToRefs(measStore);
 
@@ -89,6 +91,21 @@ export function useMeasurementTable() {
     applyFilters();
   }
 
+  function confirmarRevertir(item) {
+    $q.dialog({
+      title: "\u26a0\ufe0f \u00bfRevertir Medici\u00f3n?",
+      message: `Esta acci\u00f3n restaurar\u00e1 el nivel del tanque <b>${item.Tanque?.nombre || ''}</b> al valor 
+        previo a esta medici\u00f3n y eliminar\u00e1 su registro del ledger de inventario.<br><br>
+        <b>Solo es posible si no existen operaciones posteriores en el tanque.</b>`,
+      html: true,
+      ok: { label: "Revertir", color: "negative", unelevated: true, icon: "undo" },
+      cancel: { label: "Cancelar", flat: true, color: "grey-7" },
+      persistent: true,
+    }).onOk(async () => {
+      await measStore.revertirMedicion(item.id_medicion);
+    });
+  }
+
   return {
     // State
     rows,
@@ -115,6 +132,7 @@ export function useMeasurementTable() {
     onFormSave,
     applyFilters,
     clearFilters,
+    confirmarRevertir,
     measStore,
     can: (p) => hasPermission(JSON.parse(localStorage.getItem("user") || "{}"), p)
   };

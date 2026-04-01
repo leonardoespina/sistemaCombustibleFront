@@ -113,12 +113,17 @@ export const useMeasurementStore = defineStore("measurements", () => {
     }
   }
 
-  async function annulMeasurement(id) {
+  async function revertirMedicion(id) {
     loading.value = true;
     try {
       const response = await api.put(`/mediciones/${id}/anular`);
-      $q.notify({ type: "positive", message: response.data.msg });
+      $q.notify({
+        type: "positive",
+        message: response.data.msg || "Medición revertida. Nivel del tanque restaurado.",
+        icon: "undo",
+      });
       await fetchMeasurements();
+      return response.data;
     } finally {
       loading.value = false;
     }
@@ -186,7 +191,7 @@ export const useMeasurementStore = defineStore("measurements", () => {
     fetchMeasurements,
     createMeasurement,
     updateMeasurement,
-    annulMeasurement,
+    revertirMedicion,
     fetchLlenaderos,
     loadTanksList,
     fetchTankDetail,

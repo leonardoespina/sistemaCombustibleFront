@@ -1,10 +1,12 @@
 import { ref } from "vue";
+import { useQuasar } from "quasar";
 import { storeToRefs } from "pinia";
 import { useCisternLoadStore } from "../../../stores/cisternLoadStore.js";
 import { hasPermission } from "../../../utils/permissions";
 import socket from "../../../services/socket";
 
 export function useCisternLoadTable() {
+  const $q = useQuasar();
   const loadStore = useCisternLoadStore();
   const { rows, loading, filter, pagination, llenaderosList, tanksList, selectedTankAforo, selectedTankDetail } = storeToRefs(loadStore);
 
@@ -79,6 +81,22 @@ export function useCisternLoadTable() {
     applyFilters();
   }
 
+  function confirmarRevertir(item) {
+    const tanques = (item.tanques_descarga || []).map(t => t.Tanque?.nombre || `#${t.id_tanque}`).join(", ") || "—";
+    $q.dialog({
+      title: "\u26a0\ufe0f \u00bfRevertir Carga de Cisterna?",
+      message: `Esta acci\u00f3n restaurar\u00e1 los niveles de los tanques (<b>${tanques}</b>) al estado 
+        previo a esta recepci\u00f3n y eliminar\u00e1 sus registros del ledger de inventario.<br><br>
+        <b>Solo es posible si no hay operaciones posteriores en ninguno de los tanques afectados.</b>`,
+      html: true,
+      ok: { label: "Revertir", color: "negative", unelevated: true, icon: "undo" },
+      cancel: { label: "Cancelar", flat: true, color: "grey-7" },
+      persistent: true,
+    }).onOk(async () => {
+      await loadStore.revertirCarga(item.id_carga);
+    });
+  }
+
   // --- SOCKET LISTENERS ---
   function initSocketListeners() {
     socket.on("carga:creada", () => loadStore.fetchLoads());
@@ -100,7 +118,8 @@ export function useCisternLoadTable() {
     rows, loading, filter, pagination, llenaderosList, tanksList,
     selectedTankAforo, selectedTankDetail, isFormDialogVisible, isDetailDialogVisible, isEditing, isReadOnly, selectedItem, filters,
     handleRequest, openAddDialog, openViewDialog, openEditDialog, handleLlenaderoChange, handleTankChange, onFormSave,
-    applyFilters, clearFilters, initSocketListeners, removeSocketListeners,
+    applyFilters, clearFilters, confirmarRevertir,
+    initSocketListeners, removeSocketListeners,
     can: (p) => hasPermission(JSON.parse(localStorage.getItem("user") || "{}"), p)
   };
 }

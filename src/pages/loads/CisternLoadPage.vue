@@ -95,18 +95,34 @@
           </q-td>
         </template>
  
+        <!-- ESTADO BADGE -->
+        <template v-slot:body-cell-estado="props">
+          <q-td :props="props">
+            <q-badge
+              :color="props.value === 'ANULADA' ? 'red-7' : 'green-7'"
+              rounded
+            >
+              {{ props.value || 'RECIBIDA' }}
+            </q-badge>
+          </q-td>
+        </template>
+
         <template v-slot:body-cell-actions="props">
           <q-td :props="props" class="q-gutter-x-sm">
             <q-btn dense round flat color="primary" icon="visibility" @click="openViewDialog(props.row)">
               <q-tooltip>Ver Detalles</q-tooltip>
             </q-btn>
-          <!--   
-            <q-btn dense round flat color="warning" icon="edit" @click="openEditDialog(props.row)">
-              <q-tooltip>Editar</q-tooltip>
+
+            <q-btn
+              v-if="can(PERMISSIONS.MANAGE_OPERACIONES_TANQUES) && props.row.estado !== 'ANULADA'"
+              dense round flat color="deep-orange" icon="undo"
+              @click="confirmarRevertir(props.row)"
+            >
+              <q-tooltip>Revertir Carga</q-tooltip>
             </q-btn>
-            -->
           </q-td>
         </template>
+
       </q-table>
     </div>
 
@@ -145,7 +161,7 @@ const {
   rows, loading, filter, pagination, llenaderosList, tanksList, 
   selectedTankAforo, selectedTankDetail, isFormDialogVisible, isDetailDialogVisible, isEditing, isReadOnly, selectedItem, filters,
   handleRequest, openAddDialog, openViewDialog, openEditDialog, handleLlenaderoChange, handleTankChange, onFormSave,
-  applyFilters, clearFilters, initSocketListeners, removeSocketListeners, can
+  applyFilters, clearFilters, confirmarRevertir, initSocketListeners, removeSocketListeners, can
 } = useCisternLoadTable();
 
 const columns = [
@@ -162,6 +178,7 @@ const columns = [
   { name: "recibido", label: "Recibido (L)", field: "litros_recibidos", align: "right" },
   { name: "diferencia", label: "Dif. Guía", field: "diferencia_guia", align: "center" },
   { name: "almacenista", label: "Recibido Por", field: row => `${row.Almacenista?.nombre} ${row.Almacenista?.apellido}`, align: "left" },
+  { name: "estado", label: "Estado", field: "estado", align: "center" },
   { name: "actions", label: "Acciones", align: "right" }
 ];
 

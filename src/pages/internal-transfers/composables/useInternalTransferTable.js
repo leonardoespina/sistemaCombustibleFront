@@ -1,10 +1,12 @@
 import { ref, onMounted, onUnmounted } from "vue";
+import { useQuasar } from "quasar";
 import { storeToRefs } from "pinia";
 import { useInternalTransferStore } from "../../../stores/internalTransferStore.js";
 import { hasPermission } from "../../../utils/permissions";
 import socket from "../../../services/socket";
 
 export function useInternalTransferTable() {
+  const $q = useQuasar();
   const transferStore = useInternalTransferStore();
   const { rows, loading, filter, pagination, llenaderosList, tanksList, sourceTankDetail, destinationTankDetail, destinationTankAforo } = storeToRefs(transferStore);
 
@@ -79,6 +81,23 @@ export function useInternalTransferTable() {
     applyFilters();
   }
 
+  function confirmarRevertir(item) {
+    const origen = item.TanqueOrigen?.nombre || `#${item.id_tanque_origen}`;
+    const destino = item.TanqueDestino?.nombre || `#${item.id_tanque_destino}`;
+    $q.dialog({
+      title: "\u26a0\ufe0f \u00bfRevertir Transferencia?",
+      message: `Esta acci\u00f3n restaurar\u00e1 los niveles de <b>${origen}</b> (origen) y 
+        <b>${destino}</b> (destino) al estado previo a esta transferencia.<br><br>
+        <b>Solo es posible si no existen operaciones posteriores en ninguno de los dos tanques.</b>`,
+      html: true,
+      ok: { label: "Revertir", color: "negative", unelevated: true, icon: "undo" },
+      cancel: { label: "Cancelar", flat: true, color: "grey-7" },
+      persistent: true,
+    }).onOk(async () => {
+      await transferStore.revertirTransferencia(item.id_transferencia);
+    });
+  }
+
   // --- SOCKET LISTENERS ---
   function initSocketListeners() {
     socket.on("transferencia:creada", () => transferStore.fetchTransfers());
@@ -105,6 +124,7 @@ export function useInternalTransferTable() {
     onFormSave,
     applyFilters,
     clearFilters,
+    confirmarRevertir,
     initSocketListeners, removeSocketListeners, transferStore,
     can: (p) => hasPermission(JSON.parse(localStorage.getItem("user") || "{}"), p)
   };

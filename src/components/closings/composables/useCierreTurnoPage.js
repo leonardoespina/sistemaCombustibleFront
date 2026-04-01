@@ -218,6 +218,40 @@ export function useCierreTurnoPage() {
         }
     }
 
+    function confirmarRevertirCierre(row) {
+        $q.dialog({
+            title: "\u26a0\ufe0f \u00bfRevertir Cierre de Turno?",
+            message: `Esta acci\u00f3n revertir\u00e1 el cierre <b>#${row.id_cierre}</b> del turno 
+                <b>${row.turno}</b> (${row.Llenadero?.nombre_llenadero || ''}).<br><br>
+                <ul style="margin:8px 0;padding-left:18px">
+                  <li>Los niveles de los tanques medidos ser\u00e1n restaurados.</li>
+                  <li>Los <b>despachos</b> asociados quedar\u00e1n desvinculados del cierre.</li>
+                  <li>Solo es posible si es el \u00faltimo cierre del llenadero y no hay
+                      operaciones posteriores en los tanques.</li>
+                </ul>
+                <b>Esta operaci\u00f3n no se puede deshacer.</b>`,
+            html: true,
+            ok: { label: "Revertir Cierre", color: "negative", unelevated: true, icon: "undo" },
+            cancel: { label: "Cancelar", flat: true, color: "grey-7" },
+            persistent: true,
+        }).onOk(async () => {
+            try {
+                const result = await store.revertirCierre(row.id_cierre);
+                $q.notify({
+                    type: "positive",
+                    message: result.msg || `Cierre #${row.id_cierre} revertido correctamente.`,
+                    icon: "undo",
+                });
+                _fetchWithFilters();
+            } catch (error) {
+                // El interceptor ya muestra la notificación de warning para 409
+                if (!error.response || error.response.status !== 409) {
+                    $q.notify({ type: "negative", message: "Error al revertir el cierre." });
+                }
+            }
+        });
+    }
+
     /** Exporta el reporte actual a PDF (Agrupado por Combustible) */
     function exportarReportePDF() {
         if (!reporteActual.value) {
@@ -324,6 +358,10 @@ export function useCierreTurnoPage() {
         _fetchWithFilters();
     }
 
+    function _onCierreActualizado() {
+        _fetchWithFilters();
+    }
+
     // ─── LIFECYCLE ───────────────────────────────────────────
 
     onMounted(async () => {
@@ -331,6 +369,7 @@ export function useCierreTurnoPage() {
 
         // Socket listeners
         socket.on("cierre:creado", _onCierreCreado);
+        socket.on("cierre:actualizado", _onCierreActualizado);
 
         // Cargar catálogos
         try {
@@ -347,6 +386,7 @@ export function useCierreTurnoPage() {
 
     onUnmounted(() => {
         socket.off("cierre:creado", _onCierreCreado);
+        socket.off("cierre:actualizado", _onCierreActualizado);
         store.filter = "";
         store.pagination.page = 1;
     });
@@ -364,5 +404,6 @@ export function useCierreTurnoPage() {
         onRequest, applyFilters, clearFilters,
         onLlenaderoChanged, onGenerarCierre,
         openDetalle, verReporte, verActa, exportarReportePDF,
+        confirmarRevertirCierre,
     };
 }
