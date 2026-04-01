@@ -281,10 +281,13 @@
 <script setup>
 import { ref, onMounted, onBeforeUnmount, reactive, computed, watch } from "vue";
 import { useQuasar } from "quasar";
-import websdkUrl from "./websdk.client.ui.js?url";
-import fingerprintSdkUrl from "./fingerprint.sdk.min.js?url";
+import axios from "axios"; // Añadir axios para el middleware local
+// --- COMENTADO TEMPORALMENTE (SDK WEB ANTIGUO) ---
+// import websdkUrl from "./websdk.client.ui.js?url";
+// import fingerprintSdkUrl from "./fingerprint.sdk.min.js?url";
 import api from "../../api";
 import OrganizationalHierarchy from "../OrganizationalHierarchy.vue";
+
 
 const $q = useQuasar();
 
@@ -346,8 +349,17 @@ const readers = ref([]);
 const samples = ref([]);
 const cedulaExists = ref(false);
 const validatingCedula = ref(false);
+
+// Control de cancelación para peticiones Axios (Middleware)
+let captureAbortController = null;
+
 let fingerprintApi = null;
 let Fingerprint = null;
+
+// Middleware local API
+const LOCAL_BIO_API = "http://localhost:8081/api";
+let statusInterval = null;
+
 
 const loadScript = (src) => {
   return new Promise((resolve, reject) => {
@@ -360,6 +372,12 @@ const loadScript = (src) => {
 };
 
 const initApi = async () => {
+    // Verificamos estado inicial del middleware
+    await refreshReadersView();
+    // Iniciamos monitoreo de estado cada 5 segundos
+    statusInterval = setInterval(refreshReadersView, 5000);
+
+  /* --- CÓDIGO ORIGINAL DEL SDK COMENTADO ---
   try {
     if (!window.WebSdk) {
       await loadScript(websdkUrl);
@@ -399,7 +417,7 @@ const initApi = async () => {
     };
 
     fingerprintApi.onDeviceDisconnected = (event) => {
-      console.log("Hardware removido:", event);
+      console.error("Hardware removido:", event);
       refreshReadersView();
     };
 
@@ -409,27 +427,89 @@ const initApi = async () => {
   } catch (e) {
     errorMessage.value = "Error: " + e.message;
   }
+  ----------------------------------------- */
 };
 
-const validateCedula = async () => {
-  if (!form.cedula || isEditing.value) return;
-  
-  validatingCedula.value = true;
-  cedulaExists.value = false;
+
+const refreshReadersView = async () => {
   try {
-    const { data } = await api.get('/biometria', { params: { search: form.cedula } });
-    if (data.data && data.data.some(r => r.cedula === form.cedula)) {
-      cedulaExists.value = true;
-      $q.notify({ type: 'warning', message: 'Esta cédula ya se encuentra registrada.' });
-    }
+    // Consultamos el estado del Middleware C#
+    const res = await axios.get(`${LOCAL_BIO_API}/status`, { timeout: 2000 });
+    // Si responde, simulamos un dispositivo conectado para habilitar la UI
+    readers.value = [{ DeviceID: "LocalBridge" }];
+    console.log("Middleware Biométrico: ACTIVO");
   } catch (error) {
-    console.error("Error validando cédula", error);
-  } finally {
-    validatingCedula.value = false;
+    readers.value = [];
+    console.error("Middleware desconectado:", error);
   }
+
+  /* --- CÓDIGO ORIGINAL COMENTADO ---
+  try {
+    if (!fingerprintApi) return;
+    const devices = await fingerprintApi.enumerateDevices();
+    readers.value = devices || [];
+    console.log("Lectores actualizados:", readers.value.length);
+  } catch (error) {
+    readers.value = [];
+    console.error("Error enumerando:", error);
+  }
+  --------------------------------- */
 };
+
 
 const startCapture = async () => {
+  if (capturing.value) return;
+  if (samples.value.length >= 4) return;
+  
+  capturing.value = true;
+  errorMessage.value = "";
+  
+  try {
+    // BUCLE DE AUTO-CAPTURA SECUENCIAL
+    while (samples.value.length < 4 && capturing.value) {
+      // Inicializamos el controlador para esta petición específica
+      captureAbortController = new AbortController();
+      
+      try {
+        // Llamamos al middleware C# para capturar una muestra con señal de aborto
+        const res = await axios.get(`${LOCAL_BIO_API}/capture`, {
+          signal: captureAbortController.signal
+        });
+        
+        if (res.data && res.data.success) {
+            // Procesamos la muestra recibida
+            await processAcquiredSample(res.data.base64Image, res.data.fmdBase64);
+            
+            // Damos un respiro de 600ms para permitir al usuario mover el dedo
+            if (samples.value.length < 4 && capturing.value) {
+              await new Promise(resolve => setTimeout(resolve, 600));
+            }
+        } else {
+            // Si el middleware falla o hay timeout, rompemos el bucle
+            break;
+        }
+      } catch (innerError) {
+        if (axios.isCancel(innerError)) {
+          console.log("[Bio] Captura secuencial abortada por el usuario.");
+          break;
+        }
+        throw innerError;
+      } finally {
+        captureAbortController = null;
+      }
+    }
+
+  } catch (error) {
+    // Solo mostramos error si no fue el usuario quien paró la captura manualmente
+    if (capturing.value) {
+      handleError(error);
+      $q.notify({ type: 'negative', message: 'Error de captura: ' + error.message });
+    }
+  } finally {
+    capturing.value = false;
+  }
+
+  /* --- CÓDIGO ORIGINAL COMENTADO ---
   if (capturing.value || !fingerprintApi) return;
   if (samples.value.length >= 4) return;
   try {
@@ -439,9 +519,18 @@ const startCapture = async () => {
   } catch (error) {
     handleError(error);
   }
+  --------------------------------- */
 };
 
+
 const stopCapture = async () => {
+  capturing.value = false;
+  if (captureAbortController) {
+    captureAbortController.abort();
+    captureAbortController = null;
+  }
+
+  /* --- CÓDIGO ORIGINAL COMENTADO ---
   if (!capturing.value || !fingerprintApi) return;
   try {
     await fingerprintApi.stopAcquisition();
@@ -449,7 +538,9 @@ const stopCapture = async () => {
   } catch (error) {
     handleError(error);
   }
+  --------------------------------- */
 };
+
 
 const clearSamples = () => {
   samples.value = [];
@@ -469,7 +560,8 @@ const resetComponentState = () => {
   cedulaExists.value = false;
 };
 
-const refreshReadersView = async () => {
+/* --- CÓDIGO ORIGINAL DUPLICADO COMENTADO (RENOMBRADO PARA EVITAR CONFLICTOS) ---
+const _legacy_refreshReadersView = async () => {
   try {
     if (!fingerprintApi) return;
     const devices = await fingerprintApi.enumerateDevices();
@@ -480,79 +572,92 @@ const refreshReadersView = async () => {
     console.error("Error enumerando:", error);
   }
 };
+-------------------------------------------- */
 
-const onSamplesAcquired = async (event) => {
+
+
+const validateCedula = async () => {
+  if (!form.cedula || isEditing.value) return;
+  
+  validatingCedula.value = true;
+  cedulaExists.value = false;
   try {
-    const sampleDataArr = JSON.parse(event.samples);
-    if (sampleDataArr.length > 0) {
-      const sampleObj = sampleDataArr[0];
-      const rawData = typeof sampleObj === "string" ? sampleObj : sampleObj.Data;
+    const { data } = await api.get('/biometria', { params: { search: form.cedula } });
+    if (data.data && data.data.some(r => r.cedula === form.cedula)) {
+      cedulaExists.value = true;
+      $q.notify({ type: 'warning', message: 'Esta cédula ya se encuentra registrada.' });
+    }
+  } catch (error) {
+    console.error("Error validando cédula", error);
+  } finally {
+    validatingCedula.value = false;
+  }
+};
 
-      if (!rawData) return;
+const processAcquiredSample = async (imageBase64, fmdBase64) => {
+  try {
+    const imageDataUrl = `data:image/png;base64,${imageBase64}`;
 
-      let imageBase64 = "";
-      let imageDataUrl = "";
-
-      if (event.sampleFormat === Fingerprint.SampleFormat.PngImage) {
-        const pngData = Fingerprint.b64UrlToUtf8(rawData);
-        imageBase64 = btoa(pngData);
-        imageDataUrl = `data:image/png;base64,${imageBase64}`;
-      } else {
-        return;
-      }
-
-      // VALIDACIÓN DE CONSISTENCIA (Match contra la primera huella)
-      if (samples.value.length > 0) {
-        validating.value = true;
-        validationError.value = false;
-        try {
-          const response = await api.post("/biometria/comparar", {
-            muestra1: samples.value[0].data,
-            muestra2: imageBase64,
-          });
-
-          if (!response.data.match) {
-            validationError.value = true;
-            $q.notify({
-              type: "warning",
-              message: "La huella no coincide con la primera muestra. Use el mismo dedo.",
-              position: "bottom",
-            });
-            return; // No agregar la huella
-          }
-        } catch (err) {
-          console.error("Error validando consistencia:", err);
-          $q.notify({
-            type: "negative",
-            message: "Error al validar consistencia de la huella",
-          });
-          return;
-        } finally {
-          validating.value = false;
-        }
-      }
-
-      if (samples.value.length < 4) {
-        samples.value.push({
-          image: imageDataUrl,
-          data: imageBase64,
+    // VALIDACIÓN DE CONSISTENCIA (Match contra la primera huella)
+    // Usamos la imagen PNG porque el microservicio Java usa SourceAFIS
+    if (samples.value.length > 0) {
+      validating.value = true;
+      validationError.value = false;
+      try {
+        const response = await api.post("/biometria/comparar", {
+          muestra1: samples.value[0].data,
+          muestra2: imageBase64,
         });
 
-        if (samples.value.length === 4) {
-          stopCapture();
+        if (!response.data.match) {
+          validationError.value = true;
           $q.notify({
-            type: "positive",
-            message: "Captura consistente completada",
-            timeout: 1000,
+            type: "warning",
+            message: "La huella no coincide con la primera muestra. Use el mismo dedo.",
+            position: "bottom",
           });
+          return;
         }
+      } catch (err) {
+        console.error("Error validando consistencia:", err);
+        $q.notify({
+          type: "negative",
+          message: "Error al validar consistencia de la huella",
+        });
+        return;
+      } finally {
+        validating.value = false;
+      }
+    }
+
+    if (samples.value.length < 4) {
+      samples.value.push({
+        image: imageDataUrl,
+        data: imageBase64, // Guardamos la imagen para registro (SourceAFIS la necesita)
+      });
+
+      if (samples.value.length === 4) {
+        $q.notify({
+          type: "positive",
+          message: "Captura consistente completada",
+          timeout: 1000,
+        });
       }
     }
   } catch (error) {
-    console.error("Error en onSamplesAcquired:", error);
+    console.error("Error en processAcquiredSample:", error);
     handleError(error);
   }
 };
+
+// Mantenemos el antiguo manejador por si se revierte el cambio
+const onSamplesAcquired = async (event) => {
+  /* --- CÓDIGO ORIGINAL COMENTADO --- 
+     (El código del SDK se encuentra en los logs de la versión anterior)
+  --------------------------------- */
+};
+
+
 
 const handleError = (error) => {
   errorMessage.value = error?.message || "Error sensor";
@@ -622,6 +727,7 @@ onMounted(async () => {
 });
 
 onBeforeUnmount(async () => {
+  if (statusInterval) clearInterval(statusInterval);
   if (capturing.value) await stopCapture();
 });
 </script>

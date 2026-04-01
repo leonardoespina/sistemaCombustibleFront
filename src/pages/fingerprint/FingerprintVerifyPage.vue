@@ -24,7 +24,7 @@
             bg-color="white"
             class="shadow-2"
             @keyup.enter="toggleSensor"
-            :disable="capturing || personaIdentificada"
+            :disable="capturing || !!personaIdentificada"
           >
             <template v-slot:prepend
               ><q-icon name="badge" color="primary"
@@ -113,11 +113,18 @@
 </template>
 
 <script setup>
-import { ref, onMounted, onBeforeUnmount } from "vue";
+import { ref, onMounted, onBeforeUnmount, watch } from "vue";
 import { useQuasar } from "quasar";
 import api from "../../api";
-import websdkUrl from "../../components/fingerprint/websdk.client.ui.js?url";
-import fingerprintSdkUrl from "../../components/fingerprint/fingerprint.sdk.min.js?url";
+import axios from "axios";
+// --- COMENTADO TEMPORALMENTE (SDK WEB ANTIGUO) ---
+// import websdkUrl from "../../components/fingerprint/websdk.client.ui.js?url";
+// import fingerprintSdkUrl from "../../components/fingerprint/fingerprint.sdk.min.js?url";
+
+// Middleware local API
+const LOCAL_BIO_API = "http://localhost:8081/api";
+let statusInterval = null;
+
 
 const $q = useQuasar();
 
@@ -131,13 +138,17 @@ const statusMessage = ref("Lector en espera");
 const personaIdentificada = ref(null);
 const cedulaBusqueda = ref("");
 
+// Control de cancelación para peticiones Axios
+let captureAbortController = null;
+
+
 let fingerprintApi = null;
 let Fingerprint = null;
 
-// Lógica de Verificación
+// Lógica de Verificación (Refactorizada para Middleware C#)
 const toggleSensor = async () => {
   if (capturing.value) {
-    await stopCapture();
+    stopCapture();
   } else {
     if (!cedulaBusqueda.value) {
       $q.notify({ type: "warning", message: "Debe ingresar una cédula" });
@@ -152,6 +163,53 @@ const toggleSensor = async () => {
 
 const startCapture = async () => {
   try {
+    capturing.value = true;
+    
+    // Inicializamos el controlador de cancelación
+    captureAbortController = new AbortController();
+    
+    // Llamamos al middleware C# para capturar una imagen PNG con señal de aborto
+    const res = await axios.get(`${LOCAL_BIO_API}/capture`, {
+        signal: captureAbortController.signal
+    });
+    
+    if (res.data && res.data.success) {
+        // En verificación enviamos directamente la imagen al backend
+        await verifyFmd(res.data.base64Image);
+    } else {
+        throw new Error(res.data?.message || "Captura fallida");
+    }
+  } catch (error) {
+    // Si el error es por cancelación manual, no mostramos notificación
+    if (axios.isCancel(error)) {
+        console.log("[Bio] Captura cancelada por navegación del usuario");
+        return;
+    }
+
+    if (capturing.value) {
+        $q.notify({ type: "negative", message: "Error al activar sensor: " + error.message });
+        statusColor.value = "grey-5";
+        statusMessage.value = "Lector en espera";
+    }
+  } finally {
+    capturing.value = false;
+    captureAbortController = null;
+  }
+};
+
+const stopCapture = () => {
+  if (captureAbortController) {
+    captureAbortController.abort();
+  }
+  capturing.value = false;
+  statusColor.value = "grey-5";
+  statusMessage.value = "Lector en espera";
+};
+
+
+/* --- CÓDIGO ORIGINAL COMENTADO (VERSIÓN SDK WEB) ---
+const startCapture_LEGACY = async () => {
+  try {
     // IMPORTANTE: Usar PngImage para compatibilidad con SourceAFIS
     await fingerprintApi.startAcquisition(Fingerprint.SampleFormat.PngImage);
     capturing.value = true;
@@ -160,14 +218,14 @@ const startCapture = async () => {
   }
 };
 
-const stopCapture = async () => {
+const stopCapture_LEGACY = async () => {
   try {
     await fingerprintApi.stopAcquisition();
     capturing.value = false;
   } catch (e) {}
 };
 
-const onSamplesAcquired = async (event) => {
+const onSamplesAcquired_LEGACY = async (event) => {
   const sampleDataArr = JSON.parse(event.samples);
   if (sampleDataArr.length > 0) {
     const sampleObj = sampleDataArr[0];
@@ -189,6 +247,9 @@ const onSamplesAcquired = async (event) => {
     await verifyFmd(pngBase64);
   }
 };
+------------------------------------------------- */
+
+
 
 const verifyFmd = async (fmd) => {
   verifying.value = true;
@@ -247,43 +308,65 @@ const reset = () => {
   statusMessage.value = "Lector en espera";
 };
 
-// Inicialización de SDK (Reutilizado de FingerprintCapture)
-const loadScript = (src) => {
-  return new Promise((resolve, reject) => {
-    const script = document.createElement("script");
-    script.src = src;
-    script.onload = resolve;
-    script.onerror = reject;
-    document.head.appendChild(script);
-  });
-};
-
-const initApi = async () => {
+// Monitor de salud del Middleware
+const checkHeartbeat = async () => {
   try {
-    if (!window.WebSdk) await loadScript(websdkUrl);
-    if (!window.Fingerprint) await loadScript(fingerprintSdkUrl);
-    Fingerprint = window.Fingerprint;
-    fingerprintApi = new Fingerprint.WebApi();
-
-    fingerprintApi.onSamplesAcquired = onSamplesAcquired;
-    fingerprintApi.onDeviceConnected = () => {
-      readerConnected.value = true;
-    };
-    fingerprintApi.onDeviceDisconnected = () => {
-      readerConnected.value = false;
-    };
-
-    const devices = await fingerprintApi.enumerateDevices();
-    if (devices.length > 0) readerConnected.value = true;
-  } catch (e) {
-    console.error(e);
+    const res = await axios.get(`${LOCAL_BIO_API}/status`, { timeout: 2000 });
+    readerConnected.value = true;
+  } catch (error) {
+    readerConnected.value = false;
   }
 };
 
-// Función de comparación de templates FMD (Fuzzy Binary Match)
+const initApi = async () => {
+  // Verificación inicial
+  await checkHeartbeat();
+  // Monitoreo constante cada 5 segundos
+  statusInterval = setInterval(checkHeartbeat, 5000);
+
+  /* --- CÓDIGO ORIGINAL COMENTADO (SDK WEB ANTIGUO) ---
+  const loadScript_LEGACY = (src) => {
+    return new Promise((resolve, reject) => {
+      const script = document.createElement("script");
+      script.src = src;
+      script.onload = resolve;
+      script.onerror = reject;
+      document.head.appendChild(script);
+    });
+  };
+
+  const initApi_LEGACY = async () => {
+    try {
+      if (!window.WebSdk) await loadScript_LEGACY(websdkUrl);
+      if (!window.Fingerprint) await loadScript_LEGACY(fingerprintSdkUrl);
+      Fingerprint = window.Fingerprint;
+      fingerprintApi = new Fingerprint.WebApi();
+
+      fingerprintApi.onSamplesAcquired = onSamplesAcquired;
+      fingerprintApi.onDeviceConnected = () => {
+        readerConnected.value = true;
+      };
+      fingerprintApi.onDeviceDisconnected = () => {
+        readerConnected.value = false;
+      };
+
+      const devices = await fingerprintApi.enumerateDevices();
+      if (devices.length > 0) readerConnected.value = true;
+    } catch (e) {
+      console.error(e);
+    }
+  };
+  ------------------------------------------------------- */
+};
 
 onMounted(initApi);
-onBeforeUnmount(stopCapture);
+
+onBeforeUnmount(() => {
+  if (statusInterval) clearInterval(statusInterval);
+  stopCapture();
+});
+
+
 </script>
 
 <style scoped>

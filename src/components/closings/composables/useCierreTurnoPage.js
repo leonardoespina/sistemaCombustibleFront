@@ -252,6 +252,7 @@ export function useCierreTurnoPage() {
         });
     }
 
+
     /** Exporta el reporte actual a PDF (Agrupado por Combustible) */
     function exportarReportePDF() {
         if (!reporteActual.value) {
