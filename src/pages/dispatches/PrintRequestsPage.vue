@@ -258,7 +258,7 @@
 
 <script setup>
 import { ref, onMounted, onBeforeUnmount, defineAsyncComponent, watch } from 'vue';
-import { useQuasar } from 'quasar';
+import { useQuasar, date } from 'quasar';
 import { useRequestStore } from '../../stores/requestStore'; 
 import { storeToRefs } from 'pinia';
 import api from '../../api';
@@ -285,7 +285,8 @@ const selectedTicket = ref(null);
 
 // --- FILTROS ---
 const searchType = ref('fecha');
-const filterDate = ref(new Date().toISOString().split('T')[0]);
+// Usa date.formatDate(new Date(), 'YYYY-MM-DD') para evitar salto de día UTC a las 8pm Venezuela
+const filterDate = ref(date.formatDate(new Date(), 'YYYY-MM-DD'));
 const filterText = ref('');
 const filterCode = ref('');
 const statusFilter = ref('APROBADA');
