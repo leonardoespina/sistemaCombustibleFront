@@ -109,7 +109,7 @@
             </q-btn>
 
             <q-btn
-              v-if="can(PERMISSIONS.MANAGE_OPERACIONES_TANQUES)
+              v-if="can(PERMISSIONS.REVERTIR_OPERACION)
                 && props.row.estado !== 'ANULADO'
                 && props.row.tipo_medicion !== 'CIERRE'"
               dense

@@ -87,7 +87,7 @@
         <template v-slot:body-cell-diferencia="props">
           <q-td :props="props">
             <q-badge
-              :color="parseFloat(props.value) > 0 ? 'negative' : 'positive'"
+              :color="parseFloat(props.value) > 0 ? 'positive' : (parseFloat(props.value) < 0 ? 'negative' : 'grey-7')"
               class="q-pa-xs"
             >
               {{ props.value }} L
@@ -114,7 +114,7 @@
             </q-btn>
 
             <q-btn
-              v-if="can(PERMISSIONS.MANAGE_OPERACIONES_TANQUES) && props.row.estado !== 'ANULADA'"
+              v-if="can(PERMISSIONS.REVERTIR_OPERACION) && props.row.estado !== 'ANULADA'"
               dense round flat color="deep-orange" icon="undo"
               @click="confirmarRevertir(props.row)"
             >

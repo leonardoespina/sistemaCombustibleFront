@@ -158,7 +158,8 @@
         <template v-slot:body="props">
           <q-tr 
             :props="props" 
-            :class="getRowClass(props.row)"
+            :class="[getRowClass(props.row), 'cursor-pointer']"
+            @click="openBiometricDialog(props.row)"
           >
             <q-td key="index" :props="props">
               <span class="text-weight-bold text-white bg-blue-9 q-px-xs">#{{ props.rowIndex + 1 }}</span>
@@ -181,7 +182,10 @@
             <q-td key="litros" :props="props" class="text-right text-caption">
               {{ props.row.cantidad_litros }}
             </q-td>
-            <q-td key="estado" :props="props" class="text-caption">
+            <q-td key="litros_desp" :props="props" class="text-right text-caption">
+              {{ props.row.cantidad_despachada || '-' }}
+            </q-td>
+            <q-td key="estado" :props="props" class="text-caption" align="center">
               {{ props.row.estado }}
             </q-td>
             <q-td key="placa" :props="props" class="text-caption">
@@ -197,7 +201,7 @@
                 color="positive"
                 icon="fingerprint"
                 class="q-mr-xs"
-                @click="openBiometricDialog(props.row)"
+                @click.stop="openBiometricDialog(props.row)"
               >
                 <q-tooltip>Captar Huella y Generar Ticket</q-tooltip>
               </q-btn>
@@ -210,7 +214,7 @@
                 color="indigo"
                 icon="print"
                 class="q-mr-xs"
-                @click="onDirectPrint(props.row)"
+                @click.stop="onDirectPrint(props.row)"
               >
                 <q-tooltip>Imprimir y Ver Ticket</q-tooltip>
               </q-btn>
@@ -221,7 +225,7 @@
                 flat
                 color="primary"
                 icon="info"
-                @click="onShowDetails(props.row)"
+                @click.stop="onShowDetails(props.row)"
               >
                 <q-tooltip>Ver Detalles</q-tooltip>
               </q-btn>

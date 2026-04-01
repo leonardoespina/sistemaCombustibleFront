@@ -89,7 +89,7 @@
 
             <!-- Rechazar (Solo si no está despachado/vencido y tiene permiso) -->
             <q-btn
-              v-if="['PENDIENTE', 'APROBADA'].includes(props.row.estado) && can(PERMISSIONS.REJECT_SOLICITUD)"
+              v-if="['PENDIENTE', 'APROBADA', 'IMPRESA'].includes(props.row.estado) && can(PERMISSIONS.REJECT_SOLICITUD)"
               dense
               round
               flat

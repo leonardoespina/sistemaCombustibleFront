@@ -18,6 +18,7 @@ export const PERMISSIONS = {
     VIEW_MIS_CUPOS: "view_mis_cupos",
     VIEW_MIS_DESPACHOS: "view_mis_despachos",
     REJECT_SOLICITUD: "reject_solicitud",
+    REVERTIR_OPERACION: "revertir_operacion",
 };
 
 export const ROLE_PERMISSIONS = {
@@ -105,6 +106,14 @@ export function hasPermission(user, permission) {
 
     if (permission === PERMISSIONS.CREATE_SOLICITUD) {
         return ["SOLICITANTE", "AMBOS"].includes(user.capacidad_solicitudes);
+    }
+
+    if (permission === PERMISSIONS.REVERTIR_OPERACION) {
+        return (
+            user.tipo_usuario === "ADMIN" ||
+            user.rol_sistema === "ADMIN" ||
+            user.capacidad_solicitudes === "AMBOS"
+        );
     }
 
     return false;

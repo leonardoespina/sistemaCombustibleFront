@@ -16,13 +16,12 @@ export function useInactivity({
   const $q = useQuasar();
   const router = useRouter();
 
-  let idleTimer = null;
-  let warningTimer = null;
+  let checkInterval = null;
   let dialogInstance = null; // Para controlar el cierre automático del Dialog
 
   const isWarningVisible = ref(false);
 
-  // Eventos que reinician el temporizador
+  // Eventos que actualizan el timestamp de última actividad
   const events = [
     "mousedown",
     "mousemove",
@@ -48,9 +47,10 @@ export function useInactivity({
     } catch (e) {
       console.error("Error al cerrar sesión por inactividad:", e);
     } finally {
-      // 3. Limpiar localmente siempre
+      // 3. Limpiar localmente
       localStorage.removeItem("token");
       localStorage.removeItem("user");
+      localStorage.removeItem("lastActivity");
 
       $q.notify({
         type: "warning",
@@ -88,7 +88,9 @@ export function useInactivity({
       })
       .onOk(() => {
         dialogInstance = null;
-        resetTimers();
+        updateLastActivity();
+        isWarningVisible.value = false;
+        // Obliga a que checkInterval no lo vuelva a lanzar por 2 segs.
       })
       .onCancel(() => {
         dialogInstance = null;
@@ -97,45 +99,93 @@ export function useInactivity({
   };
 
   /**
-   * Inicia los temporizadores
+   * Actualiza el timestamp en LocalStorage
+   */
+  const updateLastActivity = () => {
+    // Si no hay token, no registrar actividad.
+    if (!localStorage.getItem("token")) return;
+    localStorage.setItem("lastActivity", Date.now().toString());
+  };
+
+  /**
+   * Verifica el tiempo transcurrido
+   */
+  const checkActivity = () => {
+    if (!localStorage.getItem("token")) return;
+
+    const lastStr = localStorage.getItem("lastActivity");
+    if (!lastStr) return;
+
+    const lastActivity = parseInt(lastStr, 10);
+    const now = Date.now();
+    const elapsedTime = now - lastActivity;
+
+    // 1. Si pasó del tiempo total, cerrar sin importar estado de ventana
+    if (elapsedTime >= idleTime) {
+      logout();
+      return;
+    } 
+    
+    // 2. Rango de advertencia
+    if (elapsedTime >= (idleTime - warningTime)) {
+      // Solo mostramos el diálogo si la pestaña está visible/maximizada
+      if (!isWarningVisible.value && document.visibilityState === "visible") {
+        showWarning();
+      }
+    } 
+    // 3. Multi-pestañas: revivida en otra tab
+    else if (elapsedTime < (idleTime - warningTime) && isWarningVisible.value && dialogInstance) {
+      dialogInstance.hide();
+      dialogInstance = null;
+      isWarningVisible.value = false;
+    }
+  };
+
+  /**
+   * Inicia el ciclo
    */
   const startTimers = () => {
-    // Timer para la advertencia (Tiempo total - Tiempo de margen)
-    const timeUntilWarning = idleTime - warningTime;
+    // Si acaba de abrir la ventana (onMounted), verificar si el tiempo expiró
+    // mientras estaba cerrada ANTES de reiniciar el temporizador
+    const lastStr = localStorage.getItem("lastActivity");
+    if (lastStr) {
+      const lastActivity = parseInt(lastStr, 10);
+      if (Date.now() - lastActivity >= idleTime) {
+        logout();
+        return; // Terminamos aquí, ya expiró en segundo plano
+      }
+    }
 
-    idleTimer = setTimeout(() => {
-      showWarning();
-    }, timeUntilWarning);
-
-    // Timer para el cierre definitivo
-    warningTimer = setTimeout(() => {
-      logout();
-    }, idleTime);
+    updateLastActivity();
+    checkInterval = setInterval(checkActivity, 5000);
   };
 
-  /**
-   * Limpia los temporizadores activos
-   */
   const clearTimers = () => {
-    if (idleTimer) clearTimeout(idleTimer);
-    if (warningTimer) clearTimeout(warningTimer);
+    if (checkInterval) clearInterval(checkInterval);
   };
 
-  /**
-   * Reinicia todo el ciclo de control
-   */
   const resetTimers = () => {
     isWarningVisible.value = false;
     clearTimers();
     startTimers();
   };
 
-  // Manejador de eventos
+  /**
+   * Manejador de eventos de usuario
+   */
   const handleUserActivity = () => {
-    // Si ya estamos mostrando la advertencia, no reiniciamos por simples movimientos
-    // El usuario debe interactuar con el diálogo
+    // Si ya estamos en estado de alerta, obligamos al click del dialog
     if (!isWarningVisible.value) {
-      resetTimers();
+      updateLastActivity();
+    }
+  };
+
+  /**
+   * Maneja retorno tras minimizar
+   */
+  const handleVisibilityChange = () => {
+    if (document.visibilityState === "visible") {
+      checkActivity();
     }
   };
 
@@ -145,6 +195,7 @@ export function useInactivity({
       events.forEach((event) => {
         window.addEventListener(event, handleUserActivity);
       });
+      document.addEventListener("visibilitychange", handleVisibilityChange);
       startTimers();
     }
   });
@@ -153,6 +204,7 @@ export function useInactivity({
     events.forEach((event) => {
       window.removeEventListener(event, handleUserActivity);
     });
+    document.removeEventListener("visibilitychange", handleVisibilityChange);
     clearTimers();
   });
 

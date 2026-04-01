@@ -111,7 +111,7 @@
             </q-btn>
 
             <q-btn
-              v-if="can(PERMISSIONS.MANAGE_OPERACIONES_TANQUES) && props.row.estado !== 'ANULADA'"
+              v-if="can(PERMISSIONS.REVERTIR_OPERACION) && props.row.estado !== 'ANULADA'"
               dense round flat color="deep-orange" icon="undo"
               @click="confirmarRevertir(props.row)"
             >

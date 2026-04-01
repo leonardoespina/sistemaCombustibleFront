@@ -4,6 +4,7 @@ import { useCierreTurnoStore } from "../../../stores/cierreTurnoStore.js";
 import socket from "../../../services/socket";
 import api from "../../../api/index.js";
 import { pdfService } from "../../../services/pdfService";
+import { hasPermission } from "../../../utils/permissions";
 
 export function useCierreTurnoPage() {
     const $q = useQuasar();
@@ -406,5 +407,6 @@ export function useCierreTurnoPage() {
         onLlenaderoChanged, onGenerarCierre,
         openDetalle, verReporte, verActa, exportarReportePDF,
         confirmarRevertirCierre,
+        can: (p) => hasPermission(JSON.parse(localStorage.getItem("user") || "{}"), p)
     };
 }
