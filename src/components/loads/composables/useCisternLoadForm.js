@@ -206,7 +206,8 @@ export function useCisternLoadForm(props, emit) {
 
     const ini = parseFloat(tq.liters.inicial) || 0;
     const fin = parseFloat(tq.liters.final) || 0;
-    tq.liters.recibido = fin - ini > 0 ? (fin - ini).toFixed(2) : "0.00";
+    // La medida de aforo final determina la cantidad total independiente de la inicial
+    tq.liters.recibido = fin >= 0 ? fin.toFixed(2) : "0.00";
   }
 
   function calculateAll() {
