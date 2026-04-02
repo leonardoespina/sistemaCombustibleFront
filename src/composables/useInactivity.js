@@ -59,7 +59,9 @@ export function useInactivity({
         timeout: 5000,
       });
 
-      router.push("/login");
+      // Use window.location.href to guarantee a full reload and clear any previous state
+      // This prevents the overlapping "bienvenido" and "sesión vencida" messages
+      window.location.href = "/login";
     }
   };
 

@@ -42,7 +42,9 @@ export function useMainLayout() {
   const handleLogoutLocal = () => {
     localStorage.removeItem("token");
     localStorage.removeItem("user");
-    router.replace("/login");
+    // Desconectar el socket para que el backend libere la sesión
+    if (socket) socket.disconnect();
+    window.location.href = "/login";
   };
 
   const handleLogout = async () => {
@@ -51,13 +53,6 @@ export function useMainLayout() {
     } catch (error) {
       console.error("Error al notificar logout:", error);
     } finally {
-      $q.notify({
-        message: "Has cerrado sesión.",
-        color: "info",
-        icon: "info",
-        position: "top",
-        timeout: 2000,
-      });
       handleLogoutLocal();
     }
   };
