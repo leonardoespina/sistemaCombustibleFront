@@ -11,13 +11,13 @@
       <q-input
         :model-value="filterPlaca"
         @update:model-value="$emit('update:filterPlaca', $event)"
-        placeholder="Filtrar por Placa..."
+        placeholder="Filtrar por Placa, Marca o Modelo..."
         dense
         outlined
         square
         bg-color="white"
         class="q-my-xs"
-        style="width: 200px"
+        style="width: 250px"
         :disable="isBidon"
       >
         <template v-slot:append>
@@ -38,7 +38,7 @@
           <tr>
             <th class="text-left" style="width: 50px">No</th>
             <th class="text-left" style="width: 80px">ID</th>
-            <th class="text-left">Placa / Modelo de Vehículo</th>
+            <th class="text-left">Placa / Marca y Modelo</th>
             <th class="text-left" style="width: 120px">Tipo Comb.</th>
           </tr>
         </thead>
@@ -63,6 +63,9 @@
             <td>
               <div class="text-weight-bold">{{ v.placa }}</div>
               <div class="text-caption text-grey-7">
+                <template v-if="v.Marca?.nombre">
+                  {{ v.Marca.nombre }} -
+                </template>
                 {{ v.Modelo?.nombre || "S/M" }}
               </div>
             </td>

@@ -36,13 +36,16 @@ export function useRequestFilters(vehicleStore) {
   }
 
   /**
-   * Filtrar vehículos por placa
+   * Filtrar vehículos por placa, marca o modelo
    */
   function triggerFilterVehicles(val) {
     const needle = val.toLowerCase();
-    filteredVehicleOptions.value = fetchedVehicles.value.filter(
-      (v) => v.placa.toLowerCase().indexOf(needle) > -1
-    );
+    filteredVehicleOptions.value = fetchedVehicles.value.filter((v) => {
+      const p = (v.placa || "").toLowerCase();
+      const m = (v.Marca?.nombre || "").toLowerCase();
+      const mod = (v.Modelo?.nombre || "").toLowerCase();
+      return p.includes(needle) || m.includes(needle) || mod.includes(needle);
+    });
   }
 
   /**
