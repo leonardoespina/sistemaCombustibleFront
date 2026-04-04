@@ -32,48 +32,58 @@
       </div>
 
       <!-- TARJETAS RESUMEN -->
-      <div class="row q-col-gutter-md">
-        <div class="col-12 col-sm-6 col-md-3">
-          <q-card flat bordered class="bg-white text-center q-pa-md rounded-borders">
-            <q-icon name="local_gas_station" size="2.5rem" color="primary" />
-            <div class="text-h5 text-weight-bold text-primary q-mt-sm">
-              {{ totalAsignado }} L
-            </div>
-            <div class="text-caption text-grey-7">Total Asignado</div>
-          </q-card>
-        </div>
+      <div v-if="statsPorCombustible.length === 0 && !loadingCupos" class="q-mb-md text-center text-grey-7">
+        No hay datos de cupos para mostrar resumen.
+      </div>
 
-        <div class="col-12 col-sm-6 col-md-3">
-          <q-card flat bordered class="bg-white text-center q-pa-md rounded-borders">
-            <q-icon name="show_chart" size="2.5rem" color="orange" />
-            <div class="text-h5 text-weight-bold text-orange q-mt-sm">
-              {{ totalConsumido }} L
-            </div>
-            <div class="text-caption text-grey-7">Total Consumido</div>
-          </q-card>
+      <div v-for="stat in statsPorCombustible" :key="stat.tipo" class="q-mb-lg">
+        <div class="text-subtitle1 text-weight-bold q-mb-sm text-primary">
+          <q-icon name="water_drop" class="q-mr-xs" />
+          Resumen: {{ stat.tipo }}
         </div>
+        <div class="row q-col-gutter-md">
+          <div class="col-12 col-sm-6 col-md-3">
+            <q-card flat bordered class="bg-white text-center q-pa-md rounded-borders">
+              <q-icon name="local_gas_station" size="2.5rem" color="primary" />
+              <div class="text-h5 text-weight-bold text-primary q-mt-sm">
+                {{ stat.asignado }} L
+              </div>
+              <div class="text-caption text-grey-7">Asignado</div>
+            </q-card>
+          </div>
 
-        <div class="col-12 col-sm-6 col-md-3">
-          <q-card flat bordered class="bg-white text-center q-pa-md rounded-borders">
-            <q-icon name="savings" size="2.5rem" color="positive" />
-            <div class="text-h5 text-weight-bold text-positive q-mt-sm">
-              {{ totalDisponible }} L
-            </div>
-            <div class="text-caption text-grey-7">Total Disponible</div>
-          </q-card>
-        </div>
+          <div class="col-12 col-sm-6 col-md-3">
+            <q-card flat bordered class="bg-white text-center q-pa-md rounded-borders">
+              <q-icon name="show_chart" size="2.5rem" color="orange" />
+              <div class="text-h5 text-weight-bold text-orange q-mt-sm">
+                {{ stat.consumido }} L
+              </div>
+              <div class="text-caption text-grey-7">Consumido</div>
+            </q-card>
+          </div>
 
-        <div class="col-12 col-sm-6 col-md-3">
-          <q-card flat bordered class="bg-white text-center q-pa-md rounded-borders">
-            <q-icon name="donut_large" size="2.5rem" :color="colorUsoPorcentaje" />
-            <div
-              class="text-h5 text-weight-bold q-mt-sm"
-              :class="`text-${colorUsoPorcentaje}`"
-            >
-              {{ usoPorcentajeGeneral }}%
-            </div>
-            <div class="text-caption text-grey-7">% de Uso General</div>
-          </q-card>
+          <div class="col-12 col-sm-6 col-md-3">
+            <q-card flat bordered class="bg-white text-center q-pa-md rounded-borders">
+              <q-icon name="savings" size="2.5rem" color="positive" />
+              <div class="text-h5 text-weight-bold text-positive q-mt-sm">
+                {{ stat.disponible }} L
+              </div>
+              <div class="text-caption text-grey-7">Disponible</div>
+            </q-card>
+          </div>
+
+          <div class="col-12 col-sm-6 col-md-3">
+            <q-card flat bordered class="bg-white text-center q-pa-md rounded-borders">
+              <q-icon name="donut_large" size="2.5rem" :color="stat.colorUso" />
+              <div
+                class="text-h5 text-weight-bold q-mt-sm"
+                :class="`text-${stat.colorUso}`"
+              >
+                {{ stat.usoPorcentaje }}%
+              </div>
+              <div class="text-caption text-grey-7">% de Uso</div>
+            </q-card>
+          </div>
         </div>
       </div>
 
@@ -389,11 +399,7 @@ const {
   cupos,
   periodo,
   periodoDisplay,
-  totalAsignado,
-  totalConsumido,
-  totalDisponible,
-  usoPorcentajeGeneral,
-  colorUsoPorcentaje,
+  statsPorCombustible,
   fetchCupos,
   columns,
   getProgressColor,

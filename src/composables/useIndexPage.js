@@ -195,34 +195,38 @@ export function useIndexPage() {
             .toUpperCase();
     });
 
-    const totalAsignado = computed(() =>
-        cupos.value.reduce((s, c) => s + parseFloat(c.asignado || 0), 0).toFixed(0)
-    );
+    const statsPorCombustible = computed(() => {
+        const stats = {};
+        cupos.value.forEach(c => {
+            const tipo = c.tipo_combustible || 'Desconocido';
+            if (!stats[tipo]) {
+                stats[tipo] = {
+                    tipo,
+                    asignado: 0,
+                    consumido: 0,
+                    disponible: 0
+                };
+            }
+            stats[tipo].asignado += parseFloat(c.asignado || 0);
+            stats[tipo].consumido += parseFloat(c.consumido || 0);
+            stats[tipo].disponible += parseFloat(c.disponible || 0);
+        });
 
-    const totalConsumido = computed(() =>
-        cupos.value
-            .reduce((s, c) => s + parseFloat(c.consumido || 0), 0)
-            .toFixed(0)
-    );
+        return Object.values(stats).map(s => {
+            const pct = s.asignado ? ((s.consumido / s.asignado) * 100) : 0;
+            let color = "positive";
+            if (pct >= 90) color = "negative";
+            else if (pct >= 75) color = "orange";
 
-    const totalDisponible = computed(() =>
-        cupos.value
-            .reduce((s, c) => s + parseFloat(c.disponible || 0), 0)
-            .toFixed(0)
-    );
-
-    const usoPorcentajeGeneral = computed(() => {
-        const asig = parseFloat(totalAsignado.value);
-        const cons = parseFloat(totalConsumido.value);
-        if (!asig) return 0;
-        return ((cons / asig) * 100).toFixed(1);
-    });
-
-    const colorUsoPorcentaje = computed(() => {
-        const pct = parseFloat(usoPorcentajeGeneral.value);
-        if (pct >= 90) return "negative";
-        if (pct >= 75) return "orange";
-        return "positive";
+            return {
+                ...s,
+                asignado: s.asignado.toFixed(0),
+                consumido: s.consumido.toFixed(0),
+                disponible: s.disponible.toFixed(0),
+                usoPorcentaje: pct.toFixed(1),
+                colorUso: color
+            };
+        });
     });
 
     const fetchCupos = async () => {
@@ -322,11 +326,7 @@ export function useIndexPage() {
         cupos,
         periodo,
         periodoDisplay,
-        totalAsignado,
-        totalConsumido,
-        totalDisponible,
-        usoPorcentajeGeneral,
-        colorUsoPorcentaje,
+        statsPorCombustible,
         fetchCupos,
         // Helpers
         columns,
