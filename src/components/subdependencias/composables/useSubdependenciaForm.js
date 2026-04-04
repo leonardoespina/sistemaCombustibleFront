@@ -1,16 +1,86 @@
 import { ref, watch, computed } from "vue";
+import api from "../../../api/index.js";
 
 /**
  * Composable para gestión del formulario de subdependencias
  * Maneja lógica condicional compleja según tipo_venta de la dependencia
  * @param {Object} props - Props del componente (modelValue, initialData, isEditing)
  * @param {Function} emit - Función emit del componente
- * @param {Array} dependenciaOptions - Opciones de dependencias disponibles
  * @returns {Object} Estado y métodos del formulario
  */
-export function useSubdependenciaForm(props, emit, dependenciaOptions) {
+export function useSubdependenciaForm(props, emit) {
   const formData = ref({});
   const dependenciaSeleccionada = ref(null);
+  const dependenciaOptions = ref([]);
+
+  const dependenciaPagination = ref({
+    page: 1,
+    hasMore: true,
+    loading: false,
+    search: "",
+  });
+
+  const LIMIT = 20;
+
+  const resetDependenciaPagination = () => {
+    dependenciaPagination.value = {
+      page: 1,
+      hasMore: true,
+      loading: false,
+      search: "",
+    };
+  };
+
+  const fetchDependencias = async () => {
+    if (dependenciaPagination.value.loading || !dependenciaPagination.value.hasMore) return;
+
+    dependenciaPagination.value.loading = true;
+    try {
+      const { data } = await api.get("/dependencias", {
+        params: {
+          search: dependenciaPagination.value.search,
+          page: dependenciaPagination.value.page,
+          limit: LIMIT,
+          sortBy: "id_dependencia",
+          descending: true
+        },
+      });
+
+      const newOptions = data.data || [];
+      if (dependenciaPagination.value.page === 1) {
+        dependenciaOptions.value = newOptions;
+      } else {
+        dependenciaOptions.value.push(...newOptions);
+      }
+
+      dependenciaPagination.value.hasMore = newOptions.length === LIMIT;
+      dependenciaPagination.value.page++;
+    } catch (error) {
+      console.error("Error cargando dependencias:", error);
+    } finally {
+      dependenciaPagination.value.loading = false;
+    }
+  };
+
+  const filterDependencia = async (val, update) => {
+    if (val === dependenciaPagination.value.search && dependenciaOptions.value.length > 0) {
+      update();
+      return;
+    }
+
+    update(async () => {
+      resetDependenciaPagination();
+      dependenciaPagination.value.search = val;
+      await fetchDependencias();
+    });
+  };
+
+  const onScrollDependencia = ({ to }) => {
+    const lastIndex = dependenciaOptions.value.length - 1;
+    if (!dependenciaPagination.value.loading && dependenciaPagination.value.hasMore && to === lastIndex) {
+      fetchDependencias();
+    }
+  };
 
   /**
    * Determina si los campos fiscales son requeridos según el tipo de venta
@@ -134,6 +204,11 @@ export function useSubdependenciaForm(props, emit, dependenciaOptions) {
 
       // Establecer dependencia seleccionada para edición
       if (props.initialData.id_dependencia) {
+        // Asignamos la dependencia inicial si viene en initialData para que el combo la reconozca al editar
+        if (props.initialData.dependencia && !dependenciaOptions.value.find(d => d.id_dependencia === props.initialData.id_dependencia)) {
+            dependenciaOptions.value.push(props.initialData.dependencia);
+        }
+
         dependenciaSeleccionada.value = dependenciaOptions.value.find(
           (d) => d.id_dependencia === props.initialData.id_dependencia
         );
@@ -196,6 +271,7 @@ export function useSubdependenciaForm(props, emit, dependenciaOptions) {
   return {
     formData,
     dependenciaSeleccionada,
+    dependenciaOptions,
     validationRules,
     validacionesUbicacion,
     validacionesResponsable,
@@ -204,5 +280,8 @@ export function useSubdependenciaForm(props, emit, dependenciaOptions) {
     onDependenciaChange,
     initializeForm,
     handleSave,
+    dependenciaPagination,
+    filterDependencia,
+    onScrollDependencia
   };
 }

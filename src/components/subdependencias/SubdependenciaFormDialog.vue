@@ -23,9 +23,19 @@
             label="Dependencia"
             emit-value
             map-options
+            use-input
+            @filter="filterDependencia"
+            @virtual-scroll="onScrollDependencia"
+            :loading="dependenciaPagination.loading"
             :rules="validationRules.id_dependencia"
             @update:model-value="onDependenciaChange"
-          />
+          >
+            <template v-slot:no-option>
+              <q-item>
+                <q-item-section class="text-grey"> No hay resultados </q-item-section>
+              </q-item>
+            </template>
+          </q-select>
           <q-input
             dense
             v-model="formData.nombre"
@@ -167,8 +177,6 @@
 <script setup>
 import { onMounted, onUnmounted } from "vue";
 import { useQuasar } from "quasar";
-import { useDependenciaStore } from "../../stores/dependenciaStore.js";
-import { storeToRefs } from "pinia";
 import socket from "../../services/socket.js";
 import { useSubdependenciaForm } from "./composables/useSubdependenciaForm.js";
 
@@ -181,26 +189,24 @@ const props = defineProps({
 const emit = defineEmits(["update:modelValue", "save"]);
 const $q = useQuasar();
 
-// Store de dependencias para el select
-const dependenciaStore = useDependenciaStore();
-const { rows: dependenciaOptions } = storeToRefs(dependenciaStore);
-
 // Composable del formulario con lógica compleja
 const {
   formData,
   dependenciaSeleccionada,
+  dependenciaOptions,
   validationRules,
   validacionesUbicacion,
   validacionesResponsable,
   validacionesCedulaRif,
   onDependenciaChange,
   handleSave,
-} = useSubdependenciaForm(props, emit, dependenciaOptions);
+  dependenciaPagination,
+  filterDependencia,
+  onScrollDependencia
+} = useSubdependenciaForm(props, emit);
 
 // Cargar dependencias al montar
 onMounted(() => {
-  dependenciaStore.fetchDependencias();
-
   // Listeners de Socket.io para sincronización en tiempo real
   socket.on("subdependencia:creado", (data) => {
     // Notificar creación
