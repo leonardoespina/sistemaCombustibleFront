@@ -478,21 +478,36 @@ const startCapture = async () => {
         
         if (res.data && res.data.success) {
             // Procesamos la muestra recibida
-            await processAcquiredSample(res.data.base64Image, res.data.fmdBase64);
+            const accepted = await processAcquiredSample(res.data.base64Image, res.data.fmdBase64);
             
-            // Damos un respiro de 600ms para permitir al usuario mover el dedo
-            if (samples.value.length < 4 && capturing.value) {
+            if (accepted && samples.value.length < 4 && capturing.value) {
+              // Muestra aceptada — delay normal para mover el dedo
               await new Promise(resolve => setTimeout(resolve, 600));
+            } else if (!accepted && capturing.value) {
+              // Huella no coincidió — delay corto y reintentar
+              await new Promise(resolve => setTimeout(resolve, 800));
             }
         } else {
-            // Si el middleware falla o hay timeout, rompemos el bucle
-            break;
+            // Respuesta no exitosa pero sin error HTTP — reintentar
+            $q.notify({ type: 'warning', message: res.data?.message || 'Captura fallida, reintentando...', timeout: 2000 });
+            await new Promise(resolve => setTimeout(resolve, 1000));
         }
       } catch (innerError) {
         if (axios.isCancel(innerError)) {
           console.log("[Bio] Captura secuencial abortada por el usuario.");
           break;
         }
+        
+        // Errores 400 son recuperables (timeout de hardware, lector ocupado, etc.)
+        if (innerError.response && innerError.response.status === 400) {
+          const msg = innerError.response.data?.message || 'Error de captura';
+          console.warn(`[Bio] Error recuperable (400): ${msg}`);
+          $q.notify({ type: 'warning', message: `${msg}. Vuelva a colocar el dedo...`, timeout: 2000 });
+          await new Promise(resolve => setTimeout(resolve, 1000));
+          continue; // Seguir en el bucle
+        }
+        
+        // Errores no recuperables (500, red, etc.) — romper
         throw innerError;
       } finally {
         captureAbortController = null;
@@ -616,7 +631,7 @@ const processAcquiredSample = async (imageBase64, fmdBase64) => {
             message: "La huella no coincide con la primera muestra. Use el mismo dedo.",
             position: "bottom",
           });
-          return;
+          return false; // Muestra rechazada — el bucle debe reintentar
         }
       } catch (err) {
         console.error("Error validando consistencia:", err);
@@ -624,7 +639,7 @@ const processAcquiredSample = async (imageBase64, fmdBase64) => {
           type: "negative",
           message: "Error al validar consistencia de la huella",
         });
-        return;
+        return false; // Error de validación — el bucle debe reintentar
       } finally {
         validating.value = false;
       }
@@ -644,9 +659,11 @@ const processAcquiredSample = async (imageBase64, fmdBase64) => {
         });
       }
     }
+    return true; // Muestra aceptada
   } catch (error) {
     console.error("Error en processAcquiredSample:", error);
     handleError(error);
+    return false; // Error inesperado — el bucle debe reintentar
   }
 };
 
