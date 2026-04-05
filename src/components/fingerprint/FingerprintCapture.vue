@@ -481,16 +481,16 @@ const startCapture = async () => {
             const accepted = await processAcquiredSample(res.data.base64Image, res.data.fmdBase64);
             
             if (accepted && samples.value.length < 4 && capturing.value) {
-              // Muestra aceptada — delay normal para mover el dedo
-              await new Promise(resolve => setTimeout(resolve, 600));
+              // Muestra aceptada — delay ajustado para mover el dedo
+              await new Promise(resolve => setTimeout(resolve, 400));
             } else if (!accepted && capturing.value) {
               // Huella no coincidió — delay corto y reintentar
-              await new Promise(resolve => setTimeout(resolve, 800));
+              await new Promise(resolve => setTimeout(resolve, 600));
             }
         } else {
             // Respuesta no exitosa pero sin error HTTP — reintentar
-            $q.notify({ type: 'warning', message: res.data?.message || 'Captura fallida, reintentando...', timeout: 2000 });
-            await new Promise(resolve => setTimeout(resolve, 1000));
+            $q.notify({ type: 'warning', message: res.data?.message || 'Captura fallida, reintentando...', timeout: 1500 });
+            await new Promise(resolve => setTimeout(resolve, 800));
         }
       } catch (innerError) {
         if (axios.isCancel(innerError)) {
