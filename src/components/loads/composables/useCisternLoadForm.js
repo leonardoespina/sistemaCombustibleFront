@@ -212,11 +212,15 @@ export function useCisternLoadForm(props, emit) {
 
   function calculateAll() {
     let globalTotalRecibido = 0;
+    let globalDepositadoReal = 0;
 
     // Calcular cada tanque individual
     for (let i = 0; i < tanquesForm.value.length; i++) {
       calculateTank(i);
+      const fin = parseFloat(tanquesForm.value[i].liters.final || 0);
+      const ini = parseFloat(tanquesForm.value[i].liters.inicial || 0);
       globalTotalRecibido += parseFloat(tanquesForm.value[i].liters.recibido || 0);
+      globalDepositadoReal += (fin - ini >= 0) ? (fin - ini) : 0;
     }
 
     // Calcular métricas globales de la cabecera
@@ -225,10 +229,10 @@ export function useCisternLoadForm(props, emit) {
     const guia = parseFloat(formData.value.litros_segun_guia) || 0;
     const flujo = parseFloat(formData.value.litros_flujometro);
 
-    globalLiters.faltante = (guia - globalTotalRecibido).toFixed(2);
+    globalLiters.faltante = (guia - globalDepositadoReal).toFixed(2);
 
     if (flujo !== null && flujo !== "" && !isNaN(flujo)) {
-      globalLiters.dif_flujo = (globalTotalRecibido - flujo).toFixed(2);
+      globalLiters.dif_flujo = (globalDepositadoReal - flujo).toFixed(2);
     } else {
       globalLiters.dif_flujo = "0.00";
     }
@@ -410,11 +414,16 @@ export function useCisternLoadForm(props, emit) {
     const volAforo = totalAforoCisterna.value;
     const volReal = parseFloat(globalLiters.recibido) || 0;
     const volFlujo = parseFloat(formData.value.litros_flujometro) || 0;
+    const depositadoReal = tanquesForm.value.reduce((acc, tq) => {
+      const f = parseFloat(tq.liters.final || 0);
+      const i = parseFloat(tq.liters.inicial || 0);
+      return acc + ((f - i) >= 0 ? f - i : 0);
+    }, 0);
 
     return {
       guiaVsAforo: calcularEstadoDiferencia(volGuia, volAforo),
-      guiaVsReal: calcularEstadoDiferencia(volGuia, volReal),
-      realVsFlujo: volFlujo > 0 ? calcularEstadoDiferencia(volReal, volFlujo) : null
+      guiaVsReal: calcularEstadoDiferencia(volGuia, depositadoReal),
+      realVsFlujo: volFlujo > 0 ? calcularEstadoDiferencia(depositadoReal, volFlujo) : null
     };
   });
 
