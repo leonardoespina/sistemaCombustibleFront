@@ -103,10 +103,10 @@
                     :hide-subdependency="true"
                   />
                 </div>
-                <!-- Multi-select de subdependencias (M:N) — filtrado por la dependencia seleccionada -->
+                <!-- Multi-select de subdependencias (M:N) — listado global -->
                 <BiometriaSubdependenciasSelect
                   v-model="form.subdependencias"
-                  :id-dependencia="form.dependencia"
+                  :initial-options="props.initialData?.Subdependencias || []"
                 />
               </div>
             </q-card-section>

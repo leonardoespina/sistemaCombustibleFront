@@ -1,10 +1,4 @@
 <!-- src/components/fingerprint/BiometriaSubdependenciasSelect.vue -->
-<!--
-  Multi-select de subdependencias para el registro biométrico.
-  Filtra las subdependencias según la dependencia seleccionada (idDependencia).
-  Permite asignar N subdependencias a una persona (relación M:N).
-  Al menos 1 subdependencia es obligatoria.
--->
 <template>
   <q-select
     v-model="internalValue"
@@ -22,7 +16,6 @@
     dense
     bg-color="grey-1"
     :loading="loading"
-    :disable="!idDependencia"
     :rules="[(val) => (val && val.length > 0) || 'Requerido: al menos una subdependencia']"
     hide-bottom-space
     @filter="onFilter"
@@ -31,9 +24,7 @@
   >
     <template v-slot:no-option>
       <q-item>
-        <q-item-section class="text-grey">
-          {{ idDependencia ? 'Sin resultados' : 'Seleccione una Dependencia primero' }}
-        </q-item-section>
+        <q-item-section class="text-grey">Sin resultados</q-item-section>
       </q-item>
     </template>
 
@@ -41,20 +32,21 @@
       <q-item v-bind="scope.itemProps">
         <q-item-section>
           <q-item-label>{{ scope.opt.nombre }}</q-item-label>
+          <q-item-label caption v-if="scope.opt.Dependencia">
+            {{ scope.opt.Dependencia.nombre_dependencia }}
+          </q-item-label>
         </q-item-section>
       </q-item>
     </template>
 
     <template v-slot:hint>
-      <span class="text-grey-6">
-        {{ idDependencia ? 'Al menos una subdependencia requerida' : 'Seleccione una Dependencia primero' }}
-      </span>
+      <span class="text-grey-6">Al menos una subdependencia requerida</span>
     </template>
   </q-select>
 </template>
 
 <script setup>
-import { ref, computed, watch } from "vue";
+import { ref, computed } from "vue";
 import api from "../../api";
 
 const props = defineProps({
@@ -62,10 +54,11 @@ const props = defineProps({
     type: Array,
     default: () => [],
   },
-  // ID de la dependencia seleccionada — filtra las opciones disponibles
-  idDependencia: {
-    type: [Number, String, null],
-    default: null,
+  // Opciones iniciales para pre-cargar los objetos seleccionados y que
+  // Quasar pueda mostrar el nombre en lugar de solo el ID
+  initialOptions: {
+    type: Array,
+    default: () => [],
   },
 });
 
@@ -84,16 +77,16 @@ const page = ref(1);
 const hasMore = ref(true);
 const LIMIT = 30;
 
-/**
- * Flag que distingue la carga inicial (edición de registro existente)
- * del cambio manual de dependencia que el usuario hace en el formulario.
- * En la carga inicial NO se borran las subdependencias ya seleccionadas.
- */
-const isFirstLoad = ref(true);
+// Inicializa las opciones con los registros ya asignados para que se vean bien
+import { onMounted } from "vue";
+onMounted(() => {
+  if (props.initialOptions && props.initialOptions.length > 0) {
+    options.value = [...props.initialOptions];
+  }
+});
 
-// --- Fetch subdependencias filtradas por dependencia ---
+// --- Fetch todas las subdependencias con lazy loading ---
 const fetchSubdependencias = async (reset = false) => {
-  if (!props.idDependencia) return;
   if (loading.value || (!hasMore.value && !reset)) return;
 
   if (reset) {
@@ -104,17 +97,16 @@ const fetchSubdependencias = async (reset = false) => {
 
   loading.value = true;
   try {
-    const { data } = await api.get("/categorias/jerarquia", {
+    const { data } = await api.get("/subdependencias", {
       params: {
-        type: "dependencia",       // subdependencias hijas de la dependencia
-        parentId: props.idDependencia,
         search: currentSearch.value,
         page: page.value,
         limit: LIMIT,
+        estatus: "ACTIVO",
       },
     });
 
-    const newItems = data.data || [];
+    const newItems = data.data || data || [];
     options.value.push(...newItems);
     hasMore.value = newItems.length === LIMIT;
     page.value++;
@@ -125,42 +117,8 @@ const fetchSubdependencias = async (reset = false) => {
   }
 };
 
-/**
- * Cuando cambia la dependencia:
- * - Primera vez (carga inicial en modo edición): solo recarga opciones, NO borra la selección.
- * - Cambios posteriores (usuario cambia dependencia): borra selección y recarga.
- */
-watch(
-  () => props.idDependencia,
-  (newVal) => {
-    if (isFirstLoad.value) {
-      // Primera carga: cargar las opciones para que los chips se muestren con label correcto,
-      // pero NO borrar los valores ya seleccionados por loadInitialData
-      isFirstLoad.value = false;
-      options.value = [];
-      currentSearch.value = "";
-      page.value = 1;
-      hasMore.value = true;
-      if (newVal) fetchSubdependencias(true);
-      return;
-    }
-
-    // El usuario cambió de dependencia manualmente: limpiar selección y recargar
-    emit("update:modelValue", []);
-    options.value = [];
-    currentSearch.value = "";
-    page.value = 1;
-    hasMore.value = true;
-    if (newVal) fetchSubdependencias(true);
-  }
-);
-
 // --- Filtro (búsqueda por texto) ---
 const onFilter = (val, update) => {
-  if (!props.idDependencia) {
-    update(() => { options.value = []; });
-    return;
-  }
   if (val === currentSearch.value && options.value.length > 0) {
     update();
     return;
@@ -181,7 +139,7 @@ const onScroll = ({ to }) => {
 
 // --- Al abrir el dropdown ---
 const onPopupShow = () => {
-  if (props.idDependencia && options.value.length === 0) {
+  if (options.value.length === 0) {
     fetchSubdependencias(true);
   }
 };
