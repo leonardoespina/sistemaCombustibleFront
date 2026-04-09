@@ -64,6 +64,24 @@
         </q-td>
       </template>
 
+      <template v-slot:body-cell-subdependencias="props">
+        <q-td :props="props">
+          <template v-if="props.row.Subdependencias && props.row.Subdependencias.length">
+            <q-chip
+              v-for="s in props.row.Subdependencias"
+              :key="s.id_subdependencia"
+              dense size="sm"
+              color="blue-1"
+              text-color="blue-9"
+              class="q-mr-xs"
+            >
+              {{ s.nombre }}
+            </q-chip>
+          </template>
+          <span v-else class="text-grey-5 text-caption">Sin asignar</span>
+        </q-td>
+      </template>
+
       <template v-slot:body-cell-actions="props">
         <q-td :props="props" class="q-gutter-sm">
           <q-btn
@@ -180,6 +198,12 @@ const columns = [
     name: "dependencia",
     label: "Dependencia",
     field: (row) => row.Dependencia?.nombre_dependencia || "N/A",
+    align: "left",
+  },
+  {
+    name: "subdependencias",
+    label: "Subdependencias",
+    field: "Subdependencias",
     align: "left",
   },
   {

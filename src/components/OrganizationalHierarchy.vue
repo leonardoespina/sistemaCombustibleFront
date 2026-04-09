@@ -46,6 +46,7 @@
     </q-select>
 
     <q-select
+      v-if="!hideSubdependency"
       dense
       v-model="internalSubdependencyId"
       :options="subdependenciaOptions"
@@ -85,6 +86,11 @@ const props = defineProps({
   subdependencyId: {
     type: [Number, String, null],
     default: null,
+  },
+  // Cuando se usa el multi-select externo de subdependencias, se puede ocultar el select simple
+  hideSubdependency: {
+    type: Boolean,
+    default: false,
   },
   initialCategory: {
     type: Object,

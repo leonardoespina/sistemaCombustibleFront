@@ -98,12 +98,16 @@
                   <OrganizationalHierarchy
                     v-model:categoryId="form.categoria"
                     v-model:dependencyId="form.dependencia"
-                    v-model:subdependencyId="form.subdependencia"
                     :initial-category="mappedCategory"
                     :initial-dependency="mappedDependency"
-                    :initial-subdependency="mappedSubdependency"
+                    :hide-subdependency="true"
                   />
                 </div>
+                <!-- Multi-select de subdependencias (M:N) — filtrado por la dependencia seleccionada -->
+                <BiometriaSubdependenciasSelect
+                  v-model="form.subdependencias"
+                  :id-dependencia="form.dependencia"
+                />
               </div>
             </q-card-section>
           </q-card>
@@ -279,14 +283,12 @@
 </template>
 
 <script setup>
-import { ref, onMounted, onBeforeUnmount, reactive, computed, watch } from "vue";
+import { ref, onMounted, onBeforeUnmount, reactive, computed, watch, nextTick } from "vue";
 import { useQuasar } from "quasar";
-import axios from "axios"; // Añadir axios para el middleware local
-// --- COMENTADO TEMPORALMENTE (SDK WEB ANTIGUO) ---
-// import websdkUrl from "./websdk.client.ui.js?url";
-// import fingerprintSdkUrl from "./fingerprint.sdk.min.js?url";
+import axios from "axios";
 import api from "../../api";
 import OrganizationalHierarchy from "../OrganizationalHierarchy.vue";
+import BiometriaSubdependenciasSelect from "./BiometriaSubdependenciasSelect.vue";
 
 
 const $q = useQuasar();
@@ -306,7 +308,7 @@ const form = reactive({
   rol: null,
   categoria: null,
   dependencia: null,
-  subdependencia: null,
+  subdependencias: [], // Array de id_subdependencia (relación M:N)
   estado: "ACTIVO",
 });
 
@@ -330,14 +332,6 @@ const mappedDependency = computed(() => {
   return {
     id_dependencia: props.initialData.id_dependencia,
     nombre_dependencia: props.initialData.Dependencia.nombre_dependencia,
-  };
-});
-
-const mappedSubdependency = computed(() => {
-  if (!props.initialData?.Subdependencia) return null;
-  return {
-    id_subdependencia: props.initialData.id_subdependencia,
-    nombre: props.initialData.Subdependencia.nombre,
   };
 });
 
@@ -568,7 +562,7 @@ const resetComponentState = () => {
   form.rol = null;
   form.categoria = null;
   form.dependencia = null;
-  form.subdependencia = null;
+  form.subdependencias = [];
   samples.value = [];
   errorMessage.value = "";
   capturing.value = false;
@@ -696,7 +690,7 @@ const onSubmit = async () => {
       rol: form.rol,
       id_categoria: form.categoria,
       id_dependencia: form.dependencia,
-      id_subdependencia: form.subdependencia,
+      subdependencias_ids: form.subdependencias,   // Array M:N
       huellas: samples.value.length > 0 ? samples.value.map((s) => s.data) : null,
       // Solo enviar estado cuando se está editando
       ...(isEditing.value && { estado: form.estado }),
@@ -727,8 +721,21 @@ const loadInitialData = () => {
       form.categoria = props.initialData.id_categoria;
     if (props.initialData.id_dependencia)
       form.dependencia = props.initialData.id_dependencia;
-    if (props.initialData.id_subdependencia)
-      form.subdependencia = props.initialData.id_subdependencia;
+
+    // Usar nextTick para asignar subdependencias DESPUÉS de que el watch
+    // de BiometriaSubdependenciasSelect haya procesado el cambio de dependencia.
+    // Esto evita que el watch borre los valores que acabamos de setear.
+    nextTick(() => {
+      const fromPivot = (props.initialData.Subdependencias || []).map(
+        (s) => s.id_subdependencia
+      );
+      if (fromPivot.length > 0) {
+        form.subdependencias = fromPivot;
+      } else if (props.initialData.id_subdependencia) {
+        // Fallback para registros que aún no han sido migrados al pivot
+        form.subdependencias = [props.initialData.id_subdependencia];
+      }
+    });
   } else {
     resetComponentState();
   }
