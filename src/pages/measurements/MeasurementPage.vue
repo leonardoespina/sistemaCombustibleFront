@@ -111,7 +111,8 @@
             <q-btn
               v-if="can(PERMISSIONS.REVERTIR_OPERACION)
                 && props.row.estado !== 'ANULADO'
-                && props.row.tipo_medicion !== 'CIERRE'"
+                && props.row.tipo_medicion !== 'CIERRE'
+                && props.row.can_revert"
               dense
               round
               flat

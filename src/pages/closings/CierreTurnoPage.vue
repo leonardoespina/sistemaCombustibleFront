@@ -148,7 +148,7 @@
               <q-tooltip>Acta de Cierre (PCP)</q-tooltip>
             </q-btn>
             <q-btn
-              v-if="can(PERMISSIONS.REVERTIR_OPERACION) && row.estado === 'CERRADO'"
+              v-if="can(PERMISSIONS.REVERTIR_OPERACION) && row.estado === 'CERRADO' && row.can_revert"
               dense round flat
               color="deep-orange" icon="undo"
               @click="confirmarRevertirCierre(row)"
