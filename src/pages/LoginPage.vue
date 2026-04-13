@@ -30,6 +30,7 @@
                 filled
                 v-model="cedula"
                 label="Cédula"
+                @keydown.space.prevent
                 lazy-rules
                 :rules="[(val) => !!val || 'La cédula es obligatoria']"
               >
@@ -41,13 +42,23 @@
               <q-input
                 filled
                 v-model="password"
-                type="password"
+                :type="verContrasena ? 'text' : 'password'"
                 label="Contraseña"
+                @keydown.space.prevent
                 lazy-rules
                 :rules="[(val) => !!val || 'La contraseña es obligatoria']"
               >
                 <template v-slot:prepend>
                   <q-icon name="lock" />
+                </template>
+                
+                <!-- ESTE ES EL NUEVO BOTON DEL OJITO -->
+                <template v-slot:append>
+                  <q-icon
+                    :name="verContrasena ? 'visibility_off' : 'visibility'"
+                    class="cursor-pointer"
+                    @click="verContrasena = !verContrasena"
+                  />
                 </template>
               </q-input>
 
@@ -80,6 +91,7 @@ import api from "../api"; // Ajusta la ruta si es necesario
 const cedula = ref("");
 const password = ref("");
 const loading = ref(false);
+const verContrasena = ref(false);
 
 const router = useRouter();
 const $q = useQuasar();

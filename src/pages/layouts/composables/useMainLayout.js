@@ -42,6 +42,7 @@ export function useMainLayout() {
   const handleLogoutLocal = () => {
     localStorage.removeItem("token");
     localStorage.removeItem("user");
+    localStorage.removeItem("lastActivity"); // Limpiar para que el timer de inactividad no se dispare al reloguear
     // Desconectar el socket para que el backend libere la sesión
     if (socket) socket.disconnect();
     window.location.href = "/login";
