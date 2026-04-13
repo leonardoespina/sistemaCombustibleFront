@@ -63,6 +63,12 @@ export function useLlenaderoPage() {
       align: "left",
     },
     {
+      name: "direccion_ip",
+      label: "Red/IP",
+      field: "direccion_ip",
+      align: "left",
+    },
+    {
       name: "estadisticas",
       label: "Capacidad y Disponibilidad (Por Combustible)",
       field: "estadisticas",

@@ -19,6 +19,14 @@
             :rules="validationRules.nombre_llenadero"
           />
 
+          <q-input
+            v-model="formData.direccion_ip"
+            label="Segmento de Red / IP (Ej: 10.60. o 192.168.1.15)"
+            hint="Puedes separar varios segmentos o IP por coma"
+            outlined
+            dense
+          />
+
           <!-- Capacidad y Combustible eliminados (ahora se gestionan vía Tanques) -->
 
           <q-toggle

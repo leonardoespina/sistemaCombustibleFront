@@ -19,6 +19,7 @@ export const PERMISSIONS = {
     VIEW_MIS_DESPACHOS: "view_mis_despachos",
     REJECT_SOLICITUD: "reject_solicitud",
     REVERTIR_OPERACION: "revertir_operacion",
+    TOGGLE_TANQUE_USO: "toggle_tanque_uso",
 };
 
 export const ROLE_PERMISSIONS = {
@@ -114,6 +115,12 @@ export function hasPermission(user, permission) {
             user.rol_sistema === "ADMIN" ||
             user.capacidad_solicitudes === "AMBOS"
         );
+    }
+
+    if (permission === PERMISSIONS.TOGGLE_TANQUE_USO) {
+        if (user.rol_sistema === "ADMIN" || user.tipo_usuario === "ADMIN") return true;
+        if (user.rol_sistema === "ALMACEN" && user.capacidad_solicitudes === "AMBOS") return true;
+        return false;
     }
 
     return false;

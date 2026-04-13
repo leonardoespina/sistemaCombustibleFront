@@ -26,6 +26,7 @@ export function useLlenaderoForm(props, emit) {
 
   const formData = ref({
     nombre_llenadero: "",
+    direccion_ip: "",
     estado: "ACTIVO",
   });
 
@@ -71,11 +72,13 @@ export function useLlenaderoForm(props, emit) {
     if (props.initialData) {
       formData.value = {
         nombre_llenadero: props.initialData.nombre_llenadero || "",
+        direccion_ip: props.initialData.direccion_ip || "",
         estado: props.initialData.estado || "ACTIVO",
       };
     } else {
       formData.value = {
         nombre_llenadero: "",
+        direccion_ip: "",
         estado: "ACTIVO",
       };
     }
