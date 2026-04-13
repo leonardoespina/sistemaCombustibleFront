@@ -42,7 +42,9 @@ export const useTankStore = defineStore("tanks", () => {
       rows.value = response.data.data;
       pagination.value.rowsNumber = response.data.pagination.totalItems;
     } catch (error) {
-      console.error("Error al obtener tanques:", error);
+      if (error.response?.status !== 403) {
+        console.error("Error al obtener tanques:", error);
+      }
     } finally {
       loading.value = false;
     }
@@ -103,6 +105,24 @@ export const useTankStore = defineStore("tanks", () => {
 
   // --- AUXILIARY LISTS ---
 
+  async function toggleTankUsage(tankId) {
+    loading.value = true;
+    try {
+      const response = await api.patch(`/tanques/${tankId}/uso`);
+      $q.notify({ type: "positive", message: response.data.msg });
+      // El listado total se actualiza vía WebSocket, pero reforzamos localmente
+      await fetchTanks();
+      await fetchTanksList();
+      return true;
+    } catch (error) {
+      // El error ya genera notificaciones si hay un interceptor global, pero se retorna fallido
+      // $q.notify es manejado usualmente en interceptores o se puede des-comentar
+      return false;
+    } finally {
+      loading.value = false;
+    }
+  }
+
   async function fetchLlenaderosList() {
     try {
       const response = await api.get("/llenaderos/lista");
@@ -155,6 +175,7 @@ export const useTankStore = defineStore("tanks", () => {
     createTank,
     updateTank,
     deleteTank,
+    toggleTankUsage,
     fetchLlenaderosList,
     fetchFuelTypesList,
     initSocket,

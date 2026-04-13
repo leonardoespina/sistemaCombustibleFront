@@ -183,7 +183,7 @@ const normalized = computed(() => {
     moneda: s.PrecioCombustible?.Moneda?.nombre || "USD",
     hasPrice: !!s.PrecioCombustible,
     llenadero: s.Llenadero?.nombre_llenadero || "S/L",
-    flota: s.flota || "NO APLICA",
+    flota: [s.marca, s.modelo].filter(Boolean).join('-') || s.flota || 'NO APLICA',
     placa: s.placa || "NO APLICA",
     suministro: s.tipo_suministro === "BIDON" ? "Bidon" : "Regular",
     autorizacion: s.Aprobador

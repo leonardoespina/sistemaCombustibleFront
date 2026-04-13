@@ -100,7 +100,22 @@
         
         <template v-slot:body-cell-activo_despacho="props">
           <q-td :props="props" align="center">
+            <!-- Botón para alternar uso -->
+            <q-btn
+              v-if="canToggle"
+              round
+              flat
+              dense
+              :icon="props.row.activo_para_despacho ? 'toggle_on' : 'toggle_off'"
+              :color="props.row.activo_para_despacho ? 'positive' : 'grey-5'"
+              size="md"
+              @click="toggleTankUsage(props.row.id_tanque)"
+            >
+              <q-tooltip>{{ props.row.activo_para_despacho ? 'Apagar Tanque' : 'Encender Tanque' }}</q-tooltip>
+            </q-btn>
+            <!-- Ícono de solo lectura para usuarios sin permiso -->
             <q-icon
+              v-else
               :name="props.row.activo_para_despacho ? 'check_circle' : 'cancel'"
               :color="props.row.activo_para_despacho ? 'positive' : 'grey-5'"
               size="sm"
@@ -115,7 +130,9 @@
 </template>
 
 <script setup>
+import { computed } from 'vue';
 import { useConsultTanks } from './composables/useConsultTanks';
+import { hasPermission, PERMISSIONS } from '../../utils/permissions';
 
 const {
   llenaderosStats,
@@ -123,8 +140,14 @@ const {
   loadingLlenaderos,
   loadingTanques,
   filter,
-  getProgressColor
+  getProgressColor,
+  toggleTankUsage
 } = useConsultTanks();
+
+// Autenticación //
+const userStr = localStorage.getItem("user");
+const userData = userStr ? JSON.parse(userStr) : null;
+const canToggle = computed(() => hasPermission(userData, PERMISSIONS.TOGGLE_TANQUE_USO));
 
 // Definición de Columnas de la Tabla
 const columns = [

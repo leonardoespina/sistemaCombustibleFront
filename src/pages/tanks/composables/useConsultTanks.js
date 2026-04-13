@@ -62,6 +62,7 @@ export function useConsultTanks() {
     filter: tankFilter,
     
     // Methods
-    getProgressColor
+    getProgressColor,
+    toggleTankUsage: tankStore.toggleTankUsage
   };
 }

@@ -34,12 +34,16 @@
                   outlined dense bg-color="white"
                   v-model="store.filters.subdependencias"
                   :options="store.subdependenciasList"
+                  @filter="filterSub"
+                  @virtual-scroll="onScrollSub"
                   option-label="nombre"
                   option-value="id_subdependencia"
-                  emit-value map-options
                   label="Subdependencias"
                   hint="Vacío = todas"
                   clearable multiple use-chips
+                  use-input
+                  input-debounce="300"
+                  :loading="store.subdepPagination.loading"
                 >
                   <template v-slot:prepend><q-icon name="account_tree" /></template>
                 </q-select>
@@ -121,6 +125,24 @@ const store = useMisDespachosStore();
 const showResultsDialog = ref(false);
 const reportFilters     = ref({});
 const fuelTypeOptions   = ref([]);
+
+const filterSub = async (val, update) => {
+  if (val === store.subdepPagination.search && store.subdependenciasList.length > 0) {
+    update();
+    return;
+  }
+  update(async () => {
+    store.subdepPagination.search = val;
+    await store.loadSubdependencias(false);
+  });
+};
+
+const onScrollSub = ({ to }) => {
+  const lastIndex = store.subdependenciasList.length - 1;
+  if (!store.subdepPagination.loading && store.subdepPagination.hasMore && to === lastIndex) {
+    store.loadSubdependencias(true);
+  }
+};
 
 const userDependencia = computed(() => {
   const userData = JSON.parse(localStorage.getItem('user') || '{}');

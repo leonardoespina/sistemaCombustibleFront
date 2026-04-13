@@ -10,6 +10,7 @@ export const useMisDespachosStore = defineStore('misDespachos', () => {
     const reportData = ref([]);
     const totalGeneral = ref('0.00');
     const subdependenciasList = ref([]); // opciones del multi-select
+    const subdepPagination = ref({ page: 1, limit: 15, hasMore: true, search: '', loading: false });
 
     const filters = ref({
         subdependencias: [],    // array de IDs seleccionados
@@ -28,16 +29,43 @@ export const useMisDespachosStore = defineStore('misDespachos', () => {
 
     // ─── Actions ─────────────────────────────────────────────
 
-    /** Carga las subdependencias de la dependencia del usuario (desde token) */
-    const loadSubdependencias = async () => {
+    /** Carga las subdependencias de la dependencia del usuario asincrónicamente */
+    const loadSubdependencias = async (isLoadMore = false) => {
+        if (!isLoadMore) {
+            subdepPagination.value.page = 1;
+            subdepPagination.value.hasMore = true;
+            subdependenciasList.value = [];
+        }
+        if (subdepPagination.value.loading || !subdepPagination.value.hasMore) return;
+
+        subdepPagination.value.loading = true;
         try {
             const userData = JSON.parse(localStorage.getItem('user') || '{}');
             const id_dependencia = userData?.Dependencia?.id_dependencia;
             if (!id_dependencia) return;
-            const { data } = await api.get('/subdependencias', { params: { id_dependencia } });
-            subdependenciasList.value = data.data || data;
+
+            const params = {
+                id_dependencia,
+                page: subdepPagination.value.page,
+                limit: subdepPagination.value.limit,
+                search: subdepPagination.value.search
+            };
+
+            const { data } = await api.get('/subdependencias', { params });
+            const newItems = data.data || data;
+
+            if (isLoadMore) {
+                subdependenciasList.value.push(...newItems);
+            } else {
+                subdependenciasList.value = newItems;
+            }
+
+            subdepPagination.value.hasMore = newItems.length === subdepPagination.value.limit;
+            subdepPagination.value.page++;
         } catch (error) {
             console.error('Error cargando subdependencias:', error);
+        } finally {
+            subdepPagination.value.loading = false;
         }
     };
 
@@ -53,10 +81,10 @@ export const useMisDespachosStore = defineStore('misDespachos', () => {
                 limit,
             };
 
-            // Serializar el array de subdependencias como query-string array
+            // Serializar el array de subdependencias como query-string array (extrayendo IDs si son objetos)
             const subdependencias = filters.value.subdependencias;
             if (subdependencias && subdependencias.length > 0) {
-                params['subdependencias[]'] = subdependencias;
+                params['subdependencias[]'] = subdependencias.map(s => typeof s === 'object' ? s.id_subdependencia : s);
             }
 
             const { data } = await api.get('/reportes/mis-despachos', { params });
@@ -100,7 +128,7 @@ export const useMisDespachosStore = defineStore('misDespachos', () => {
     };
 
     return {
-        loading, reportData, totalGeneral, subdependenciasList, filters, pagination,
+        loading, reportData, totalGeneral, subdependenciasList, subdepPagination, filters, pagination,
         loadSubdependencias, fetchReport, resetFilters, clearReportData,
         initSocket, destroySocket,
     };
