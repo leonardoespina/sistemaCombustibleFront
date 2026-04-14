@@ -136,6 +136,9 @@
                 type="number"
                 label="Alto"
                 :suffix="formData.unidad_medida"
+                :rules="formData.tipo_tanque === 'RECTANGULAR'
+                  ? [(val) => (val !== null && val > 0) || 'Requerido para tanque rectangular']
+                  : []"
               />
             </div>
             <div class="col-12 col-md-3">

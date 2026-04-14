@@ -223,10 +223,18 @@ export function useMeasurementForm(props, emit) {
             const ancho_m = parseFloat(t.ancho) * scale;
             const alto_m = parseFloat(t.alto) * scale;
 
-            const calc = calcularVolumenTanque(h_m, largo_m, ancho_m, t.tipo_tanque, alto_m);
-            volReal = parseFloat(calc.toFixed(2));
+            // Guard: si alguna dimensión es inválida (ej. alto = null en BD), no calcular
+            if (isNaN(largo_m) || isNaN(ancho_m) || isNaN(alto_m) || largo_m <= 0 || ancho_m <= 0 || alto_m <= 0) {
+              console.warn("[Medición] Tanque rectangular con dimensiones inválidas o incompletas:", {
+                largo: t.largo, ancho: t.ancho, alto: t.alto, unidad: t.unidad_medida
+              });
+              volReal = 0;
+            } else {
+              const calc = calcularVolumenTanque(h_m, largo_m, ancho_m, t.tipo_tanque, alto_m);
+              volReal = parseFloat(calc.toFixed(2));
+            }
           } else {
-            // CILÍNDRICOS
+            // CILÍNDRICOS — sin cambios
             const largo_m = parseFloat(t.largo) * scale;
             const radio_m = parseFloat(t.radio) * scale;
 

@@ -10,7 +10,8 @@ export const calcularVolumenCilindrico = (h, L, R) => {
   if (h > 2 * R) h = 2 * R;
 
   const term1 = (Math.PI * Math.pow(R, 2)) / 2;
-  const term2 = (h - R) * Math.sqrt(2 * R * h - Math.pow(h, 2));
+  const radicand = Math.max(0, 2 * R * h - Math.pow(h, 2)); // Evita NaN por error de punto flotante cuando h ≈ 2R
+  const term2 = (h - R) * Math.sqrt(radicand);
 
   let term3 = 0;
   const argumentoAsin = (h - R) / R;
