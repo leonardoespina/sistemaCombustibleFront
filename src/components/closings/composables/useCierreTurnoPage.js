@@ -63,7 +63,7 @@ export function useCierreTurnoPage() {
     const columns = [
         {
             name: "id_cierre",
-            label: "#",
+            label: "ID",
             field: "id_cierre",
             align: "left",
             sortable: true,
