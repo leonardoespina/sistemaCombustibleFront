@@ -99,6 +99,19 @@
             >
               <q-tooltip>Rechazar</q-tooltip>
             </q-btn>
+
+            <!-- ANULACIÓN ADMINISTRATIVA (Solo FINALIZADA y solo ADMIN) -->
+            <q-btn
+              v-if="props.row.estado === 'FINALIZADA' && can(PERMISSIONS.REVERTIR_OPERACION)"
+              dense
+              round
+              flat
+              color="deep-orange"
+              icon="undo"
+              @click="onAnnulFinalized(props.row)"
+            >
+              <q-tooltip>Anulación Administrativa (Revertir)</q-tooltip>
+            </q-btn>
           </q-td>
         </template>
       </q-table>
@@ -301,6 +314,32 @@ function onReject(row) {
   });
 }
 
+function onAnnulFinalized(row) {
+  const isClosed = !!row.id_cierre_turno;
+  
+  $q.dialog({
+    title: isClosed ? "🔥 RECTIFICACIÓN DE TICKET CERRADO" : "⚠️ Confirmar Anulación Administrativa",
+    message: `
+      <div class="${isClosed ? 'text-negative text-weight-bold' : ''}">
+        ¿Está seguro de anular la solicitud FINALIZADA del vehículo ${row.placa}? 
+        ${isClosed ? '<br><br>AVISO: Este ticket pertenece a un CIERRE DE TURNO ya finalizado. La anulación generará un descuadre contable en ese periodo que deberá ser justificado.' : ''}
+      </div>
+      <br>
+      Esta operación REVERTIRÁ el inventario al tanque y REINTEGRARÁ el cupo en el periodo actual.
+    `,
+    html: true,
+    cancel: { label: 'Cancelar', color: 'grey', flat: true },
+    ok: { 
+      label: isClosed ? 'Sí, Rectificar (Forzar)' : 'Sí, Anular y Revertir', 
+      color: isClosed ? 'negative' : 'deep-orange', 
+      flat: false 
+    },
+    persistent: true,
+  }).onOk(async () => {
+    await requestStore.annulFinalizedRequest(row.id_solicitud);
+  });
+}
+
 function getStatusColor(status) {
   switch (status) {
     case "PENDIENTE":
@@ -309,9 +348,10 @@ function getStatusColor(status) {
       return "blue";
     case "IMPRESA":
       return "indigo";
-    case "DESPACHADA":
-      return "green";
+    case "FINALIZADA":
+      return "teal";
     case "RECHAZADA":
+    case "ANULADA":
       return "red";
     case "VENCIDA":
       return "grey-8";

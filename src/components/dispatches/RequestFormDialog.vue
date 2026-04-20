@@ -79,6 +79,7 @@
                 :solicitante-name="solicitanteName"
                 :current-date="currentDate"
                 :current-time="currentTime"
+                :available-fuel-in-tank="availableFuelInTank"
                 @update:cantidad-litros="formData.cantidad_litros = $event"
                 @update:tipo-solicitud="onTipoSolicitudChange"
                 @update:precio-obj="selectedPrecioObj = $event"
@@ -190,6 +191,7 @@ const {
   vehicleDisabled,
   availableModalities,
   calculatedTotal,
+  availableFuelInTank,
   canSubmit,
   initializeForm,
   resetForm,

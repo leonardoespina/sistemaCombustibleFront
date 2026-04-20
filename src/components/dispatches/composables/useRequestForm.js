@@ -87,11 +87,35 @@ export function useRequestForm(emit, requestStore) {
       formData.value.tipo_solicitud === "VENTA",
   );
 
+  const availableFuelInTank = computed(() => {
+    if (!formData.value.id_llenadero || !selectedCombustible.value) return 0;
+    
+    // Buscar llenadero en la lista (que viene de requestStore.llenaderosPorCombustible)
+    // Nota: llenaderosPorCombustible se carga y expone globalmente, pero como el store reactivo 
+    // está en requestStore, accedemos por ahí.
+    const llenadero = requestStore.llenaderosPorCombustible?.find(
+      (l) => l.id_llenadero === formData.value.id_llenadero
+    );
+    if (!llenadero) return 0;
+
+    const tanque = llenadero.Tanques?.find(
+      (t) => t.id_tipo_combustible === selectedCombustible.value && t.activo_para_despacho
+    );
+
+    return tanque ? parseFloat(tanque.nivel_actual || 0) : 0;
+  });
+
   const canSubmit = computed(() => {
     const baseOk =
       formData.value.id_llenadero &&
       formData.value.cantidad_litros > 0 &&
       selectedCombustible.value;
+
+    if (!baseOk) return false;
+    
+    // Bloquear si el tanque está en cero o la cantidad solicitada supera el nivel físico
+    if (availableFuelInTank.value <= 0) return false;
+    if (parseFloat(formData.value.cantidad_litros) > availableFuelInTank.value) return false;
 
     // BIDÓN+VENTA no requiere vehículo seleccionado
     if (vehicleDisabled.value) return Boolean(baseOk);
@@ -208,6 +232,7 @@ export function useRequestForm(emit, requestStore) {
     vehicleDisabled,
     availableModalities,
     calculatedTotal,
+    availableFuelInTank,
     canSubmit,
     // Methods
     initializeForm,

@@ -17,9 +17,19 @@
             square
             bg-color="white"
             class="text-weight-bolder"
-            :rules="[(val) => !!val || 'Requerido']"
+            :rules="[
+              (val) => !!val || 'Requerido',
+              (val) => (availableFuelInTank > 0) || 'El tanque está en cero (0 L). No hay disponibilidad.',
+              (val) => parseFloat(val) <= availableFuelInTank || `Supera el físico en tanque. Máx: ${new Intl.NumberFormat('es-VE').format(availableFuelInTank)} L`
+            ]"
             hide-bottom-space
-          />
+          >
+            <template v-slot:hint>
+              <span v-if="formData.id_llenadero" :class="availableFuelInTank > 0 ? 'text-positive' : 'text-negative text-weight-bolder'">
+                Físico Disponible: {{ new Intl.NumberFormat('es-VE').format(availableFuelInTank) }} L
+              </span>
+            </template>
+          </q-input>
         </div>
       </div>
 
@@ -181,6 +191,10 @@ defineProps({
   calculatedTotal: {
     type: String,
     default: "0",
+  },
+  availableFuelInTank: {
+    type: Number,
+    default: 0,
   },
   solicitanteName: {
     type: String,
