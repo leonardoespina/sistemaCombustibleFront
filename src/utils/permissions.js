@@ -116,8 +116,7 @@ export function hasPermission(user, permission) {
     if (permission === PERMISSIONS.REVERTIR_OPERACION) {
         return (
             user.tipo_usuario === "ADMIN" ||
-            user.rol_sistema === "ADMIN" ||
-            user.capacidad_solicitudes === "AMBOS"
+            user.rol_sistema === "ADMIN"
         );
     }
 

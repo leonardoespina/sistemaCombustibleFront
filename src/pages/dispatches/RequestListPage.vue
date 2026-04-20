@@ -100,9 +100,9 @@
               <q-tooltip>Rechazar</q-tooltip>
             </q-btn>
 
-            <!-- ANULACIÓN ADMINISTRATIVA (Solo FINALIZADA y solo ADMIN) -->
+            <!-- ANULACIÓN ADMINISTRATIVA (Solo FINALIZADA y estrictamente ADMIN) -->
             <q-btn
-              v-if="props.row.estado === 'FINALIZADA' && can(PERMISSIONS.REVERTIR_OPERACION)"
+              v-if="props.row.estado === 'FINALIZADA' && (userData?.rol_sistema === 'ADMIN' || userData?.tipo_usuario === 'ADMIN')"
               dense
               round
               flat
