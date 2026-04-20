@@ -166,6 +166,20 @@ export function useIndexPage() {
         }
     };
 
+    const llenaderosAgrupados = computed(() => {
+        const groups = {};
+        stats.value.llenaderos.forEach(tank => {
+            const llName = tank.nombre_llenadero || 'S/N';
+            const fuelType = tank.tipo_combustible || 'OTROS';
+            
+            if (!groups[llName]) groups[llName] = {};
+            if (!groups[llName][fuelType]) groups[llName][fuelType] = [];
+            
+            groups[llName][fuelType].push(tank);
+        });
+        return groups;
+    });
+
     const setupSocketListeners = () => {
         socket.on("llenadero:actualizado", fetchStats);
         socket.on("llenadero:creado", fetchStats);
@@ -319,6 +333,7 @@ export function useIndexPage() {
         // Dashboard operativo / almacen / seguridad
         loading,
         stats,
+        llenaderosAgrupados,
         fetchStats,
         modulosDashboard,
         // Dashboard estándar

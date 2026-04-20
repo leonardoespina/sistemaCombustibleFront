@@ -260,18 +260,30 @@
             Estado de Tanques (Llenaderos)
           </div>
 
-          <div class="row q-col-gutter-md justify-start">
-            <div
-              v-for="ll in stats.llenaderos"
-              :key="ll.id_llenadero"
-              class="col-12 col-sm-6 col-md-3 col-lg-2"
-            >
-              <LiquidLlenadero :llenadero="ll" class="q-mx-auto" style="max-width: 300px" />
+          <div v-for="(types, llName) in llenaderosAgrupados" :key="llName" class="q-mb-lg">
+            <div class="row items-center q-mb-sm">
+              <q-icon name="location_on" color="brown" class="q-mr-xs" />
+              <span class="text-subtitle1 text-weight-bold text-brown text-uppercase">{{ llName }}</span>
+            </div>
+            
+            <div v-for="(tanks, fuelType) in types" :key="fuelType" class="q-mb-md q-pl-md" style="border-left: 2px solid #D7CCC8">
+              <div class="text-caption text-weight-bold text-grey-8 q-mb-xs">
+                <q-icon name="water_drop" size="xs" /> {{ fuelType }}
+              </div>
+              <div class="row q-col-gutter-md justify-start">
+                <div
+                  v-for="tk in tanks"
+                  :key="tk.id_tanque"
+                  class="col-12 col-sm-6 col-md-3 col-lg-2"
+                >
+                  <LiquidLlenadero :llenadero="tk" class="q-mx-auto" style="max-width: 300px" />
+                </div>
+              </div>
             </div>
           </div>
 
           <div
-            v-if="stats.llenaderos.length === 0 && !loading"
+            v-if="Object.keys(llenaderosAgrupados).length === 0 && !loading"
             class="text-center q-pa-lg text-grey-6"
           >
             <q-icon name="oil_barrel" size="3rem" />
@@ -356,18 +368,34 @@
           </div>
         </div>
 
-        <!-- LLENADEROS -->
-        <div
-          v-for="ll in stats.llenaderos"
-          :key="ll.id_llenadero"
-          class="col-12 col-sm-6 col-md-3 col-lg-2"
-        >
-          <LiquidLlenadero :llenadero="ll" class="q-mx-auto" style="max-width: 300px" />
+        <!-- LLENADEROS AGRUPADOS POR TIPO -->
+        <div v-for="(types, llName) in llenaderosAgrupados" :key="llName" class="col-12 q-mb-lg">
+          <div class="row items-center q-mb-sm q-px-sm">
+            <q-icon name="location_on" size="1.5rem" color="primary" class="q-mr-xs" />
+            <span class="text-h6 text-weight-bold text-primary">{{ llName }}</span>
+            <q-separator class="col q-ml-md" />
+          </div>
+          
+          <div v-for="(tanks, fuelType) in types" :key="fuelType" class="q-mb-md q-pl-lg">
+            <div class="row items-center q-mb-xs">
+               <q-badge :color="fuelType === 'DIESEL' ? 'grey-9' : 'orange-7'" rounded class="q-mr-sm" />
+               <span class="text-subtitle2 text-weight-bold text-grey-9">{{ fuelType }}</span>
+            </div>
+            <div class="row q-col-gutter-md">
+              <div
+                v-for="tk in tanks"
+                :key="tk.id_tanque"
+                class="col-12 col-sm-6 col-md-3 col-lg-2"
+              >
+                <LiquidLlenadero :llenadero="tk" class="q-mx-auto" style="max-width: 300px" />
+              </div>
+            </div>
+          </div>
         </div>
 
         <!-- SIN DATOS -->
         <div
-          v-if="stats.llenaderos.length === 0 && !loading"
+          v-if="Object.keys(llenaderosAgrupados).length === 0 && !loading"
           class="col-12 flex flex-center q-pa-xl"
         >
           <q-banner class="bg-warning text-white rounded-borders">
@@ -393,6 +421,7 @@ const {
   userRole,
   loading,
   stats,
+  llenaderosAgrupados,
   fetchStats,
   modulosDashboard,
   loadingCupos,

@@ -19,14 +19,14 @@
             :filename="`MisDespachos_${filters.fechaDesde}_${filters.fechaHasta}`"
             sheet-name="Mis Despachos"
             :meta="['MIS DESPACHOS', `Periodo: ${formatDate(filters.fechaDesde)} - ${formatDate(filters.fechaHasta)}`, `Total General: ${total} L`]"
-            label="Excel" flat class="q-mr-xs"
+            label="Excel" flat color="white" class="q-mr-xs"
           />
-          <q-btn flat icon="print" label="Imprimir" @click="() => window.print()" />
+          <q-btn flat icon="print" label="Imprimir" color="white" @click="printReport" />
         </template>
         <q-btn v-else flat round icon="more_vert">
           <q-menu>
             <q-list style="min-width: 150px">
-              <q-item clickable v-close-popup @click="() => window.print()">
+              <q-item clickable v-close-popup @click="printReport">
                 <q-item-section avatar><q-icon name="print" /></q-item-section>
                 <q-item-section>Imprimir</q-item-section>
               </q-item>
@@ -39,7 +39,7 @@
         <div
           id="print-section"
           class="bg-white q-pa-lg shadow-3 rounded-borders"
-          style="max-width: 1100px; margin: 0 auto"
+          style="width: 100%; margin: 0 auto"
         >
           <!-- ENCABEZADO RESPONSIVE -->
           <div class="column items-center q-mb-md q-pb-sm" style="border-bottom: 1px solid #e0e0e0">
@@ -128,6 +128,8 @@ const columns = [
   { name: 'placa',             label: 'Placa',           field: 'placa',                align: 'left' },
   { name: 'subdependencia',    label: 'Subdependencia',  field: 'subdependencia',        align: 'left' },
   { name: 'solicitante',       label: 'Solicitante',     field: 'solicitante',           align: 'left' },
+  { name: 'aprobador',         label: 'Aprobador',       field: 'aprobador',             align: 'left' },
+  { name: 'recibido',          label: 'Recibido',        field: 'recibido',              align: 'left' },
   { name: 'cantidad_aprobada', label: 'Aprobado (L)',    field: 'cantidad_aprobada',     align: 'right' },
   { name: 'cantidad_despachada', label: 'Despachado (L)', field: 'cantidad_despachada', align: 'right' },
 ];
@@ -140,6 +142,10 @@ function formatDate(fechaStr) {
 function formatDateTime(fechaStr) {
   if (!fechaStr) return '-';
   return date.formatDate(new Date(fechaStr), 'DD/MM/YYYY');
+}
+
+function printReport() {
+  window.print();
 }
 </script>
 

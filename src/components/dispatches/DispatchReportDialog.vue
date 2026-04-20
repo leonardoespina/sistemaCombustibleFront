@@ -19,9 +19,9 @@
             :filename="`Despachos_${filters.fechaDesde}_${filters.fechaHasta}`"
             sheet-name="Despachos"
             :meta="['REPORTE DE DESPACHOS', `Desde: ${formatDate(filters.fechaDesde)} - Hasta: ${formatDate(filters.fechaHasta)}`]"
-            label="Excel" color="positive" flat class="q-mr-xs"
+            label="Excel" color="white" flat class="q-mr-xs"
           />
-          <q-btn flat icon="print" label="Imprimir" @click="printReport" />
+          <q-btn flat icon="print" label="Imprimir" color="white" @click="printReport" />
         </template>
         <q-btn v-else flat round icon="more_vert">
           <q-menu>
@@ -39,7 +39,7 @@
         <div
           id="print-section"
           class="bg-white q-pa-lg shadow-3 rounded-borders"
-          style="max-width: 1200px; margin: 0 auto"
+          style="width: 100%; margin: 0 auto"
         >
           <!-- ENCABEZADO RESPONSIVE -->
           <div class="column items-center q-mb-md q-pb-sm" style="border-bottom: 1px solid #e0e0e0">
@@ -71,7 +71,7 @@
             <!-- PIE DE PÁGINA (TOTALIZADOR) -->
             <template v-slot:bottom-row>
               <q-tr class="bg-grey-2 text-weight-bold text-h6">
-                <q-td colspan="7" class="text-right"
+                <q-td colspan="9" class="text-right"
                   >TOTAL GENERAL DESPACHADO:</q-td
                 >
                 <q-td class="text-right text-primary">{{ total }}</q-td>
@@ -134,6 +134,8 @@ const columns = [
   { name: "hora",                label: "Hora",             field: "hora",               align: "center" },
   { name: "codigo_ticket",       label: "Ticket #",         field: "codigo_ticket",       align: "center" },
   { name: "solicitante",         label: "Solicitante",      field: "solicitante",         align: "left" },
+  { name: "aprobador",           label: "Aprobador",        field: "aprobador",           align: "left" },
+  { name: "recibido",            label: "Recibido",         field: "recibido",            align: "left" },
   { name: "vehiculo",            label: "Vehículo",         field: "vehiculo",            align: "left" },
   { name: "placa",               label: "Placa",            field: "placa",               align: "left" },
   { name: "cantidad_aprobada",   label: "Cant. Aprobada",   field: "cantidad_aprobada",   align: "right", format: (val) => val ? parseFloat(val).toFixed(2) : "0.00" },

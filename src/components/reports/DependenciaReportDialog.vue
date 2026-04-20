@@ -26,9 +26,10 @@
             ]"
             label="Excel"
             flat
+            color="white"
             class="q-mr-xs"
           />
-          <q-btn flat icon="print" label="PDF" @click="printReport" />
+          <q-btn flat icon="print" label="Imprimir" @click="printReport" />
         </template>
         <!-- Menú compacto en móvil -->
         <q-btn v-else flat round icon="more_vert">

@@ -12,6 +12,8 @@ export function useReporteDiarioPage() {
     // ─── Columnas ────────────────────────────────────────────
     const columnsInstitucional = [
         { name: 'solicitante', label: 'Solicitante', field: 'solicitante', align: 'left' },
+        { name: 'aprobador', label: 'Aprobador', field: 'aprobador', align: 'left' },
+        { name: 'recibido', label: 'Recibido', field: 'recibido', align: 'left' },
         { name: 'vehiculo', label: 'Vehículo', field: 'vehiculo', align: 'left' },
         { name: 'placa', label: 'Placa', field: 'placa', align: 'left' },
         { name: 'dependencia', label: 'Dependencia', field: 'dependencia', align: 'left' },

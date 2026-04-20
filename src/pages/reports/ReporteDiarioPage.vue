@@ -82,7 +82,7 @@
                   `Llenadero: ${getLlenaderoNombre(store.filters.id_llenadero)}`,
                 ]"
                 label="Institucional"
-                flat
+                flat color="white"
                 class="q-mr-xs"
               />
               <ExportExcelBtn
@@ -96,10 +96,10 @@
                   `Llenadero: ${getLlenaderoNombre(store.filters.id_llenadero)}`,
                 ]"
                 label="Venta"
-                flat
+                flat color="white"
                 class="q-mr-xs"
               />
-              <q-btn flat icon="print" label="PDF" @click="printReport" />
+              <q-btn flat icon="print" label="Imprimir" color="white" @click="printReport" />
             </template>
             <!-- Menú compacto en móvil -->
             <q-btn v-else flat round icon="more_vert">
@@ -115,7 +115,7 @@
           </q-toolbar>
 
           <q-card-section class="q-pa-sm q-pa-md-md scroll" style="height: calc(100vh - 50px)">
-            <div id="print-section" class="bg-white q-pa-sm q-pa-lg-lg shadow-3 rounded-borders" style="max-width: 1200px; margin: 0 auto">
+            <div id="print-section" class="bg-white q-pa-sm q-pa-lg-lg shadow-3 rounded-borders" style="width: 100%; margin: 0 auto">
 
               <!-- ENCABEZADO IMPRESIÓN -->
               <div class="row items-center q-mb-md q-pb-sm" style="border-bottom: 1px solid #e0e0e0">
@@ -151,7 +151,7 @@
                   >
                     <template v-slot:bottom-row>
                       <q-tr class="bg-grey-2 text-weight-bold">
-                        <q-td colspan="6" class="text-right">Total Litros Institucional:</q-td>
+                        <q-td colspan="8" class="text-right">Total Litros Institucional:</q-td>
                         <q-td class="text-right">{{ store.reportData.totales.litros_institucional }}</q-td>
                       </q-tr>
                     </template>
@@ -177,7 +177,7 @@
                   >
                     <template v-slot:bottom-row>
                       <q-tr class="bg-grey-2 text-weight-bold">
-                        <q-td colspan="6" class="text-right">Totales Venta:</q-td>
+                        <q-td colspan="8" class="text-right">Totales Venta:</q-td>
                         <q-td class="text-right">{{ store.reportData.totales.litros_venta }}</q-td>
                         <q-td class="text-right"></q-td>
                         <q-td class="text-right">{{ store.reportData.totales.monto_venta }}</q-td>
