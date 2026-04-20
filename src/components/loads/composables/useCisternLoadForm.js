@@ -206,8 +206,8 @@ export function useCisternLoadForm(props, emit) {
 
     const ini = parseFloat(tq.liters.inicial) || 0;
     const fin = parseFloat(tq.liters.final) || 0;
-    // La medida de aforo final determina la cantidad total independiente de la inicial
-    tq.liters.recibido = fin >= 0 ? fin.toFixed(2) : "0.00";
+    // Volumen real recibido = Medida Final - Medida Inicial
+    tq.liters.recibido = (fin >= ini) ? (fin - ini).toFixed(2) : "0.00";
   }
 
   function calculateAll() {
@@ -219,8 +219,10 @@ export function useCisternLoadForm(props, emit) {
       calculateTank(i);
       const fin = parseFloat(tanquesForm.value[i].liters.final || 0);
       const ini = parseFloat(tanquesForm.value[i].liters.inicial || 0);
-      globalTotalRecibido += parseFloat(tanquesForm.value[i].liters.recibido || 0);
-      globalDepositadoReal += (fin - ini >= 0) ? (fin - ini) : 0;
+      
+      const recibidoEnEsteTanque = (fin - ini) > 0 ? (fin - ini) : 0;
+      globalTotalRecibido += recibidoEnEsteTanque;
+      globalDepositadoReal += recibidoEnEsteTanque;
     }
 
     // Calcular métricas globales de la cabecera
@@ -229,7 +231,7 @@ export function useCisternLoadForm(props, emit) {
     const guia = parseFloat(formData.value.litros_segun_guia) || 0;
     const flujo = parseFloat(formData.value.litros_flujometro);
 
-    globalLiters.faltante = (guia - globalDepositadoReal).toFixed(2);
+    globalLiters.faltante = (globalDepositadoReal - guia).toFixed(2);
 
     if (flujo !== null && flujo !== "" && !isNaN(flujo)) {
       globalLiters.dif_flujo = (globalDepositadoReal - flujo).toFixed(2);
@@ -401,12 +403,23 @@ export function useCisternLoadForm(props, emit) {
     const percent = (Math.abs(diff) / litrosBase) * 100;
 
     let color = "positive";
-    let icon = "check_circle"; // Check circle for positive matching
+    let icon = "check_circle";
 
-    if (percent > 1.0) { color = "negative"; icon = "error"; }
-    else if (percent > 0.5) { color = "warning"; icon = "warning"; }
+    if (diff < 0) {
+      color = "negative";
+      icon = "trending_down";
+    } else if (diff > 0) {
+      color = "positive";
+      icon = "trending_up";
+    }
 
-    return { diffLiters: diff.toFixed(2), diffPercent: percent.toFixed(2), color, icon };
+    // Si la variación es muy pequeña (menos al 0.05%), poner en gris
+    if (percent < 0.05) {
+      color = "grey-7";
+      icon = "check_circle";
+    }
+
+    return { diffLiters: (diff > 0 ? '+' : '') + diff.toFixed(2), diffPercent: (diff > 0 ? '+' : '') + diff.toFixed(2), color, icon };
   }
 
   const analysis = computed(() => {
@@ -417,7 +430,9 @@ export function useCisternLoadForm(props, emit) {
     const depositadoReal = tanquesForm.value.reduce((acc, tq) => {
       const f = parseFloat(tq.liters.final || 0);
       const i = parseFloat(tq.liters.inicial || 0);
-      return acc + ((f - i) >= 0 ? f - i : 0);
+      // Depósito real neto = Sumatoria de las diferencias (Final - Inicial)
+      const diff = (f - i) > 0 ? (f - i) : 0;
+      return acc + diff;
     }, 0);
 
     return {

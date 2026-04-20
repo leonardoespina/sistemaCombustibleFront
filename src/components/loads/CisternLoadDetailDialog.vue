@@ -135,8 +135,8 @@
                   </div>
                   <div>
                       <div class="text-caption text-grey-7">Diferencia de Ruta (Mermas)</div>
-                      <div class="text-subtitle2 text-weight-bold" :class="parseFloat(data.diferencia_guia) > 0 ? 'text-negative' : 'text-positive'">
-                          {{ parseFloat(data.diferencia_guia) > 0 ? '-' : '+' }}{{ formatNumber(Math.abs(data.diferencia_guia)) }} L
+                      <div class="text-subtitle2 text-weight-bold" :class="parseFloat(data.diferencia_guia) < 0 ? 'text-negative' : (parseFloat(data.diferencia_guia) > 0 ? 'text-positive' : 'text-grey-7')">
+                          {{ parseFloat(data.diferencia_guia) > 0 ? '+' : '' }}{{ formatNumber(data.diferencia_guia) }} L
                       </div>
                   </div>
               </div>

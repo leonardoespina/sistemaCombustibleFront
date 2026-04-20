@@ -87,10 +87,11 @@
         <template v-slot:body-cell-diferencia="props">
           <q-td :props="props">
             <q-badge
-              :color="parseFloat(props.value) > 0 ? 'positive' : (parseFloat(props.value) < 0 ? 'negative' : 'grey-7')"
+              :color="parseFloat(props.value) < 0 ? 'negative' : (parseFloat(props.value) > 0 ? 'positive' : 'grey-7')"
               class="q-pa-xs"
             >
-              {{ props.value }} L
+              <q-icon :name="parseFloat(props.value) < 0 ? 'trending_down' : (parseFloat(props.value) > 0 ? 'trending_up' : 'check_circle')" size="xs" class="q-mr-xs" />
+              {{ parseFloat(props.value) > 0 ? '+' : '' }}{{ props.value }} L
             </q-badge>
           </q-td>
         </template>
