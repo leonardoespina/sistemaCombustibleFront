@@ -178,6 +178,29 @@ export const useRequestStore = defineStore("requests", () => {
   }
 
   /**
+   * Anular solicitud FINALIZADA (Administración)
+   * Revierte inventario y cupos
+   */
+  async function annulFinalizedRequest(requestId) {
+    loading.value = true;
+    try {
+      const response = await api.post(`/solicitudes/${requestId}/anular-finalizada`);
+      $q.notify({
+        type: "positive",
+        message: response.data.msg || "Solicitud anulada correctamente",
+      });
+      await fetchRequests();
+      return true;
+    } catch (error) {
+      const errorMsg = error.response?.data?.msg || "Error al anular solicitud finalizada";
+      $q.notify({ type: "negative", message: errorMsg });
+      return false;
+    } finally {
+      loading.value = false;
+    }
+  }
+
+  /**
    * Obtener subdependencias autorizadas para el usuario actual
    */
   async function fetchSubdependenciasAutorizadas() {
@@ -264,6 +287,7 @@ export const useRequestStore = defineStore("requests", () => {
     printTicket,
     reprintTicket,
     dispatchRequest,
+    annulFinalizedRequest,
     fetchSubdependenciasAutorizadas,
     fetchLlenaderosPorCombustible,
     initSocket,
