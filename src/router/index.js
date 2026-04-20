@@ -198,6 +198,12 @@ const routes = [
         component: () => import("../pages/reports/MisDespachosPage.vue"),
       },
 
+      {
+        path: "reportes/situacion-combustible",
+        name: "reporte-situacion-combustible",
+        meta: { requiresPermission: PERMISSIONS.VIEW_REPORTES_GLOB },
+        component: () => import("../pages/reports/SituacionCombustiblePage.vue"),
+      },
 
 
       {

@@ -188,7 +188,7 @@
     <!--          REPORTES                  -->
     <!-- ================================== -->
     <q-expansion-item
-      v-if="can(PERMISSIONS.VIEW_MIS_CUPOS) || can(PERMISSIONS.VIEW_MIS_DESPACHOS) || can(PERMISSIONS.VIEW_REPORTE_DIARIO) || can(PERMISSIONS.VIEW_REPORTE_DESPACHOS) || can(PERMISSIONS.VIEW_REPORTE_CONSUMO)"
+      v-if="can(PERMISSIONS.VIEW_MIS_CUPOS) || can(PERMISSIONS.VIEW_MIS_DESPACHOS) || can(PERMISSIONS.VIEW_REPORTE_DIARIO) || can(PERMISSIONS.VIEW_REPORTE_DESPACHOS) || can(PERMISSIONS.VIEW_REPORTE_CONSUMO) || can(PERMISSIONS.VIEW_REPORTES_GLOB)"
       expand-separator
       icon="analytics"
       label="Reportes"
@@ -241,6 +241,20 @@
           /></q-item-section>
           <q-item-section>Consumo por Dependencia</q-item-section>
         </q-item>
+
+        <!-- Situación del Combustible (nuevo) -->
+        <q-item
+          v-if="can(PERMISSIONS.VIEW_REPORTES_GLOB)"
+          clickable
+          v-ripple
+          to="/reportes/situacion-combustible"
+        >
+          <q-item-section avatar>
+            <q-icon name="local_gas_station" size="xs" />
+          </q-item-section>
+          <q-item-section>Situación del Combustible</q-item-section>
+        </q-item>
+
       </q-list>
     </q-expansion-item>
   </q-list>
