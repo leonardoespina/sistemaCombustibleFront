@@ -25,6 +25,16 @@ export const useSituacionCombustibleStore = defineStore('situacionCombustible', 
         const rows = [];
         if (!reportData.value) return rows;
 
+        // 1. Contar cuántas veces aparece cada tipo de combustible en los llenaderos
+        const tcCounts = {};
+        reportData.value.datos.forEach((ll) => {
+            ll.tipos_combustible.forEach((tc) => {
+                const id = tc.id_tipo_combustible;
+                tcCounts[id] = (tcCounts[id] || 0) + 1;
+            });
+        });
+
+        // 2. Generar filas de llenaderos
         reportData.value.datos.forEach((ll) => {
             ll.tipos_combustible.forEach((tc) => {
                 const pctStock = tc.capacidad_total > 0
@@ -41,20 +51,23 @@ export const useSituacionCombustibleStore = defineStore('situacionCombustible', 
             });
         });
 
-        // Filas de totales
+        // 3. Filas de totales (Solo si el combustible está en más de 1 llenadero)
         reportData.value.totales_por_combustible.forEach((tc) => {
-            const pct = tc.capacidad_total > 0
-                ? ((tc.stock_actual / tc.capacidad_total) * 100).toFixed(1)
-                : "0.0";
-            rows.push({
-                llenadero:        `TOTAL ${tc.nombre_combustible}`,
-                combustible:      tc.nombre_combustible,
-                capacidad:        tc.capacidad_total,
-                stock:            tc.stock_actual,
-                consumido:        tc.consumido_periodo,
-                porcentaje_stock: pct,
-                esTotal:          true,
-            });
+            const count = tcCounts[tc.id_tipo_combustible] || 0;
+            if (count > 1) {
+                const pct = tc.capacidad_total > 0
+                    ? ((tc.stock_actual / tc.capacidad_total) * 100).toFixed(1)
+                    : "0.0";
+                rows.push({
+                    llenadero:        `TOTAL ${tc.nombre_combustible}`,
+                    combustible:      tc.nombre_combustible,
+                    capacidad:        tc.capacidad_total,
+                    stock:            tc.stock_actual,
+                    consumido:        tc.consumido_periodo,
+                    porcentaje_stock: pct,
+                    esTotal:          true,
+                });
+            }
         });
 
         return rows;

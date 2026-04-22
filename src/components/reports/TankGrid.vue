@@ -54,10 +54,11 @@
           />
 
           <!-- Separador vertical -->
-          <div class="total-separator"></div>
+          <div v-if="llenaderosPorTC(tc.id_tipo_combustible).length > 1" class="total-separator"></div>
 
           <!-- Cilindro total -->
           <TankCylinder
+            v-if="llenaderosPorTC(tc.id_tipo_combustible).length > 1"
             :uid="`total-tc-${tc.id_tipo_combustible}`"
             :nombre="`TOTAL ${tc.nombre_combustible}`"
             :capacidad="tc.capacidad_total"
