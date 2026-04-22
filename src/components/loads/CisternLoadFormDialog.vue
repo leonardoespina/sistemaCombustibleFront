@@ -19,7 +19,7 @@
         <q-btn icon="close" flat round dense v-close-popup />
       </q-card-section>
 
-      <q-form @submit.prevent="handleSave">
+      <q-form @submit.prevent="confirmarCarga">
         <!-- Reemplazo a Stepper -->
         <q-stepper
           v-model="step"
@@ -67,7 +67,7 @@
                 <q-input dense outlined v-model="formData.fecha_recepcion" type="date" label="Fecha Recepción" :readonly="isReadOnly" />
               </div>
               <div class="col-12 col-md-3">
-                <q-input dense outlined v-model.number="formData.litros_segun_guia" type="number" label="Litros según Guía" suffix="Lts" :readonly="isReadOnly" :rules="[(val) => val > 0 || 'Requerido']" @update:model-value="calculateAll" />
+                <q-input dense outlined v-model.number="formData.litros_segun_guia" type="number" label="Litros según Guía" suffix="Lts" :readonly="isReadOnly" :rules="[(val) => !!val || 'Requerido']" @update:model-value="calculateAll" />
               </div>
 
               <div class="col-12 col-md-4">
@@ -409,6 +409,7 @@
 
 <script setup>
 import { ref, watch, nextTick } from "vue";
+import { useQuasar } from "quasar";
 import { useCisternLoadForm } from "./composables/useCisternLoadForm";
 
 const props = defineProps({
@@ -423,6 +424,8 @@ const props = defineProps({
 });
 
 const emit = defineEmits(["update:modelValue", "save", "llenadero-changed", "tank-changed"]);
+
+const $q = useQuasar();
 
 const {
     formData, isInternalCistern, tipoCombustible, pesoNeto, step,
@@ -443,6 +446,97 @@ watch(() => props.modelValue, (isOpen) => {
     almacenistaNombre.value = `${user.nombre} ${user.apellido}`;
   }
 });
+
+function confirmarCarga() {
+  // Formatear fecha
+  const fechaFormateada = new Date(formData.value.fecha).toLocaleDateString('es-ES', {
+    weekday: 'long',
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric'
+  });
+
+  // Generar resumen de tanques
+  const resumenTanques = tanquesForm.value.map(tq => {
+    const tanqueNombre = tq.detail ? `${tq.detail.codigo} - ${tq.detail.nombre}` : 'Tanque no identificado';
+    const litrosRecibidos = Number(tq.liters.recibido || 0).toLocaleString();
+    const nivelFinal = Number(tq.liters.final || 0).toLocaleString();
+    
+    return `
+      <div style="margin-bottom: 8px; padding: 8px; background: white; border-radius: 4px; border: 1px solid #e0e0e0;">
+        <div style="font-weight: bold; color: #1976d2; margin-bottom: 4px;">${tanqueNombre}</div>
+        <div style="font-size: 13px; color: #666;">
+          <span style="margin-right: 12px;">📥 Recibido: <strong>${litrosRecibidos} L</strong></span>
+          <span>📊 Nivel Final: <strong>${nivelFinal} L</strong></span>
+        </div>
+      </div>
+    `;
+  }).join('');
+
+  $q.dialog({
+    title: "🚛 Confirmar Carga de Cisterna",
+    message: `
+      <div style="text-align: left; line-height: 1.6;">
+        <div style="margin-bottom: 16px; padding: 12px; background: #f5f5f5; border-radius: 8px; border-left: 4px solid #1976d2;">
+          <div style="font-weight: bold; color: #1976d2; margin-bottom: 8px;">📍 Detalles de la Carga</div>
+          <div style="margin-bottom: 4px;"><strong>📋 N° Guía:</strong> ${formData.value.numero_guia || 'N/A'}</div>
+          <div style="margin-bottom: 4px;"><strong>🚛 Placa:</strong> ${formData.value.placa_cisterna || 'N/A'}</div>
+          <div style="margin-bottom: 4px;"><strong>📅 Fecha:</strong> ${fechaFormateada}</div>
+          <div style="margin-bottom: 4px;"><strong>⏰ Hora:</strong> ${formData.value.hora}</div>
+          <div><strong>👤 Almacenista:</strong> ${almacenistaNombre.value}</div>
+        </div>
+
+        <div style="margin-bottom: 16px; padding: 12px; background: #f8f9fa; border-radius: 8px; border-left: 4px solid #28a745;">
+          <div style="font-weight: bold; color: #28a745; margin-bottom: 8px;">📊 Resumen de Volúmenes</div>
+          
+            <div style="margin-bottom: 12px; padding: 8px; background: white; border-radius: 4px; border: 1px solid #e0e0e0;">
+              <div style="font-weight: bold; color: #6c757d; margin-bottom: 4px;">📋 SEGÚN GUÍA: ${Number(formData.value.litros_segun_guia || 0).toLocaleString()} L</div>
+              <div style="font-weight: bold; color: #28a745; margin-bottom: 4px;">📏 VOLUMEN RECIBIDO TOTAL: ${Number(globalLiters.recibido || 0).toLocaleString()} L</div>
+              <div style="font-weight: bold; color: ${Number(globalLiters.faltante || 0) >= 0 ? '#28a745' : '#dc3545'};">📈 DIFERENCIA: ${Number(globalLiters.faltante || 0).toLocaleString()} L</div>
+              <div style="font-size: 12px; color: #666; margin-top: 4px; font-style: italic;">
+                * El Volumen Recibido Total es la suma de lo depositado en todos los tanques receptores.
+              </div>
+            </div>
+        </div>
+
+        <div style="margin-bottom: 16px; padding: 12px; background: #f8f9fa; border-radius: 8px; border-left: 4px solid #17a2b8;">
+          <div style="font-weight: bold; color: #17a2b8; margin-bottom: 8px;">🛢️ Tanques de Descarga</div>
+          ${resumenTanques}
+        </div>
+        
+        <div style="padding: 12px; background: #fff3cd; border-radius: 8px; border-left: 4px solid #ffc107; margin-bottom: 16px;">
+          <div style="font-weight: bold; color: #856404; margin-bottom: 4px;">⚠️ Importante</div>
+          <div style="color: #856404; font-size: 14px;">
+            Esta acción registrará la <strong>carga de cisterna</strong> y actualizará los niveles de inventario.
+            Una vez confirmada, se procesarán todas las mediciones y diferencias.
+          </div>
+        </div>
+        
+        <div style="text-align: center; color: #666; font-size: 14px;">
+          ¿Desea continuar con el registro de la carga?
+        </div>
+      </div>
+    `,
+    cancel: {
+      label: "❌ Cancelar",
+      color: "grey-7",
+      flat: true,
+      'no-caps': true
+    },
+    ok: {
+      label: "✅ Confirmar Carga",
+      color: "positive",
+      unelevated: true,
+      'no-caps': true,
+      icon: "local_shipping"
+    },
+    persistent: true,
+    html: true,
+    style: "min-width: 600px;"
+  }).onOk(() => {
+    handleSave();
+  });
+}
 
 function handleSave() {
   const payload = { ...formData.value };

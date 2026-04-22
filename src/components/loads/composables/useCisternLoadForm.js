@@ -133,11 +133,8 @@ export function useCisternLoadForm(props, emit) {
     const tq = tanquesForm.value[index];
     if (!tq.detail) return;
 
-    const medIni = tq.medida_inicial;
-    const medFin = tq.medida_final;
-    const unidad = (tq.detail.unidad_medida || "CM").toUpperCase();
-
     const getVol = (medida) => {
+      const unidad = tq.detail?.unidad_medida || "cm";
       const m = parseFloat(medida);
       if (isNaN(m)) return 0;
 
@@ -201,6 +198,9 @@ export function useCisternLoadForm(props, emit) {
       return m;
     };
 
+    const medIni = parseFloat(tq.medida_inicial) || 0;
+    const medFin = parseFloat(tq.medida_final) || 0;
+
     if (!tq.litersWereEdited.inicial) tq.liters.inicial = parseFloat(getVol(medIni).toFixed(2));
     if (!tq.litersWereEdited.final) tq.liters.final = parseFloat(getVol(medFin).toFixed(2));
 
@@ -212,17 +212,15 @@ export function useCisternLoadForm(props, emit) {
 
   function calculateAll() {
     let globalTotalRecibido = 0;
-    let globalDepositadoReal = 0;
 
     // Calcular cada tanque individual
     for (let i = 0; i < tanquesForm.value.length; i++) {
       calculateTank(i);
       const fin = parseFloat(tanquesForm.value[i].liters.final || 0);
       const ini = parseFloat(tanquesForm.value[i].liters.inicial || 0);
-      
+
       const recibidoEnEsteTanque = (fin - ini) > 0 ? (fin - ini) : 0;
       globalTotalRecibido += recibidoEnEsteTanque;
-      globalDepositadoReal += recibidoEnEsteTanque;
     }
 
     // Calcular métricas globales de la cabecera
@@ -231,10 +229,11 @@ export function useCisternLoadForm(props, emit) {
     const guia = parseFloat(formData.value.litros_segun_guia) || 0;
     const flujo = parseFloat(formData.value.litros_flujometro);
 
-    globalLiters.faltante = (globalDepositadoReal - guia).toFixed(2);
+    // Diferencia (Mermas) = Recibido - Guía
+    globalLiters.faltante = (globalTotalRecibido - guia).toFixed(2);
 
     if (flujo !== null && flujo !== "" && !isNaN(flujo)) {
-      globalLiters.dif_flujo = (globalDepositadoReal - flujo).toFixed(2);
+      globalLiters.dif_flujo = (globalTotalRecibido - flujo).toFixed(2);
     } else {
       globalLiters.dif_flujo = "0.00";
     }
@@ -267,9 +266,13 @@ export function useCisternLoadForm(props, emit) {
   }
 
   function calcularPesoNeto() {
-    const entrada = parseFloat(formData.value.peso_entrada) || 0;
-    const salida = parseFloat(formData.value.peso_salida) || 0;
-    pesoNeto.value = entrada && salida ? entrada - salida : null;
+    const ent = parseFloat(formData.value.peso_entrada) || 0;
+    const sal = parseFloat(formData.value.peso_salida) || 0;
+    if (ent > 0 && sal > 0) {
+      pesoNeto.value = Math.abs(ent - sal);
+    } else {
+      pesoNeto.value = null;
+    }
   }
 
   // --- MÉTODOS AFORO DE CISTERNA ---
@@ -427,18 +430,11 @@ export function useCisternLoadForm(props, emit) {
     const volAforo = totalAforoCisterna.value;
     const volReal = parseFloat(globalLiters.recibido) || 0;
     const volFlujo = parseFloat(formData.value.litros_flujometro) || 0;
-    const depositadoReal = tanquesForm.value.reduce((acc, tq) => {
-      const f = parseFloat(tq.liters.final || 0);
-      const i = parseFloat(tq.liters.inicial || 0);
-      // Depósito real neto = Sumatoria de las diferencias (Final - Inicial)
-      const diff = (f - i) > 0 ? (f - i) : 0;
-      return acc + diff;
-    }, 0);
 
     return {
       guiaVsAforo: calcularEstadoDiferencia(volGuia, volAforo),
-      guiaVsReal: calcularEstadoDiferencia(volGuia, depositadoReal),
-      realVsFlujo: volFlujo > 0 ? calcularEstadoDiferencia(depositadoReal, volFlujo) : null
+      guiaVsReal: calcularEstadoDiferencia(volGuia, volReal),
+      realVsFlujo: volFlujo > 0 ? calcularEstadoDiferencia(volReal, volFlujo) : null
     };
   });
 

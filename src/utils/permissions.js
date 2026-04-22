@@ -66,6 +66,7 @@ export const ROLE_PERMISSIONS = {
         PERMISSIONS.VIEW_REPORTES_GLOB,
         PERMISSIONS.VIEW_MIS_CUPOS,
         PERMISSIONS.VIEW_MIS_DESPACHOS,
+        PERMISSIONS.REVERTIR_OPERACION,
     ],
 
     PRESIDENCIA: [
@@ -116,7 +117,8 @@ export function hasPermission(user, permission) {
     if (permission === PERMISSIONS.REVERTIR_OPERACION) {
         return (
             user.tipo_usuario === "ADMIN" ||
-            user.rol_sistema === "ADMIN"
+            user.rol_sistema === "ADMIN" ||
+            user.capacidad_solicitudes === "AMBOS"
         );
     }
 
