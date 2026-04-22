@@ -1,5 +1,5 @@
 import { ref, watch, nextTick, reactive, computed } from "vue";
-import { date } from "quasar";
+import { date, useQuasar } from "quasar";
 import { calcularVolumenTanque } from "../formula.js";
 
 /**
@@ -14,6 +14,8 @@ import { calcularVolumenTanque } from "../formula.js";
  * @returns {Object} Estado y métodos del formulario
  */
 export function useMeasurementForm(props, emit) {
+  const $q = useQuasar();
+
   // ============================================
   // ESTADO DEL FORMULARIO Y VARIABLES LOCALES
   // ============================================
@@ -294,6 +296,91 @@ export function useMeasurementForm(props, emit) {
     resetCalculos();
   }
 
+  function confirmarMedicion() {
+    // Obtener información del tanque y llenadero
+    const tanque = props.currentTankDetail;
+    const llenadero = props.llenaderosList?.find(l => l.id_llenadero === formData.value.id_llenadero);
+
+    // Formatear fecha
+    const fechaFormateada = new Date(formData.value.fecha).toLocaleDateString('es-ES', {
+      weekday: 'long',
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric'
+    });
+
+    // Determinar modo de medición
+    let modoMedicion = 'Manual';
+    if (isFormulaMode.value) {
+      modoMedicion = 'Fórmula Matemática';
+    } else if (!isManualMode.value) {
+      modoMedicion = 'Tabla de Aforo';
+    }
+
+    $q.dialog({
+      title: "📏 Confirmar Medición Física",
+      message: `
+        <div style="text-align: left; line-height: 1.6;">
+          <div style="margin-bottom: 16px; padding: 12px; background: #f5f5f5; border-radius: 8px; border-left: 4px solid #1976d2;">
+            <div style="font-weight: bold; color: #1976d2; margin-bottom: 8px;">📍 Detalles de la Medición</div>
+            <div style="margin-bottom: 4px;"><strong>🏢 Llenadero:</strong> ${llenadero?.nombre_llenadero || 'N/A'}</div>
+            <div style="margin-bottom: 4px;"><strong>🛢️ Tanque:</strong> ${tanque?.codigo} - ${tanque?.nombre}</div>
+            <div style="margin-bottom: 4px;"><strong>📅 Fecha:</strong> ${fechaFormateada}</div>
+            <div style="margin-bottom: 4px;"><strong>⏰ Hora:</strong> ${formData.value.hora}</div>
+            <div><strong>⚙️ Modo:</strong> ${modoMedicion}</div>
+          </div>
+
+          <div style="margin-bottom: 16px; padding: 12px; background: #f8f9fa; border-radius: 8px; border-left: 4px solid #28a745;">
+            <div style="font-weight: bold; color: #28a745; margin-bottom: 8px;">📊 Resultados de Medición</div>
+            
+            <div style="margin-bottom: 8px; padding: 8px; background: white; border-radius: 4px; border: 1px solid #e0e0e0;">
+              <div style="font-weight: bold; color: #6c757d; margin-bottom: 4px;">💻 NIVEL SISTEMA: ${Number(tanque?.nivel_actual || 0).toLocaleString()} L</div>
+              <div style="font-weight: bold; color: #1976d2; margin-bottom: 4px;">📏 VOLUMEN REAL: ${Number(liters.real || 0).toLocaleString()} L</div>
+              <div style="font-weight: bold; color: ${Number(liters.diferencia || 0) > 0 ? '#dc3545' : Number(liters.diferencia || 0) < 0 ? '#ff9800' : '#28a745'};">📈 DIFERENCIA: ${Number(liters.diferencia || 0).toLocaleString()} L</div>
+              ${formData.value.litros_evaporacion > 0 ? `<div style="font-weight: bold; color: #6c757d;">💨 EVAPORACIÓN: ${Number(formData.value.litros_evaporacion).toLocaleString()} L</div>` : ''}
+            </div>
+
+            ${formData.value.medida_vara ? `
+              <div style="margin-bottom: 8px; padding: 8px; background: white; border-radius: 4px; border: 1px solid #e0e0e0;">
+                <div style="font-weight: bold; color: #17a2b8; margin-bottom: 4px;">📐 Medida de Vara: ${formData.value.medida_vara} ${tanque?.unidad_medida || 'cm'}</div>
+              </div>
+            ` : ''}
+          </div>
+          
+          <div style="padding: 12px; background: #fff3cd; border-radius: 8px; border-left: 4px solid #ffc107; margin-bottom: 16px;">
+            <div style="font-weight: bold; color: #856404; margin-bottom: 4px;">⚠️ Importante</div>
+            <div style="color: #856404; font-size: 14px;">
+              Esta acción registrará la <strong>medición física</strong> del tanque.
+              Una vez confirmada, se actualizará el registro de inventario.
+            </div>
+          </div>
+          
+          <div style="text-align: center; color: #666; font-size: 14px;">
+            ¿Desea continuar con el registro de la medición?
+          </div>
+        </div>
+      `,
+      cancel: {
+        label: "❌ Cancelar",
+        color: "grey-7",
+        flat: true,
+        'no-caps': true
+      },
+      ok: {
+        label: "✅ Confirmar Medición",
+        color: "primary",
+        unelevated: true,
+        'no-caps': true,
+        icon: "straighten"
+      },
+      persistent: true,
+      html: true,
+      style: "min-width: 500px;"
+    }).onOk(() => {
+      onSave();
+    });
+  }
+
   async function onSave() {
     await nextTick();
 
@@ -360,5 +447,6 @@ export function useMeasurementForm(props, emit) {
     onLlenaderoSelect,
     onTankSelect,
     onSave,
+    confirmarMedicion,
   };
 }

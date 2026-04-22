@@ -19,7 +19,7 @@
         <q-btn icon="close" flat round dense v-close-popup />
       </q-card-section>
 
-      <q-form @submit.prevent="handleSaveInternal">
+      <q-form @submit.prevent="confirmarTransferencia">
         <q-card-section class="q-pt-md scroll" style="max-height: 75vh">
           <div class="row q-col-gutter-md">
             <!-- 1. DATOS GENERALES -->
@@ -299,6 +299,7 @@
 
 <script setup>
 import { ref, watch, computed } from "vue";
+import { useQuasar } from "quasar";
 import { useInternalTransferForm } from "./composables/useInternalTransferForm";
 
 const props = defineProps({
@@ -320,6 +321,8 @@ const emit = defineEmits([
   "source-tank-changed",
   "destination-tank-changed",
 ]);
+
+const $q = useQuasar();
 
 const {
   formData, calculationMode, litersToTransfer, editing, manualEdit, liters,
@@ -384,6 +387,91 @@ function onDestinationTankSelect(id) {
   emit("destination-tank-changed", id);
   formData.value.medida_vara_destino = null;
   resetAllStates();
+}
+
+function confirmarTransferencia() {
+  // Obtener nombres de tanques y llenaderos
+  const tanqueOrigen = props.tanksList.find(t => t.id_tanque === formData.value.id_tanque_origen);
+  const tanqueDestino = props.tanksList.find(t => t.id_tanque === formData.value.id_tanque_destino);
+  const llenadero = props.llenaderosList.find(l => l.id_llenadero === formData.value.id_llenadero);
+  
+  // Formatear fecha
+  const fechaFormateada = new Date(formData.value.fecha).toLocaleDateString('es-ES', {
+    weekday: 'long',
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric'
+  });
+
+  $q.dialog({
+    title: "🔄 Confirmar Transferencia Interna",
+    message: `
+      <div style="text-align: left; line-height: 1.6;">
+        <div style="margin-bottom: 16px; padding: 12px; background: #f5f5f5; border-radius: 8px; border-left: 4px solid #1976d2;">
+          <div style="font-weight: bold; color: #1976d2; margin-bottom: 8px;">📍 Detalles de la Transferencia</div>
+          <div style="margin-bottom: 4px;"><strong>🏢 Llenadero:</strong> ${llenadero?.nombre_llenadero || 'N/A'}</div>
+          <div style="margin-bottom: 4px;"><strong>📅 Fecha:</strong> ${fechaFormateada}</div>
+          <div style="margin-bottom: 4px;"><strong>⏰ Hora:</strong> ${formData.value.hora}</div>
+          <div><strong>👤 Registrado por:</strong> ${almacenistaNombre.value}</div>
+        </div>
+
+        <div style="margin-bottom: 16px; padding: 12px; background: #f8f9fa; border-radius: 8px; border-left: 4px solid #28a745;">
+          <div style="font-weight: bold; color: #28a745; margin-bottom: 8px;">🔄 Movimiento de Combustible</div>
+          
+          <div style="margin-bottom: 12px; padding: 8px; background: white; border-radius: 4px; border: 1px solid #e0e0e0;">
+            <div style="font-weight: bold; color: #dc3545; margin-bottom: 4px;">📤 ORIGEN: ${tanqueOrigen?.codigo} - ${tanqueOrigen?.nombre}</div>
+            <div style="font-size: 13px; color: #666;">
+              <span style="margin-right: 12px;">📊 Nivel Actual: <strong>${props.sourceTankDetail?.nivel_actual?.toLocaleString() || 'N/A'} L</strong></span>
+              <span>📉 Quedará: <strong>${Number(litersOrigenDespues).toLocaleString()} L</strong></span>
+            </div>
+          </div>
+
+          <div style="text-align: center; margin: 8px 0;">
+            <div style="font-size: 18px; color: #1976d2;">⬇️</div>
+            <div style="font-weight: bold; color: #1976d2; font-size: 16px;">${Number(computedLitersTransferidos).toLocaleString()} L</div>
+          </div>
+
+          <div style="margin-bottom: 8px; padding: 8px; background: white; border-radius: 4px; border: 1px solid #e0e0e0;">
+            <div style="font-weight: bold; color: #28a745; margin-bottom: 4px;">📥 DESTINO: ${tanqueDestino?.codigo} - ${tanqueDestino?.nombre}</div>
+            <div style="font-size: 13px; color: #666;">
+              <span style="margin-right: 12px;">📊 Nivel Actual: <strong>${props.destinationTankDetail?.nivel_actual?.toLocaleString() || 'N/A'} L</strong></span>
+              <span>📈 Quedará: <strong>${Number(liters.final).toLocaleString()} L</strong></span>
+            </div>
+          </div>
+        </div>
+        
+        <div style="padding: 12px; background: #fff3cd; border-radius: 8px; border-left: 4px solid #ffc107; margin-bottom: 16px;">
+          <div style="font-weight: bold; color: #856404; margin-bottom: 4px;">⚠️ Importante</div>
+          <div style="color: #856404; font-size: 14px;">
+            Esta acción registrará la <strong>transferencia interna</strong> de combustible entre tanques.
+            Una vez confirmada, se actualizarán los niveles de inventario.
+          </div>
+        </div>
+        
+        <div style="text-align: center; color: #666; font-size: 14px;">
+          ¿Desea continuar con el registro de la transferencia?
+        </div>
+      </div>
+    `,
+    cancel: {
+      label: "❌ Cancelar",
+      color: "grey-7",
+      flat: true,
+      'no-caps': true
+    },
+    ok: {
+      label: "✅ Confirmar Transferencia",
+      color: "primary",
+      unelevated: true,
+      'no-caps': true,
+      icon: "swap_horiz"
+    },
+    persistent: true,
+    html: true,
+    style: "min-width: 500px;"
+  }).onOk(() => {
+    handleSaveInternal();
+  });
 }
 
 function handleSaveInternal() {

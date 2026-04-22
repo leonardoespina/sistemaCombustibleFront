@@ -9,7 +9,7 @@
         <div class="text-h6">Registrar Medición Física</div>
       </q-card-section>
 
-      <q-form @submit.prevent="onSave">
+      <q-form @submit.prevent="confirmarMedicion">
         <q-card-section class="q-pt-none scroll" style="max-height: 70vh">
           <div class="row q-col-gutter-md">
             <!-- 1. DATOS GENERALES -->
@@ -375,6 +375,7 @@ const {
   onLlenaderoSelect,
   onTankSelect,
   onSave,
+  confirmarMedicion,
 } = useMeasurementForm(props, emit);
 </script>
 

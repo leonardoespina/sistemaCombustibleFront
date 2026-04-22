@@ -1,5 +1,5 @@
-import { ref, reactive, watch, computed } from "vue";
-import { date } from "quasar";
+import { ref, watch, computed } from "vue";
+import { date, useQuasar } from "quasar";
 import { calcularVolumenTanque } from "../../measurements/formula.js";
 
 /**
@@ -7,6 +7,8 @@ import { calcularVolumenTanque } from "../../measurements/formula.js";
  * Reutiliza la lógica de cálculo volumétrico de useMeasurementForm.
  */
 export function useGenerarCierreForm(props, emit) {
+    const $q = useQuasar();
+
     // ─── DATOS DEL LOTE ──────────────────────────────────────
     const lote = ref({
         id_llenadero: null,
@@ -169,6 +171,97 @@ export function useGenerarCierreForm(props, emit) {
         return hasDim ? "FORMULA" : "MANUAL";
     }
 
+    // ─── CONFIRMACIÓN DE GUARDADO ────────────────────────────
+    function confirmarGuardado() {
+        // Obtener información del lote para mostrar en el diálogo
+        const llenaderoNombre = props.llenaderosList?.find(l => l.id_llenadero === lote.value.id_llenadero)?.nombre_llenadero || 'N/A';
+        const tanquesCount = tanquesSeleccionados.value.length;
+
+        // Formatear fecha más legible
+        const fechaFormateada = new Date(lote.value.fecha_lote).toLocaleDateString('es-ES', {
+            weekday: 'long',
+            year: 'numeric',
+            month: 'long',
+            day: 'numeric'
+        });
+
+        // Emoji dinámico para el turno
+        const turnoEmoji = lote.value.turno === 'DIURNO' ? '☀️' : '🌙';
+
+        // Generar resumen de tanques y mediciones
+        const tanquesSeleccionadosData = tanquesForm.value.filter(t =>
+            tanquesSeleccionados.value.includes(t.id_tanque)
+        );
+
+        const resumenTanques = tanquesSeleccionadosData.map(t => {
+            const volumenReal = t.volumen_calculado ? Number(t.volumen_calculado).toLocaleString() : 'No medido';
+            const diferencia = t.diferencia !== null ? Number(t.diferencia).toLocaleString() : '--';
+            const evaporacion = t.merma_evaporacion ? Number(t.merma_evaporacion).toLocaleString() : '0';
+
+            return `
+                <div style="margin-bottom: 8px; padding: 8px; background: white; border-radius: 4px; border: 1px solid #e0e0e0;">
+                    <div style="font-weight: bold; color: #1976d2; margin-bottom: 4px;">${t.codigo} - ${t.nombre}</div>
+                    <div style="font-size: 13px; color: #666;">
+                        <span style="margin-right: 12px;">📊 Real: <strong>${volumenReal} L</strong></span>
+                        <span style="margin-right: 12px;">📈 Dif: <strong>${diferencia} L</strong></span>
+                        <span>💨 Evap: <strong>${evaporacion} L</strong></span>
+                    </div>
+                </div>
+            `;
+        }).join('');
+
+        $q.dialog({
+            title: "🔒 Confirmar Cierre de Turno",
+            message: `
+                <div style="text-align: left; line-height: 1.6;">
+                    <div style="margin-bottom: 16px; padding: 12px; background: #f5f5f5; border-radius: 8px; border-left: 4px solid #1976d2;">
+                        <div style="font-weight: bold; color: #1976d2; margin-bottom: 8px;">📍 Detalles del Cierre</div>
+                        <div style="margin-bottom: 4px;"><strong>🏢 Llenadero:</strong> ${llenaderoNombre}</div>
+                        <div style="margin-bottom: 4px;"><strong>${turnoEmoji} Turno:</strong> ${lote.value.turno}</div>
+                        <div style="margin-bottom: 4px;"><strong>📅 Fecha:</strong> ${fechaFormateada}</div>
+                        <div style="margin-bottom: 4px;"><strong>⏰ Período:</strong> ${lote.value.hora_inicio_lote} → ${lote.value.hora_cierre_lote}</div>
+                        <div><strong>🛢️ Tanques:</strong> ${tanquesCount} tanque${tanquesCount !== 1 ? 's' : ''} seleccionado${tanquesCount !== 1 ? 's' : ''}</div>
+                    </div>
+
+                    <div style="margin-bottom: 16px; padding: 12px; background: #f8f9fa; border-radius: 8px; border-left: 4px solid #28a745;">
+                        <div style="font-weight: bold; color: #28a745; margin-bottom: 8px;">📋 Resumen de Mediciones</div>
+                        ${resumenTanques}
+                    </div>
+                    
+                    <div style="padding: 12px; background: #fff3cd; border-radius: 8px; border-left: 4px solid #ffc107; margin-bottom: 16px;">
+                        <div style="font-weight: bold; color: #856404; margin-bottom: 4px;">⚠️ Importante</div>
+                        <div style="color: #856404; font-size: 14px;">
+                            Esta acción procesará las mediciones físicas y generará el <strong>cierre definitivo</strong> del turno.
+                            Una vez confirmado, no podrá ser modificado.
+                        </div>
+                    </div>
+                    
+                    <div style="text-align: center; color: #666; font-size: 14px;">
+                        ¿Desea continuar con la generación del cierre?
+                    </div>
+                </div>
+            `,
+            cancel: {
+                label: "❌ Cancelar",
+                color: "grey-7",
+                flat: true,
+                'no-caps': true
+            },
+            ok: {
+                label: "✅ Confirmar Cierre",
+                color: "primary",
+                unelevated: true,
+                'no-caps': true,
+                icon: "lock_clock"
+            },
+            persistent: true,
+            html: true,
+            style: "min-width: 500px;"
+        }).onOk(() => {
+            onSave();
+        });
+    }
+
     // ─── GUARDAR ─────────────────────────────────────────────
     function onSave() {
         // Filtrar solo los tanques que el usuario seleccionó
@@ -201,5 +294,6 @@ export function useGenerarCierreForm(props, emit) {
         onVolumenManual,
         getModo,
         onSave,
+        confirmarGuardado,
     };
 }

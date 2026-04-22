@@ -239,7 +239,7 @@
               <q-btn v-if="step < 3" :disable="step === 2 && tanquesSeleccionados.length === 0" color="primary" @click="step++" label="Continuar" unelevated />
               <q-btn
                 v-if="step === 3"
-                type="submit"
+                @click="confirmarGuardado"
                 color="primary"
                 icon="lock_clock"
                 label="Generar Cierre"
@@ -269,6 +269,6 @@ const props = defineProps({
 
 const emit = defineEmits(["update:modelValue", "llenadero-changed", "save"]);
 
-const { step, lote, tanquesForm, tanquesPorCombustible, tanquesSeleccionados, calcular, onVolumenManual, getModo, onSave } =
+const { step, lote, tanquesForm, tanquesPorCombustible, tanquesSeleccionados, calcular, onVolumenManual, getModo, onSave, confirmarGuardado } =
   useGenerarCierreForm(props, emit);
 </script>

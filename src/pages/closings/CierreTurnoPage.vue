@@ -428,7 +428,7 @@
 </template>
 
 <script setup>
-import { computed, onMounted } from "vue";
+import { computed} from "vue";
 import { PERMISSIONS, hasPermission } from "../../utils/permissions";
 import { useCierreTurnoPage } from "../../components/closings/composables/useCierreTurnoPage.js";
 import GenerarCierreDialog from "../../components/closings/GenerarCierreDialog.vue";
