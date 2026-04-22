@@ -422,13 +422,13 @@ function confirmarTransferencia() {
             <div style="font-weight: bold; color: #dc3545; margin-bottom: 4px;">📤 ORIGEN: ${tanqueOrigen?.codigo} - ${tanqueOrigen?.nombre}</div>
             <div style="font-size: 13px; color: #666;">
               <span style="margin-right: 12px;">📊 Nivel Actual: <strong>${props.sourceTankDetail?.nivel_actual?.toLocaleString() || 'N/A'} L</strong></span>
-              <span>📉 Quedará: <strong>${Number(litersOrigenDespues).toLocaleString()} L</strong></span>
+              <span>📉 Quedará: <strong>${Number(litersOrigenDespues.value).toLocaleString()} L</strong></span>
             </div>
           </div>
 
           <div style="text-align: center; margin: 8px 0;">
             <div style="font-size: 18px; color: #1976d2;">⬇️</div>
-            <div style="font-weight: bold; color: #1976d2; font-size: 16px;">${Number(computedLitersTransferidos).toLocaleString()} L</div>
+            <div style="font-weight: bold; color: #1976d2; font-size: 16px;">${Number(computedLitersTransferidos.value).toLocaleString()} L</div>
           </div>
 
           <div style="margin-bottom: 8px; padding: 8px; background: white; border-radius: 4px; border: 1px solid #e0e0e0;">
