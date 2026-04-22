@@ -12,12 +12,13 @@ export const useReporteDiarioStore = defineStore('reporteDiario', () => {
 
     const filters = ref({
         id_llenadero: null,
-        fecha: todayStr(),
+        fecha_desde: todayStr(),
+        fecha_hasta: todayStr(),
     });
 
     const pagination = ref({
         page: 1,
-        rowsPerPage: 20,
+        rowsPerPage: 50,
         rowsNumber: 0,
     });
 
@@ -39,7 +40,8 @@ export const useReporteDiarioStore = defineStore('reporteDiario', () => {
             const { data } = await api.get('/reportes/diario', {
                 params: {
                     id_llenadero: filters.value.id_llenadero,
-                    fecha: filters.value.fecha,
+                    fecha_desde: filters.value.fecha_desde,
+                    fecha_hasta: filters.value.fecha_hasta,
                     page,
                     limit,
                 },
@@ -60,7 +62,8 @@ export const useReporteDiarioStore = defineStore('reporteDiario', () => {
 
     const resetFilters = () => {
         filters.value.id_llenadero = null;
-        filters.value.fecha = todayStr();
+        filters.value.fecha_desde = todayStr();
+        filters.value.fecha_hasta = todayStr();
         reportData.value = null;
     };
 

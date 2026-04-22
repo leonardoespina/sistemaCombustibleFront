@@ -11,6 +11,14 @@ export function useReporteDiarioPage() {
 
     // ─── Columnas ────────────────────────────────────────────
     const columnsInstitucional = [
+        {
+            name: 'fecha_hora', label: 'Fecha/Hora', align: 'left',
+            field: row => `${row.fecha} ${row.hora}`,
+            format: (v, row) => {
+                if (!row.fecha) return '-';
+                return `${date.formatDate(row.fecha, 'DD/MM/YYYY')} ${row.hora || ''}`;
+            }
+        },
         { name: 'solicitante', label: 'Solicitante', field: 'solicitante', align: 'left' },
         { name: 'aprobador', label: 'Aprobador', field: 'aprobador', align: 'left' },
         { name: 'recibido', label: 'Recibido', field: 'recibido', align: 'left' },
@@ -19,8 +27,8 @@ export function useReporteDiarioPage() {
         { name: 'dependencia', label: 'Dependencia', field: 'dependencia', align: 'left' },
         { name: 'subdependencia', label: 'Subdependencia', field: 'subdependencia', align: 'left' },
         { name: 'tipo_combustible', label: 'Combustible', field: 'tipo_combustible', align: 'left' },
-        { name: 'cant_solic', label: 'Cant. Solic', field: 'cant_solic', align: 'right' },
-        { name: 'cant_desp', label: 'Cant. Desp', field: 'cant_desp', align: 'right' },
+        { name: 'cant_solic', label: 'Cant. Solic', field: 'cant_solic', align: 'right', format: v => Number(v).toFixed(2) },
+        { name: 'cant_desp', label: 'Cant. Desp', field: 'cant_desp', align: 'right', format: v => Number(v).toFixed(2) },
     ];
 
     const columnsVenta = [
@@ -32,7 +40,7 @@ export function useReporteDiarioPage() {
     ];
 
     // ─── Acciones ────────────────────────────────────────────
-    async function consultarReporte(page = 1, limit = 20) {
+    async function consultarReporte(page = 1, limit = 50) {
         try {
             await store.fetchReport(page, limit);
             showReportDialog.value = true;

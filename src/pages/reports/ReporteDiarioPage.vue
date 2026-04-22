@@ -37,24 +37,35 @@
                 <template v-slot:prepend><q-icon name="ev_station" color="primary" /></template>
               </q-select>
             </div>
-            <div class="col-12 col-sm-4">
+            <div class="col-12 col-sm-3">
               <q-input
                 outlined dense bg-color="white"
-                v-model="store.filters.fecha"
+                v-model="store.filters.fecha_desde"
                 type="date"
-                label="Fecha de Reporte"
+                label="Desde"
                 :rules="[val => !!val || 'Requerida']"
               >
                 <template v-slot:prepend><q-icon name="event" color="primary" /></template>
               </q-input>
             </div>
             <div class="col-12 col-sm-3">
+              <q-input
+                outlined dense bg-color="white"
+                v-model="store.filters.fecha_hasta"
+                type="date"
+                label="Hasta"
+                :rules="[val => !!val || 'Requerida']"
+              >
+                <template v-slot:prepend><q-icon name="event" color="primary" /></template>
+              </q-input>
+            </div>
+            <div class="col-12 col-sm-2">
               <q-btn
                 color="primary" icon="search" label="Generar"
                 class="full-width" unelevated
                 @click="consultarReporte(1)"
                 :loading="store.loading"
-                :disable="!store.filters.id_llenadero || !store.filters.fecha"
+                :disable="!store.filters.id_llenadero || !store.filters.fecha_desde || !store.filters.fecha_hasta"
               />
             </div>
           </div>
@@ -74,11 +85,11 @@
               <ExportExcelBtn
                 :rows="store.reportData?.institucional || []"
                 :columns="columnsInstitucional"
-                :filename="`ReporteDiario_Institucional_${store.filters.fecha}`"
+                :filename="`ReporteDiario_Institucional_${store.filters.fecha_desde}_al_${store.filters.fecha_hasta}`"
                 sheet-name="Institucional"
                 :meta="[
                   'REPORTE DIARIO DE COMBUSTIBLE — INSTITUCIONAL',
-                  `Fecha: ${formatDate(store.filters.fecha)}`,
+                  `Periodo: ${formatDate(store.filters.fecha_desde)} al ${formatDate(store.filters.fecha_hasta)}`,
                   `Llenadero: ${getLlenaderoNombre(store.filters.id_llenadero)}`,
                 ]"
                 label="Institucional"
@@ -88,11 +99,11 @@
               <ExportExcelBtn
                 :rows="store.reportData?.venta || []"
                 :columns="columnsVenta"
-                :filename="`ReporteDiario_Venta_${store.filters.fecha}`"
+                :filename="`ReporteDiario_Venta_${store.filters.fecha_desde}_al_${store.filters.fecha_hasta}`"
                 sheet-name="Venta"
                 :meta="[
                   'REPORTE DIARIO DE COMBUSTIBLE — VENTA',
-                  `Fecha: ${formatDate(store.filters.fecha)}`,
+                  `Periodo: ${formatDate(store.filters.fecha_desde)} al ${formatDate(store.filters.fecha_hasta)}`,
                   `Llenadero: ${getLlenaderoNombre(store.filters.id_llenadero)}`,
                 ]"
                 label="Venta"
@@ -125,7 +136,7 @@
                     Reporte Diario de Combustible
                   </div>
                   <div class="text-caption text-grey-8">
-                    Fecha: <span class="text-weight-bold">{{ formatDate(store.filters.fecha) }}</span>
+                    Periodo: <span class="text-weight-bold">{{ formatDate(store.filters.fecha_desde) }} - {{ formatDate(store.filters.fecha_hasta) }}</span>
                     · Llenadero: <span class="text-weight-bold">{{ getLlenaderoNombre(store.filters.id_llenadero) }}</span>
                   </div>
                 </div>
@@ -151,7 +162,7 @@
                   >
                     <template v-slot:bottom-row>
                       <q-tr class="bg-grey-2 text-weight-bold">
-                        <q-td colspan="8" class="text-right">Total Litros Institucional:</q-td>
+                        <q-td colspan="9" class="text-right">Total Litros Institucional:</q-td>
                         <q-td class="text-right">{{ store.reportData.totales.litros_institucional }}</q-td>
                       </q-tr>
                     </template>
@@ -177,7 +188,7 @@
                   >
                     <template v-slot:bottom-row>
                       <q-tr class="bg-grey-2 text-weight-bold">
-                        <q-td colspan="8" class="text-right">Totales Venta:</q-td>
+                        <q-td colspan="9" class="text-right">Totales Venta:</q-td>
                         <q-td class="text-right">{{ store.reportData.totales.litros_venta }}</q-td>
                         <q-td class="text-right"></q-td>
                         <q-td class="text-right">{{ store.reportData.totales.monto_venta }}</q-td>
