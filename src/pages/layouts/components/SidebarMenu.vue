@@ -188,7 +188,7 @@
     <!--          REPORTES                  -->
     <!-- ================================== -->
     <q-expansion-item
-      v-if="can(PERMISSIONS.VIEW_MIS_CUPOS) || can(PERMISSIONS.VIEW_MIS_DESPACHOS) || can(PERMISSIONS.VIEW_REPORTE_DIARIO) || can(PERMISSIONS.VIEW_REPORTE_DESPACHOS) || can(PERMISSIONS.VIEW_REPORTE_CONSUMO) || can(PERMISSIONS.VIEW_REPORTES_GLOB)"
+      v-if="can(PERMISSIONS.VIEW_MIS_CUPOS) || can(PERMISSIONS.VIEW_MIS_DESPACHOS) || can(PERMISSIONS.VIEW_REPORTE_DIARIO) || can(PERMISSIONS.VIEW_REPORTE_DESPACHOS) || can(PERMISSIONS.VIEW_REPORTE_CONSUMO) || can(PERMISSIONS.VIEW_REPORTE_RECEPCION) || can(PERMISSIONS.VIEW_REPORTES_GLOB)"
       expand-separator
       icon="analytics"
       label="Reportes"
@@ -253,6 +253,19 @@
             <q-icon name="local_gas_station" size="xs" />
           </q-item-section>
           <q-item-section>Situación del Combustible</q-item-section>
+        </q-item>
+
+        <!-- Recepción de Combustibles (nuevo) -->
+        <q-item
+          v-if="can(PERMISSIONS.VIEW_REPORTE_RECEPCION)"
+          clickable
+          v-ripple
+          to="/reportes/recepcion-cisternas"
+        >
+          <q-item-section avatar>
+            <q-icon name="local_shipping" size="xs" />
+          </q-item-section>
+          <q-item-section>Recepción de Combustibles</q-item-section>
         </q-item>
 
       </q-list>
