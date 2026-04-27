@@ -76,6 +76,7 @@
               'SEGURIDAD',
               'INSPECTOR',
               'PRESIDENCIA',
+              'TI',
             ]"
             label="Rol del Sistema (Permisología)"
             :rules="validationRules.rol_sistema"
@@ -83,7 +84,7 @@
           <q-select
             dense
             v-model="formData.capacidad_solicitudes"
-            :options="['SOLICITANTE', 'APROBADOR', 'AMBOS', 'NINGUNO']"
+            :options="capacidadOpciones"
             label="Capacidad de Solicitudes"
             :rules="validationRules.capacidad_solicitudes"
           />
@@ -116,7 +117,7 @@
 </template>
 
 <script setup>
-import { onMounted, onUnmounted } from "vue";
+import { onMounted, onUnmounted, computed } from "vue";
 import { useQuasar } from "quasar";
 import socket from "../../services/socket.js";
 import OrganizationalHierarchy from "../OrganizationalHierarchy.vue";
@@ -130,6 +131,17 @@ const props = defineProps({
 
 const emit = defineEmits(["update:modelValue", "save", "dataUpdated"]);
 const $q = useQuasar();
+
+// Opciones dinámicas según rol
+const usuarioLogueadoStr = localStorage.getItem("user");
+const usuarioLogueado = usuarioLogueadoStr ? JSON.parse(usuarioLogueadoStr) : {};
+
+const capacidadOpciones = computed(() => {
+  if (usuarioLogueado.cedula === "root") {
+    return ['SOLICITANTE', 'APROBADOR', 'AMBOS', 'NINGUNO'];
+  }
+  return ['SOLICITANTE', 'APROBADOR', 'NINGUNO'];
+});
 
 // Composable del formulario
 const {

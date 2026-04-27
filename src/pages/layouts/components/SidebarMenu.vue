@@ -11,13 +11,14 @@
     <!--          CONFIGURACIÓN             -->
     <!-- ================================== -->
     <q-expansion-item
-      v-if="can(PERMISSIONS.MANAGE_SYSTEM)"
+      v-if="can(PERMISSIONS.MANAGE_SYSTEM) || can(PERMISSIONS.MANAGE_CONFIG_TI)"
       expand-separator
       icon="settings"
       label="Configuración"
       class="text-grey-8"
     >
       <q-expansion-item
+        v-if="can(PERMISSIONS.MANAGE_SYSTEM) || can(PERMISSIONS.MANAGE_CONFIG_TI)"
         expand-separator
         icon="category"
         label="Gerencias y Entes"
@@ -42,6 +43,7 @@
       </q-expansion-item>
 
       <q-expansion-item
+        v-if="can(PERMISSIONS.MANAGE_SYSTEM) || can(PERMISSIONS.MANAGE_CONFIG_TI)"
         expand-separator
         icon="directions_car"
         label="Vehículos"
@@ -72,37 +74,47 @@
       </q-expansion-item>
 
       <q-list class="q-pl-md">
-        <q-item clickable v-ripple to="/usuarios">
+        <!-- Solo ADMIN -->
+        <q-item v-if="can(PERMISSIONS.MANAGE_SYSTEM)" clickable v-ripple to="/usuarios">
           <q-item-section avatar><q-icon name="group" /></q-item-section>
           <q-item-section>Usuarios</q-item-section>
         </q-item>
 
-        <q-item clickable v-ripple to="/tipos-combustible">
+        <!-- Solo ADMIN -->
+        <q-item v-if="can(PERMISSIONS.MANAGE_SYSTEM)" clickable v-ripple to="/tipos-combustible">
           <q-item-section avatar><q-icon name="category" /></q-item-section>
           <q-item-section>Tipos de Combustible</q-item-section>
         </q-item>
 
-        <q-item clickable v-ripple to="/cupos">
+        <!-- Solo ADMIN -->
+        <q-item v-if="can(PERMISSIONS.MANAGE_SYSTEM)" clickable v-ripple to="/cupos">
           <q-item-section avatar><q-icon name="assignment" /></q-item-section>
           <q-item-section>Gestión de Cupos</q-item-section>
         </q-item>
 
-        <q-item clickable v-ripple to="/precios">
+        <!-- Solo ADMIN -->
+        <q-item v-if="can(PERMISSIONS.MANAGE_SYSTEM)" clickable v-ripple to="/precios">
           <q-item-section avatar><q-icon name="payments" /></q-item-section>
           <q-item-section>Relación de Precios</q-item-section>
         </q-item>
 
-        <q-item clickable v-ripple to="/llenaderos">
+        <!-- Solo ADMIN -->
+        <q-item v-if="can(PERMISSIONS.MANAGE_SYSTEM)" clickable v-ripple to="/llenaderos">
           <q-item-section avatar><q-icon name="ev_station" /></q-item-section>
           <q-item-section>Llenaderos</q-item-section>
         </q-item>
 
-        <q-item clickable v-ripple to="/huella">
+        <!-- ADMIN y TI -->
+        <q-item
+          v-if="can(PERMISSIONS.MANAGE_SYSTEM) || can(PERMISSIONS.MANAGE_CONFIG_TI)"
+          clickable v-ripple to="/huella"
+        >
           <q-item-section avatar><q-icon name="fingerprint" /></q-item-section>
           <q-item-section>Huella</q-item-section>
         </q-item>
 
-        <q-item clickable v-ripple to="/tanques">
+        <!-- Solo ADMIN -->
+        <q-item v-if="can(PERMISSIONS.MANAGE_SYSTEM)" clickable v-ripple to="/tanques">
           <q-item-section avatar><q-icon name="oil_barrel" /></q-item-section>
           <q-item-section>Gestión de Tanques</q-item-section>
         </q-item>

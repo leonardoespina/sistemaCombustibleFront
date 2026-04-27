@@ -21,6 +21,7 @@ export const PERMISSIONS = {
     REVERTIR_OPERACION: "revertir_operacion",
     TOGGLE_TANQUE_USO: "toggle_tanque_uso",
     VIEW_REPORTE_RECEPCION: "view_reporte_recepcion",
+    MANAGE_CONFIG_TI: "manage_config_ti",
 };
 
 export const ROLE_PERMISSIONS = {
@@ -87,6 +88,13 @@ export const ROLE_PERMISSIONS = {
         PERMISSIONS.VIEW_REPORTES_GLOB,
         PERMISSIONS.VIEW_MIS_CUPOS,
         PERMISSIONS.VIEW_MIS_DESPACHOS,
+    ],
+
+    TI: [
+        PERMISSIONS.MANAGE_CONFIG_TI,
+        PERMISSIONS.VIEW_SOLICITUDES,
+        PERMISSIONS.CREATE_SOLICITUD,
+        PERMISSIONS.REJECT_SOLICITUD,
     ],
 };
 

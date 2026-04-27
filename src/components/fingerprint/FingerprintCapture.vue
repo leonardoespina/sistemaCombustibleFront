@@ -86,7 +86,7 @@
               <div class="column q-gutter-y-xs">
                 <q-select
                   v-model="form.rol"
-                  :options="['RETIRO', 'ALMACEN', 'AMBOS']"
+                  :options="rolOpciones"
                   label="Rol"
                   outlined
                   dense
@@ -290,7 +290,16 @@ import api from "../../api";
 import OrganizationalHierarchy from "../OrganizationalHierarchy.vue";
 import BiometriaSubdependenciasSelect from "./BiometriaSubdependenciasSelect.vue";
 
-
+// Opciones del selector Rol: 'AMBOS' solo visible para ADMIN y root
+const _usuarioLogueado = (() => {
+  try { return JSON.parse(localStorage.getItem("user") || "{}"); } catch { return {}; }
+})();
+const _puedeVerAmbos =
+  _usuarioLogueado.tipo_usuario === "ADMIN" ||
+  _usuarioLogueado.cedula === "root";
+const rolOpciones = _puedeVerAmbos
+  ? ["RETIRO", "ALMACEN", "AMBOS"]
+  : ["RETIRO", "ALMACEN"];
 const $q = useQuasar();
 
 const props = defineProps({

@@ -21,21 +21,21 @@ const routes = [
       {
         path: "huella",
         name: "fingerprint",
-        meta: { requiresAdmin: true },
+        meta: { requiresPermission: PERMISSIONS.MANAGE_CONFIG_TI },
         component: () =>
           import("../pages/fingerprint/FingerprintManagementPage.vue"),
       },
       {
         path: "huella/verificar",
         name: "fingerprint-verify",
-        meta: { requiresAdmin: true },
+        meta: { requiresPermission: PERMISSIONS.MANAGE_CONFIG_TI },
         component: () =>
           import("../pages/fingerprint/FingerprintVerifyPage.vue"),
       },
       {
         path: "subdependencias",
         name: "subdependencias",
-        meta: { requiresAdmin: true },
+        meta: { requiresPermission: PERMISSIONS.MANAGE_CONFIG_TI },
         component: () =>
           import("../pages/subdependencias/SubdependenciasPage.vue"),
       },
@@ -48,31 +48,31 @@ const routes = [
       {
         path: "/vehiculos/marcas", // -> /vehiculos/marcas
         name: "brand-management",
-        meta: { requiresAdmin: true },
+        meta: { requiresPermission: PERMISSIONS.MANAGE_CONFIG_TI },
         component: () => import("../pages/vehicles/BrandPage.vue"), // Placeholder
       },
       {
         path: "/vehiculos/modelos",
         name: "model-management",
-        meta: { requiresAdmin: true },
+        meta: { requiresPermission: PERMISSIONS.MANAGE_CONFIG_TI },
         component: () => import("../pages/vehicles/ModelPage.vue"), // Placeholder
       },
       {
         path: "/vehiculos/lista",
         name: "vehiculo",
-        meta: { requiresAdmin: true },
+        meta: { requiresPermission: PERMISSIONS.MANAGE_CONFIG_TI },
         component: () => import("../pages/vehicles/VehicleListPage.vue"), // Placeholder
       },
       {
         path: "categorias",
         name: "categoria-list",
-        meta: { requiresAdmin: true },
+        meta: { requiresPermission: PERMISSIONS.MANAGE_CONFIG_TI },
         component: () => import("../pages/categoria/CategoriaPage.vue"),
       },
       {
         path: "dependencias",
         name: "dependency-list",
-        meta: { requiresAdmin: true },
+        meta: { requiresPermission: PERMISSIONS.MANAGE_CONFIG_TI },
         component: () => import("../pages/dependencias/DependenciasPage.vue"),
       },
       {
@@ -256,7 +256,11 @@ router.beforeEach((to, from, next) => {
   // 1. Permitir acceso libre a login si no hay token
   if (to.path === "/login") {
     if (token) {
-      return next({ name: "home" }); // Si ya tiene token, no dejar entrar a login
+      // Si el usuario TI ya tiene token, enviarlo directo a solicitudes
+      if (user.rol_sistema === "TI") {
+        return next({ name: "request-list" });
+      }
+      return next({ name: "home" });
     }
     return next();
   }
@@ -266,14 +270,19 @@ router.beforeEach((to, from, next) => {
     return next("/login");
   }
 
-  // 3. Protección por RBAC Capacidades
+  // 3. Redirigir al rol TI al home (/) hacia /solicitudes
+  if (to.name === "home" && user.rol_sistema === "TI") {
+    return next({ name: "request-list" });
+  }
+
+  // 4. Protección por RBAC Capacidades
   if (to.meta.requiresPermission) {
     if (!hasPermission(user, to.meta.requiresPermission)) {
       return next({ name: "home" });
     }
   }
 
-  // 4. Mantenemos el soporte obsoleto temporal para "requiresAdmin"
+  // 5. Mantenemos el soporte obsoleto temporal para "requiresAdmin"
   if (to.meta.requiresAdmin && user.tipo_usuario !== "ADMIN") {
     return next({ name: "home" });
   }
