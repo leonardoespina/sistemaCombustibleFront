@@ -8,7 +8,12 @@ import { quasar, transformAssetUrls } from '@quasar/vite-plugin'
 // https://vitejs.dev/config/
 export default defineConfig({
   server: {
-    host: true, // Permite conexiones desde la red
+    host: true,
+    allowedHosts: [
+      'combustible.lespina.info',
+      'local.lespina.info' // <-- Agrega tu nuevo subdominio aquí
+    ],
+    // Permite conexiones desde la red
     proxy: {
       // Proxy para llamadas HTTP de Axios (rutas /api/...)
       // El target define hacia dónde se redirigen las peticiones durante el desarrollo.
