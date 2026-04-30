@@ -113,13 +113,45 @@
               <q-btn icon="search" color="primary" round dense size="sm" @click="triggerSearch" />
             </div>
 
+            <!-- Selector de Llenadero -->
+            <div class="col-12 col-md-auto q-ml-sm" style="min-width: 200px;">
+              <q-select
+                v-model="filterLlenadero"
+                :options="llenaderosList"
+                option-value="id_llenadero"
+                option-label="nombre_llenadero"
+                label="Llenadero"
+                dense
+                outlined
+                bg-color="white"
+                emit-value
+                map-options
+                clearable
+                @update:model-value="onLlenaderoChange"
+              >
+                <template v-slot:prepend>
+                  <q-icon name="local_gas_station" color="primary" />
+                </template>
+              </q-select>
+            </div>
+
             <q-space />
 
             <!-- Búsqueda Global (Placa/Ticket) -->
             <div class="col-12 col-md-auto">
-              <q-input v-model="filterCode" dense outlined style="width: 100%; min-width: 250px" bg-color="white" placeholder="Placa o Ticket (Global)...">
+              <q-input
+                v-model="filterCode"
+                dense
+                outlined
+                style="width: 100%; min-width: 250px"
+                bg-color="white"
+                placeholder="Placa o Ticket (Global)..."
+                @keyup.enter="triggerSearch"
+                clearable
+                @clear="triggerSearch"
+              >
                 <template v-slot:append>
-                  <q-icon name="search" />
+                  <q-icon name="search" class="cursor-pointer" @click="triggerSearch" />
                 </template>
               </q-input>
             </div>
@@ -166,6 +198,20 @@
             </q-td>
             <q-td key="codigo_ticket" :props="props" class="text-weight-medium text-caption">
               {{ props.row.codigo_ticket }}
+            </q-td>
+            <q-td key="llenadero" :props="props" class="text-caption">
+              <q-chip 
+                dense 
+                size="sm" 
+                color="blue-1" 
+                text-color="primary" 
+                icon="local_gas_station"
+                class="text-weight-bold"
+                v-if="props.row.Llenadero?.nombre_llenadero"
+              >
+                {{ props.row.Llenadero.nombre_llenadero }}
+              </q-chip>
+              <span v-else class="text-grey">N/A</span>
             </q-td>
             <q-td key="flota" :props="props" class="text-caption">
               {{ props.row.modelo || 'N/A' }} 
@@ -257,7 +303,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted, onBeforeUnmount, defineAsyncComponent, watch } from 'vue';
+import { ref, onMounted, onBeforeUnmount, defineAsyncComponent } from 'vue';
 import { useQuasar, date } from 'quasar';
 import { useRequestStore } from '../../stores/requestStore'; 
 import { storeToRefs } from 'pinia';
@@ -290,6 +336,8 @@ const filterDate = ref(date.formatDate(new Date(), 'YYYY-MM-DD'));
 const filterText = ref('');
 const filterCode = ref('');
 const statusFilter = ref('APROBADA');
+const filterLlenadero = ref(null);
+const llenaderosList = ref([]);
 
 // --- PAGINACIÓN (Server-Side) ---
 const rows = ref([]);
@@ -304,6 +352,7 @@ const pagination = ref({
 const columns = [
   { name: 'index', label: 'No.', align: 'left', field: 'index' },
   { name: 'codigo_ticket', label: 'No. Solicitud', align: 'left', field: 'codigo_ticket', sortable: true },
+  { name: 'llenadero', label: 'Llenadero', align: 'left', field: row => row.Llenadero?.nombre_llenadero, sortable: true },
   { name: 'flota', label: 'Flota', align: 'left', field: 'modelo' },
   { name: 'tipo', label: 'Tipo', align: 'left', field: row => row.TipoCombustible?.nombre },
   { name: 'dependencia', label: 'Dependencia II', align: 'left', field: row => row.Subdependencia?.nombre },
@@ -334,15 +383,21 @@ const loadRequests = async (props = { pagination: pagination.value }) => {
   // Mapeo Inteligente de Filtros
   params.estado = statusFilter.value;
 
+  if (filterLlenadero.value) {
+    params.id_llenadero = filterLlenadero.value;
+  }
+
+  // Búsqueda por texto (Global o por Solicitud)
   if (filterCode.value) {
       params.search = filterCode.value;
-  } 
-  else if (searchType.value === 'solicitud' && filterText.value) {
-       params.search = filterText.value;
+  } else if (searchType.value === 'solicitud' && filterText.value) {
+      params.search = filterText.value;
   }
-  else if (searchType.value === 'fecha' && filterDate.value) {
+
+  // Búsqueda por fecha (Independiente de la búsqueda por texto)
+  if (searchType.value === 'fecha' && filterDate.value) {
        // El backend espera fecha_inicio y fecha_fin para rango
-       // Si es un solo día, mandamos el mismo día 00:00 a 23:59 (backend suele manejarlo o enviamos fechas)
+       // Si es un solo día, mandamos el mismo día 00:00 a 23:59
        params.fecha_inicio = filterDate.value; 
        params.fecha_fin = filterDate.value;
   }
@@ -392,6 +447,16 @@ const triggerSearch = () => {
     loadRequests({ pagination: newPagination });
 };
 
+/**
+ * Manejador del filtro Llenadero.
+ * @update:model-value recibe el valor nuevo (incluye null al limpiar con clearable).
+ * Asignamos manualmente para garantizar sync y lanzamos la búsqueda.
+ */
+const onLlenaderoChange = (val) => {
+    filterLlenadero.value = val;
+    triggerSearch();
+};
+
 // --- SOCKET ---
 const handleSocketUpdate = (data) => {
     // Con paginación servidor, actualizar es complejo (¿está el item en esta página?)
@@ -423,7 +488,17 @@ const handleSocketUpdate = (data) => {
     }
 };
 
+const loadLlenaderos = async () => {
+    try {
+        const response = await api.get('/llenaderos');
+        llenaderosList.value = response.data?.data || response.data || [];
+    } catch (error) {
+        console.error("Error cargando llenaderos", error);
+    }
+};
+
 onMounted(() => {
+    loadLlenaderos();
     triggerSearch(); // Carga inicial
     socketServiceName.on('solicitud:actualizada', handleSocketUpdate);
     socketServiceName.on('solicitud:creada', handleSocketUpdate);
