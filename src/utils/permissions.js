@@ -22,6 +22,7 @@ export const PERMISSIONS = {
     TOGGLE_TANQUE_USO: "toggle_tanque_uso",
     VIEW_REPORTE_RECEPCION: "view_reporte_recepcion",
     MANAGE_CONFIG_TI: "manage_config_ti",
+    MANAGE_VEHICULOS: "manage_vehiculos",
 };
 
 export const ROLE_PERMISSIONS = {
@@ -92,6 +93,7 @@ export const ROLE_PERMISSIONS = {
 
     TI: [
         PERMISSIONS.MANAGE_CONFIG_TI,
+        PERMISSIONS.MANAGE_VEHICULOS,
         PERMISSIONS.VIEW_SOLICITUDES,
         PERMISSIONS.CREATE_SOLICITUD,
         PERMISSIONS.REJECT_SOLICITUD,
