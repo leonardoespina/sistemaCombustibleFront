@@ -11,7 +11,7 @@ export default defineConfig({
     host: true,
     allowedHosts: [
       'combustible.lespina.info',
-      'local.lespina.info' // <-- Agrega tu nuevo subdominio aquí
+      // <-- Agrega tu nuevo subdominio aquí
     ],
     // Permite conexiones desde la red
     proxy: {
@@ -31,7 +31,17 @@ export default defineConfig({
       '/socket.io': {
         target: 'http://10.60.0.21:3000',
         ws: true,          // Habilita el soporte para WebSocket
-        changeOrigin: true
+        changeOrigin: true,
+        timeout: 15000,
+        proxyTimeout: 15000,
+        configure: (proxy) => {
+          proxy.on('error', (err) => {
+            // Suprime logs repetitivos de ETIMEDOUT en consola
+            if (err.code !== 'ECONNRESET' && err.code !== 'ETIMEDOUT') {
+              console.error('[ws proxy error]', err.message)
+            }
+          })
+        }
       }
     }
   },
