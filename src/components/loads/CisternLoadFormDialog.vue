@@ -67,7 +67,19 @@
                 <q-input dense outlined v-model="formData.fecha_recepcion" type="date" label="Fecha Recepción" :readonly="isReadOnly" />
               </div>
               <div class="col-12 col-md-3">
-                <q-input dense outlined v-model.number="formData.litros_segun_guia" type="number" label="Litros según Guía" suffix="Lts" :readonly="isReadOnly" :rules="[(val) => !!val || 'Requerido']" @update:model-value="calculateAll" />
+                <q-input
+                  dense
+                  outlined
+                  :model-value="litrosGuiaDisplay"
+                  @update:model-value="onLitrosGuiaInput"
+                  @blur="onLitrosGuiaBlur"
+                  label="Litros según Guía"
+                  suffix="Lts"
+                  :readonly="isReadOnly"
+                  :rules="[(val) => !!parseLitros(val) || 'Requerido']"
+                  hint="Ej: 37.030 = treinta y siete mil treinta litros"
+                  inputmode="decimal"
+                />
               </div>
 
               <div class="col-12 col-md-4">
@@ -439,11 +451,104 @@ const {
 
 const almacenistaNombre = ref("");
 
-watch(() => props.modelValue, (isOpen) => {
+// ─────────────────────────────────────────────────────────────────────────────
+// FIX: Parseo de litros según guía con separadores de miles venezolanos
+// El usuario puede escribir  37.030  (punto como miles) o  37,030  o  37030
+// El modificador .number de Vue + type="number" lo interpretaba como  37.03
+// ─────────────────────────────────────────────────────────────────────────────
+
+/** Texto raw que ve el usuario mientras escribe */
+const litrosGuiaDisplay = ref("");
+
+/**
+ * Convierte un string con formato venezolano/europeo a número JS.
+ * Reglas:
+ *   "37.030"   → 37030   (punto como separador de miles)
+ *   "37,030"   → 37030   (coma como separador de miles)
+ *   "37.030,5" → 37030.5 (punto=miles, coma=decimal)
+ *   "37,030.5" → 37030.5 (coma=miles, punto=decimal)
+ *   "37030"    → 37030
+ *   ""         → null
+ */
+function parseLitros(raw) {
+  if (raw === null || raw === undefined || String(raw).trim() === "") return null;
+  let s = String(raw).trim();
+
+  const dotCount   = (s.match(/\./g)  || []).length;
+  const commaCount = (s.match(/,/g)   || []).length;
+
+  if (dotCount > 1) {
+    // "1.234.567"  → múltiples puntos = todos son miles
+    s = s.replace(/\./g, "");
+  } else if (commaCount > 1) {
+    // "1,234,567"  → múltiples comas = todas son miles
+    s = s.replace(/,/g, "");
+  } else if (dotCount === 1 && commaCount === 1) {
+    // Ambos presentes: el último es el decimal
+    const lastDot   = s.lastIndexOf(".");
+    const lastComma = s.lastIndexOf(",");
+    if (lastComma > lastDot) {
+      // "37.030,5"  → punto=miles, coma=decimal
+      s = s.replace(/\./g, "").replace(",", ".");
+    } else {
+      // "37,030.5"  → coma=miles, punto=decimal
+      s = s.replace(/,/g, "");
+    }
+  } else if (dotCount === 1) {
+    // Solo un punto: distinguir miles vs decimal
+    const [, decimals] = s.split(".");
+    // Si la parte decimal tiene exactamente 3 dígitos → miles (ej. 37.030)
+    if (decimals && decimals.length === 3) {
+      s = s.replace(".", "");
+    }
+    // Si tiene 1, 2 o ≥4 dígitos → decimal normal (ej. 37.5 o 37.50)
+  } else if (commaCount === 1) {
+    // Solo una coma
+    const [, decimals] = s.split(",");
+    if (decimals && decimals.length === 3) {
+      s = s.replace(",", "");
+    } else {
+      s = s.replace(",", ".");
+    }
+  }
+
+  const num = parseFloat(s);
+  return isNaN(num) ? null : num;
+}
+
+/** Sincroniza el texto raw → formData mientras el usuario tipea */
+function onLitrosGuiaInput(val) {
+  litrosGuiaDisplay.value = val;
+  const parsed = parseLitros(val);
+  formData.value.litros_segun_guia = parsed;
+  calculateAll();
+}
+
+/** Al perder el foco, normaliza la visualización (muestra número limpio) */
+function onLitrosGuiaBlur() {
+  const num = parseLitros(litrosGuiaDisplay.value);
+  if (num !== null) {
+    // Mostrar con separador de miles para que el usuario pueda confirmar
+    litrosGuiaDisplay.value = num.toLocaleString("es-VE", {
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 2
+    });
+    formData.value.litros_segun_guia = num;
+    calculateAll();
+  }
+}
+
+watch(() => props.modelValue, async (isOpen) => {
   if (isOpen) {
     initializeForm();
     const user = JSON.parse(localStorage.getItem("user") || "{}");
     almacenistaNombre.value = `${user.nombre} ${user.apellido}`;
+    // Esperar un tick para que initializeForm() haya asignado formData
+    await nextTick();
+    const v = formData.value.litros_segun_guia;
+    litrosGuiaDisplay.value = v
+      ? Number(v).toLocaleString("es-VE", { minimumFractionDigits: 0, maximumFractionDigits: 2 })
+      : "";
   }
 });
 
