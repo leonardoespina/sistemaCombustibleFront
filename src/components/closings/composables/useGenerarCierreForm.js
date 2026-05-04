@@ -173,6 +173,21 @@ export function useGenerarCierreForm(props, emit) {
 
     // ─── CONFIRMACIÓN DE GUARDADO ────────────────────────────
     function confirmarGuardado() {
+        // Validar que los tanques seleccionados tengan un volumen válido
+        const tanquesAEnviar = tanquesForm.value.filter((t) =>
+            tanquesSeleccionados.value.includes(t.id_tanque)
+        );
+
+        const tanquesInvalidos = tanquesAEnviar.filter(t => t.volumen_calculado == null || isNaN(t.volumen_calculado));
+        
+        if (tanquesInvalidos.length > 0) {
+             $q.notify({
+                 type: "negative",
+                 message: `Error: La medida ingresada para el/los tanque(s) ${tanquesInvalidos.map(t => t.codigo).join(', ')} no se encuentra en la tabla de aforo o es inválida.`
+             });
+             return; // Abortar confirmación
+        }
+
         // Obtener información del lote para mostrar en el diálogo
         const llenaderoNombre = props.llenaderosList?.find(l => l.id_llenadero === lote.value.id_llenadero)?.nombre_llenadero || 'N/A';
         const tanquesCount = tanquesSeleccionados.value.length;
