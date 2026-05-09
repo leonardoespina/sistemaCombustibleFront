@@ -198,6 +198,16 @@
             </div>
             <div class="col-12 col-sm-6 col-md-3">
               <q-btn
+                v-if="userRole === 'VENTA'"
+                unelevated
+                color="deep-orange"
+                icon="point_of_sale"
+                label="Reporte de Ventas"
+                class="full-width"
+                to="/reportes/ventas"
+              />
+              <q-btn
+                v-else
                 unelevated
                 color="deep-orange"
                 icon="today"
