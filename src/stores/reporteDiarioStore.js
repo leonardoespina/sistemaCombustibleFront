@@ -42,7 +42,7 @@ export const useReporteDiarioStore = defineStore('reporteDiario', () => {
                     id_llenadero: filters.value.id_llenadero,
                     fecha_desde: filters.value.fecha_desde,
                     fecha_hasta: filters.value.fecha_hasta,
-                    tipo_reporte: 'INSTITUCIONAL',
+                    tipo_reporte: 'TODOS',
                     page,
                     limit,
                 },
