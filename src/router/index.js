@@ -174,6 +174,12 @@ const routes = [
         component: () => import("../pages/reports/ReporteDiarioPage.vue"),
       },
       {
+        path: "reportes/ventas",
+        name: "reporte-ventas",
+        meta: { requiresPermission: PERMISSIONS.VIEW_REPORTE_VENTAS },
+        component: () => import("../pages/reports/ReporteVentaPage.vue"),
+      },
+      {
         path: "reportes/despachos",
         name: "reporte-despachos",
         meta: { requiresPermission: PERMISSIONS.VIEW_REPORTE_DESPACHOS },

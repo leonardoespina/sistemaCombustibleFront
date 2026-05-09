@@ -200,7 +200,7 @@
     <!--          REPORTES                  -->
     <!-- ================================== -->
     <q-expansion-item
-      v-if="can(PERMISSIONS.VIEW_MIS_CUPOS) || can(PERMISSIONS.VIEW_MIS_DESPACHOS) || can(PERMISSIONS.VIEW_REPORTE_DIARIO) || can(PERMISSIONS.VIEW_REPORTE_DESPACHOS) || can(PERMISSIONS.VIEW_REPORTE_CONSUMO) || can(PERMISSIONS.VIEW_REPORTE_RECEPCION) || can(PERMISSIONS.VIEW_REPORTES_GLOB)"
+      v-if="can(PERMISSIONS.VIEW_MIS_CUPOS) || can(PERMISSIONS.VIEW_MIS_DESPACHOS) || can(PERMISSIONS.VIEW_REPORTE_DIARIO) || can(PERMISSIONS.VIEW_REPORTE_DESPACHOS) || can(PERMISSIONS.VIEW_REPORTE_CONSUMO) || can(PERMISSIONS.VIEW_REPORTE_RECEPCION) || can(PERMISSIONS.VIEW_REPORTES_GLOB) || can(PERMISSIONS.VIEW_REPORTE_VENTAS)"
       expand-separator
       icon="analytics"
       label="Reportes"
@@ -229,6 +229,16 @@
           /></q-item-section>
           <q-item-section>Reporte Diario</q-item-section>
         </q-item> 
+
+        <!-- Reporte de Ventas (nuevo) -->
+        <q-item v-if="can(PERMISSIONS.VIEW_REPORTE_VENTAS)"
+          clickable
+          v-ripple to="/reportes/ventas">
+          <q-item-section avatar
+            ><q-icon name="point_of_sale" size="xs"
+          /></q-item-section>
+          <q-item-section>Reporte de Ventas</q-item-section>
+        </q-item>
 
         <q-item
           v-if="can(PERMISSIONS.VIEW_REPORTE_DESPACHOS)"

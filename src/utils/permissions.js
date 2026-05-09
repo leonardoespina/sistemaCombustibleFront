@@ -23,6 +23,8 @@ export const PERMISSIONS = {
     VIEW_REPORTE_RECEPCION: "view_reporte_recepcion",
     MANAGE_CONFIG_TI: "manage_config_ti",
     MANAGE_VEHICULOS: "manage_vehiculos",
+    CREATE_MEDICION: "create_medicion",
+    VIEW_REPORTE_VENTAS: "view_reporte_ventas",
 };
 
 export const ROLE_PERMISSIONS = {
@@ -64,6 +66,7 @@ export const ROLE_PERMISSIONS = {
         PERMISSIONS.MANAGE_OPERACIONES_TANQUES,
         PERMISSIONS.CREATE_CISTERNA,
         PERMISSIONS.CREATE_TRANSFERENCIA,
+        PERMISSIONS.CREATE_MEDICION,
         PERMISSIONS.VIEW_REPORTE_DIARIO,
         PERMISSIONS.VIEW_REPORTE_DESPACHOS,
         PERMISSIONS.VIEW_REPORTE_CONSUMO,
@@ -81,6 +84,7 @@ export const ROLE_PERMISSIONS = {
         PERMISSIONS.MANAGE_OPERACIONES_TANQUES,
         PERMISSIONS.CREATE_CISTERNA,
         PERMISSIONS.CREATE_TRANSFERENCIA,
+        PERMISSIONS.CREATE_MEDICION,
         PERMISSIONS.VIEW_VALIDACION_CIERRE,
         PERMISSIONS.VIEW_REPORTE_DIARIO,
         PERMISSIONS.VIEW_REPORTE_DESPACHOS,
@@ -89,6 +93,7 @@ export const ROLE_PERMISSIONS = {
         PERMISSIONS.VIEW_REPORTES_GLOB,
         PERMISSIONS.VIEW_MIS_CUPOS,
         PERMISSIONS.VIEW_MIS_DESPACHOS,
+        PERMISSIONS.VIEW_REPORTE_VENTAS,
     ],
 
     TI: [
@@ -97,6 +102,14 @@ export const ROLE_PERMISSIONS = {
         PERMISSIONS.VIEW_SOLICITUDES,
         PERMISSIONS.CREATE_SOLICITUD,
         PERMISSIONS.REJECT_SOLICITUD,
+    ],
+
+    VENTA: [
+        PERMISSIONS.VIEW_DASHBOARD_ESTANDAR,
+        PERMISSIONS.VIEW_REPORTE_VENTAS,
+        PERMISSIONS.VIEW_SOLICITUDES,
+        PERMISSIONS.VIEW_MIS_CUPOS,
+        PERMISSIONS.VIEW_MIS_DESPACHOS,
     ],
 };
 
@@ -110,6 +123,14 @@ export function hasPermission(user, permission) {
 
     const role = user.rol_sistema || "ESTANDAR";
     const userPermissions = ROLE_PERMISSIONS[role] || ROLE_PERMISSIONS.ESTANDAR;
+
+    // Regla: Personal operativo de Almacén NO puede registrar transferencias ni mediciones libres.
+    // Solo Jefes, Gerentes o Coordinadores conservan este derecho de registro.
+    if (role === "ALMACEN" && !["COORDINADOR", "JEFE DE DIVISION", "GERENTE"].includes(user.tipo_usuario)) {
+        if (permission === PERMISSIONS.CREATE_TRANSFERENCIA || permission === PERMISSIONS.CREATE_MEDICION) {
+            return false;
+        }
+    }
 
     // Si el rol tiene el permiso de forma estática, conceder acceso.
     if (userPermissions.includes(permission)) return true;

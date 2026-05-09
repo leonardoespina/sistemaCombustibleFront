@@ -4,7 +4,7 @@ import api from '../api';
 import socket from '../services/socket';
 import { todayStr } from '../utils/dateUtils';
 
-export const useReporteDiarioStore = defineStore('reporteDiario', () => {
+export const useReporteVentasStore = defineStore('reporteVentas', () => {
     // ─── State ───────────────────────────────────────────────
     const loading = ref(false);
     const reportData = ref(null);
@@ -42,7 +42,7 @@ export const useReporteDiarioStore = defineStore('reporteDiario', () => {
                     id_llenadero: filters.value.id_llenadero,
                     fecha_desde: filters.value.fecha_desde,
                     fecha_hasta: filters.value.fecha_hasta,
-                    tipo_reporte: 'INSTITUCIONAL',
+                    tipo_reporte: 'VENTA',
                     page,
                     limit,
                 },
@@ -54,7 +54,7 @@ export const useReporteDiarioStore = defineStore('reporteDiario', () => {
                 pagination.value.rowsPerPage = data.pagination.limit;
             }
         } catch (error) {
-            console.error('Error fetching reporte diario:', error);
+            console.error('Error fetching reporte de ventas:', error);
             throw error;
         } finally {
             loading.value = false;
@@ -68,7 +68,6 @@ export const useReporteDiarioStore = defineStore('reporteDiario', () => {
         reportData.value = null;
     };
 
-    // Socket — refresca cuando se finaliza una solicitud en el día actual
     const initSocket = () => {
         socket.on('solicitud:finalizada', () => {
             if (reportData.value && filters.value.id_llenadero) {

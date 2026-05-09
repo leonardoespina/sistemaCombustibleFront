@@ -77,6 +77,7 @@
               'INSPECTOR',
               'PRESIDENCIA',
               'TI',
+              'VENTA',
             ]"
             label="Rol del Sistema (Permisología)"
             :rules="validationRules.rol_sistema"

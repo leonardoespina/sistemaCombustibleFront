@@ -12,7 +12,7 @@
         </div>
         <div class="col-12 col-md-auto q-mt-sm q-mt-md-none">
           <q-btn
-            v-if="can(PERMISSIONS.MANAGE_OPERACIONES_TANQUES)"
+            v-if="can(PERMISSIONS.CREATE_MEDICION)"
             color="primary"
             icon="add"
             label="Nueva Medición"
