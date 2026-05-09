@@ -156,6 +156,34 @@
                   </q-table>
                 </div>
 
+                <!-- VENTA -->
+                <div v-if="store.reportData.venta?.length > 0" class="q-mb-lg">
+                  <q-banner dense class="bg-orange-9 text-white rounded-borders q-mb-sm">
+                    <template v-slot:avatar><q-icon name="sell" /></template>
+                    DESPACHOS DE VENTA (S.C.)
+                  </q-banner>
+                  <q-table
+                    :rows="store.reportData.venta"
+                    :columns="columnsVenta"
+                    row-key="id_solicitud"
+                    dense flat bordered
+                    :pagination="store.pagination"
+                    :loading="store.loading"
+                    @request="onRequest"
+                    wrap-cells
+                    class="print-table"
+                  >
+                    <template v-slot:bottom-row>
+                      <q-tr class="bg-grey-2 text-weight-bold">
+                        <q-td :colspan="canViewFinancial ? 9 : 9" class="text-right">Total Litros Venta:</q-td>
+                        <q-td class="text-right">{{ store.reportData.totales.litros_venta }}</q-td>
+                        <q-td v-if="canViewFinancial" colspan="4" class="text-right">
+                          Monto Total: {{ store.reportData.totales.monto_venta }}
+                        </q-td>
+                      </q-tr>
+                    </template>
+                  </q-table>
+                </div>
 
                 <!-- RESUMEN -->
                 <div class="row justify-center q-mt-md">
@@ -166,13 +194,17 @@
                           <td class="text-left text-weight-bold">Total Litros Institucional</td>
                           <td class="text-right text-teal text-h6">{{ store.reportData.totales.litros_institucional }} L</td>
                         </tr>
+                        <tr>
+                          <td class="text-left text-weight-bold">Total Litros Venta (S.C.)</td>
+                          <td class="text-right text-orange-9 text-h6">{{ store.reportData.totales.litros_venta }} L</td>
+                        </tr>
 
                         <template v-for="(item, index) in store.reportData.totales.por_combustible" :key="index">
                           <tr>
                             <td class="text-left q-pl-md" style="border-top: 1px dashed #ccc">
                               <q-icon name="local_gas_station" class="q-mr-xs text-grey-6" />
                               <span class="text-weight-bold">{{ item.combustible }}</span>
-                              <div class="text-caption text-grey-7">Inst: {{ item.institucional }} L</div>
+                              <div class="text-caption text-grey-7">Inst: {{ item.institucional }} L | Venta: {{ item.venta }} L</div>
                             </td>
                             <td class="text-right text-h6" style="border-top: 1px dashed #ccc">{{ item.total }} L</td>
                           </tr>
@@ -183,6 +215,26 @@
                         </tr>
                       </tbody>
                     </q-markup-table>
+                  </div>
+                </div>
+
+                <!-- SALDOS A FAVOR (Solo si tiene permiso de ventas) -->
+                <div v-if="canViewFinancial && store.reportData.totales.resumen_saldos?.length > 0" class="q-mt-lg">
+                  <q-banner class="bg-red-1 text-red-9" rounded>
+                    <template v-slot:avatar><q-icon name="warning" color="red-9" /></template>
+                    <span class="text-weight-bold">REINTEGROS PENDIENTES (SALDOS A FAVOR)</span>
+                  </q-banner>
+                  <div class="row q-col-gutter-md q-mt-sm">
+                    <div
+                      v-for="saldo in store.reportData.totales.resumen_saldos"
+                      :key="saldo.moneda"
+                      class="col-6 col-sm-4 col-md-3"
+                    >
+                      <q-card flat bordered class="bg-red-1 text-center q-pa-sm">
+                        <div class="text-caption text-grey-8">Moneda: {{ saldo.moneda }}</div>
+                        <div class="text-h5 text-red-9 text-weight-bolder">{{ saldo.total }}</div>
+                      </q-card>
+                    </div>
                   </div>
                 </div>
 
@@ -207,6 +259,8 @@ import ExportExcelBtn from '../../components/common/ExportExcelBtn.vue';
 const {
   store, showReportDialog,
   columnsInstitucional,
+  columnsVenta,
+  canViewFinancial,
   consultarReporte, onRequest,
   getLlenaderoNombre, formatDate,
   printReport,

@@ -1,10 +1,10 @@
-import { ref } from 'vue';
-import { date } from 'quasar';
-import { useReporteDiarioStore } from '../stores/reporteDiarioStore';
-import { onMounted, onUnmounted } from 'vue';
+import { PERMISSIONS, hasPermission } from '../utils/permissions';
+import { onMounted, onUnmounted, computed } from 'vue';
 
 export function useReporteDiarioPage() {
     const store = useReporteDiarioStore();
+    const user = JSON.parse(localStorage.getItem('user') || '{}');
+    const canViewFinancial = hasPermission(user, PERMISSIONS.VIEW_REPORTE_VENTAS);
 
     // ─── UI State ────────────────────────────────────────────
     const showReportDialog = ref(false);
@@ -29,6 +29,16 @@ export function useReporteDiarioPage() {
         { name: 'tipo_combustible', label: 'Combustible', field: 'tipo_combustible', align: 'left' },
         { name: 'cant_solic', label: 'Cant. Solic', field: 'cant_solic', align: 'right', format: v => Number(v).toFixed(2) },
         { name: 'cant_desp', label: 'Cant. Desp', field: 'cant_desp', align: 'right', format: v => Number(v).toFixed(2) },
+    ];
+
+    const columnsVenta = [
+        ...columnsInstitucional,
+        ...(canViewFinancial ? [
+            { name: 'precio', label: 'Precio', field: 'precio', align: 'right', format: v => Number(v).toFixed(2) },
+            { name: 'moneda', label: 'Moneda', field: 'moneda', align: 'center' },
+            { name: 'total_pagar', label: 'Total', field: 'total_pagar', align: 'right', format: v => Number(v).toFixed(2) },
+            { name: 'saldo_favor', label: 'Saldo Favor', field: 'saldo_favor', align: 'right' },
+        ] : [])
     ];
 
 
@@ -73,6 +83,8 @@ export function useReporteDiarioPage() {
     return {
         store, showReportDialog,
         columnsInstitucional,
+        columnsVenta,
+        canViewFinancial,
         consultarReporte, onRequest,
         getLlenaderoNombre, formatDate,
         printReport,
