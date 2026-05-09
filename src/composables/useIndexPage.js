@@ -15,8 +15,8 @@ export function useIndexPage() {
         const role = userData.value?.rol_sistema;
         const legacyType = userData.value?.tipo_usuario;
         if (role === "ADMIN" || legacyType === "ADMIN") return false;
-        // Usuarios Estándar e Inspectores ven el dashboard resumido (cupos)
-        return role === "ESTANDAR" || role === "INSPECTOR";
+        // Usuarios Estándar, Inspectores y Ventas ven el dashboard resumido (cupos)
+        return role === "ESTANDAR" || role === "INSPECTOR" || role === "VENTA";
     });
 
     const isAlmacenOrSeguridad = computed(() => {
