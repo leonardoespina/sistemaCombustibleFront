@@ -23,7 +23,7 @@
             <span class="text-subtitle2 text-primary text-weight-bold">Parámetros de Búsqueda</span>
           </div>
           <div class="row q-col-gutter-sm">
-            <div class="col-12 col-sm-5">
+            <div class="col-12 col-md-3">
               <q-select
                 outlined dense bg-color="white"
                 v-model="store.filters.id_llenadero"
@@ -37,7 +37,7 @@
                 <template v-slot:prepend><q-icon name="ev_station" color="primary" /></template>
               </q-select>
             </div>
-            <div class="col-12 col-sm-3">
+            <div class="col-12 col-sm-6 col-md-2">
               <q-input
                 outlined dense bg-color="white"
                 v-model="store.filters.fecha_desde"
@@ -48,7 +48,17 @@
                 <template v-slot:prepend><q-icon name="event" color="primary" /></template>
               </q-input>
             </div>
-            <div class="col-12 col-sm-3">
+            <div class="col-12 col-sm-6 col-md-2">
+              <q-input
+                outlined dense bg-color="white"
+                v-model="store.filters.hora_desde"
+                type="time"
+                label="Hora Inicio"
+              >
+                <template v-slot:prepend><q-icon name="schedule" color="primary" /></template>
+              </q-input>
+            </div>
+            <div class="col-12 col-sm-6 col-md-2">
               <q-input
                 outlined dense bg-color="white"
                 v-model="store.filters.fecha_hasta"
@@ -59,14 +69,26 @@
                 <template v-slot:prepend><q-icon name="event" color="primary" /></template>
               </q-input>
             </div>
-            <div class="col-12 col-sm-2">
+            <div class="col-12 col-sm-6 col-md-2">
+              <q-input
+                outlined dense bg-color="white"
+                v-model="store.filters.hora_hasta"
+                type="time"
+                label="Hora Fin"
+              >
+                <template v-slot:prepend><q-icon name="schedule" color="primary" /></template>
+              </q-input>
+            </div>
+            <div class="col-12 col-md-1">
               <q-btn
-                color="primary" icon="search" label="Generar"
+                color="primary" icon="search"
                 class="full-width" unelevated
                 @click="consultarReporte(1)"
                 :loading="store.loading"
                 :disable="!store.filters.id_llenadero || !store.filters.fecha_desde || !store.filters.fecha_hasta"
-              />
+              >
+                <q-tooltip>Generar</q-tooltip>
+              </q-btn>
             </div>
           </div>
         </q-card-section>

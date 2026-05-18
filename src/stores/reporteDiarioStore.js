@@ -13,7 +13,9 @@ export const useReporteDiarioStore = defineStore('reporteDiario', () => {
     const filters = ref({
         id_llenadero: null,
         fecha_desde: todayStr(),
+        hora_desde: '07:00',
         fecha_hasta: todayStr(),
+        hora_hasta: '07:00',
     });
 
     const pagination = ref({
@@ -41,7 +43,9 @@ export const useReporteDiarioStore = defineStore('reporteDiario', () => {
                 params: {
                     id_llenadero: filters.value.id_llenadero,
                     fecha_desde: filters.value.fecha_desde,
+                    hora_desde: filters.value.hora_desde,
                     fecha_hasta: filters.value.fecha_hasta,
+                    hora_hasta: filters.value.hora_hasta,
                     tipo_reporte: 'TODOS',
                     page,
                     limit,
@@ -64,7 +68,9 @@ export const useReporteDiarioStore = defineStore('reporteDiario', () => {
     const resetFilters = () => {
         filters.value.id_llenadero = null;
         filters.value.fecha_desde = todayStr();
+        filters.value.hora_desde = '07:00';
         filters.value.fecha_hasta = todayStr();
+        filters.value.hora_hasta = '07:00';
         reportData.value = null;
     };
 
