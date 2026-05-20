@@ -201,6 +201,31 @@ export const useRequestStore = defineStore("requests", () => {
   }
 
   /**
+   * Finalizar solicitud vencida de forma extemporánea (Administración ROOT)
+   */
+  async function finalizeExpiredRequest(requestId, payload) {
+    loading.value = true;
+    try {
+      const response = await api.post(`/validacion/finalizar-extemporaneo`, {
+        id_solicitud: requestId,
+        ...payload
+      });
+      $q.notify({
+        type: "positive",
+        message: response.data.msg || "Ticket finalizado extemporáneamente con éxito.",
+      });
+      await fetchRequests();
+      return true;
+    } catch (error) {
+      const errorMsg = error.response?.data?.msg || "Error al finalizar ticket extemporáneo";
+      $q.notify({ type: "negative", message: errorMsg });
+      return false;
+    } finally {
+      loading.value = false;
+    }
+  }
+
+  /**
    * Obtener subdependencias autorizadas para el usuario actual
    */
   async function fetchSubdependenciasAutorizadas() {
@@ -288,6 +313,7 @@ export const useRequestStore = defineStore("requests", () => {
     reprintTicket,
     dispatchRequest,
     annulFinalizedRequest,
+    finalizeExpiredRequest,
     fetchSubdependenciasAutorizadas,
     fetchLlenaderosPorCombustible,
     initSocket,

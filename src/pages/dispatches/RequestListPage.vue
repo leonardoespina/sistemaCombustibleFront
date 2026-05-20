@@ -112,6 +112,19 @@
             >
               <q-tooltip>Anulación Administrativa (Revertir)</q-tooltip>
             </q-btn>
+
+            <!-- FINALIZACIÓN EXTEMPORÁNEA (Solo VENCIDA + ROOT) -->
+            <q-btn
+              v-if="props.row.estado === 'VENCIDA' && props.row.fecha_impresion && (userData?.nombre === 'root' || userData?.cedula === 'root')"
+              dense
+              round
+              flat
+              color="secondary"
+              icon="qr_code_scanner"
+              @click="onFinalizeExpired(props.row)"
+            >
+              <q-tooltip>Simular Escaneo (Finalización Extemporánea)</q-tooltip>
+            </q-btn>
           </q-td>
         </template>
       </q-table>
@@ -337,6 +350,44 @@ function onAnnulFinalized(row) {
     persistent: true,
   }).onOk(async () => {
     await requestStore.annulFinalizedRequest(row.id_solicitud);
+  });
+}
+
+function onFinalizeExpired(row) {
+  $q.dialog({
+    title: "Finalización Extemporánea",
+    message: `
+      <div>Está a punto de finalizar la solicitud <b>${row.codigo_ticket}</b> que se encuentra VENCIDA.</div>
+      <div class="text-caption text-grey-8 q-mt-sm">Esta acción re-descontará el cupo y descontará el volumen del tanque activo.</div>
+    `,
+    html: true,
+    prompt: {
+      model: row.cantidad_litros,
+      type: "number",
+      label: "Cantidad Real Cargada (Litros)",
+      isValid: val => val > 0 && val <= row.cantidad_litros
+    },
+    cancel: true,
+    persistent: true,
+    ok: { label: "Continuar", color: "primary" }
+  }).onOk((cantidad) => {
+    $q.dialog({
+      title: "Justificación Requerida",
+      message: "Ingrese el motivo u observación de esta finalización extemporánea:",
+      prompt: {
+        model: "",
+        type: "text",
+        isValid: val => val.trim().length > 3
+      },
+      cancel: true,
+      persistent: true,
+      ok: { label: "Finalizar Ticket", color: "secondary" }
+    }).onOk(async (obs) => {
+      await requestStore.finalizeExpiredRequest(row.id_solicitud, {
+        cantidad_real_cargada: cantidad,
+        observaciones: obs
+      });
+    });
   });
 }
 
