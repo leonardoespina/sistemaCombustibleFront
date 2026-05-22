@@ -46,6 +46,8 @@ export function useReporteVentasPage() {
     }
 
     const onRequest = async ({ pagination: p }) => {
+        store.pagination.page = p.page;
+        store.pagination.rowsPerPage = p.rowsPerPage;
         await consultarReporte(p.page, p.rowsPerPage);
     };
 

@@ -1,10 +1,11 @@
 import { ref, onMounted, onUnmounted, computed } from 'vue';
-import { date } from 'quasar';
+import { date, useQuasar } from 'quasar';
 import { useReporteDiarioStore } from '../stores/reporteDiarioStore';
 import { PERMISSIONS, hasPermission } from '../utils/permissions';
 
 export function useReporteDiarioPage() {
     const store = useReporteDiarioStore();
+    const $q = useQuasar();
     const user = JSON.parse(localStorage.getItem('user') || '{}');
     const canViewFinancial = hasPermission(user, PERMISSIONS.VIEW_REPORTE_VENTAS);
 
@@ -56,6 +57,8 @@ export function useReporteDiarioPage() {
     }
 
     const onRequest = async ({ pagination: p }) => {
+        store.pagination.page = p.page;
+        store.pagination.rowsPerPage = p.rowsPerPage;
         await consultarReporte(p.page, p.rowsPerPage);
     };
 

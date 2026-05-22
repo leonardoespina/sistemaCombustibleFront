@@ -163,7 +163,7 @@
                     :columns="columnsInstitucional"
                     row-key="id_solicitud"
                     dense flat bordered
-                    :pagination="store.pagination"
+                    v-model:pagination="store.pagination"
                     :loading="store.loading"
                     @request="onRequest"
                     wrap-cells
@@ -189,7 +189,7 @@
                     :columns="columnsVenta"
                     row-key="id_solicitud"
                     dense flat bordered
-                    :pagination="store.pagination"
+                    v-model:pagination="store.pagination"
                     :loading="store.loading"
                     @request="onRequest"
                     wrap-cells
