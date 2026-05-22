@@ -30,6 +30,7 @@
                 <OrganizationalHierarchy
                   v-if="!isInitializing"
                   :key="mountKey"
+                  :required="false"
                   v-model:categoryId="store.filters.categoryId"
                   v-model:dependencyId="store.filters.dependencyId"
                   v-model:subdependencyId="store.filters.subdependencyId"
@@ -74,7 +75,7 @@
                       <q-btn
                         color="secondary" icon="search" label="Filtrar" unelevated
                         @click="handleSearch" :loading="store.loading"
-                        :disable="!store.filters.dependencyId || !store.filters.fechaDesde || !store.filters.fechaHasta"
+                        :disable="!store.filters.fechaDesde || !store.filters.fechaHasta"
                       />
                     </div>
                   </div>

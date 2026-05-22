@@ -14,7 +14,8 @@
       emit-value
       map-options
       :loading="pagination.categoria.loading"
-      :rules="[(val) => !!val || 'Campo requerido']"
+      :rules="required ? [(val) => !!val || 'Campo requerido'] : []"
+      :clearable="!required"
     >
       <template v-slot:no-option>
         <q-item>
@@ -36,7 +37,8 @@
       emit-value
       map-options
       :loading="pagination.dependencia.loading"
-      :rules="[(val) => !!val || 'Campo requerido']"
+      :rules="required ? [(val) => !!val || 'Campo requerido'] : []"
+      :clearable="!required"
     >
       <template v-slot:no-option>
         <q-item>
@@ -103,6 +105,10 @@ const props = defineProps({
   initialSubdependency: {
     type: Object,
     default: null,
+  },
+  required: {
+    type: Boolean,
+    default: true,
   },
 });
 
