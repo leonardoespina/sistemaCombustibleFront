@@ -105,7 +105,8 @@
             <q-space />
             <template v-if="$q.screen.gt.xs">
               <ExportExcelBtn
-                :rows="store.reportData?.institucional || []"
+                v-if="store.reportData?.institucional?.length > 0"
+                :rows="store.reportData.institucional"
                 :columns="columnsInstitucional"
                 :filename="`ReporteDiario_Institucional_${store.filters.fecha_desde}_al_${store.filters.fecha_hasta}`"
                 sheet-name="Institucional"
@@ -114,7 +115,23 @@
                   `Periodo: ${formatDate(store.filters.fecha_desde)} al ${formatDate(store.filters.fecha_hasta)}`,
                   `Llenadero: ${getLlenaderoNombre(store.filters.id_llenadero)}`,
                 ]"
-                label="Institucional"
+                label="Inst. Excel"
+                flat color="white"
+                class="q-mr-xs"
+              />
+
+              <ExportExcelBtn
+                v-if="store.reportData?.venta?.length > 0"
+                :rows="store.reportData.venta"
+                :columns="columnsVenta"
+                :filename="`ReporteDiario_Venta_${store.filters.fecha_desde}_al_${store.filters.fecha_hasta}`"
+                sheet-name="Venta"
+                :meta="[
+                  'REPORTE DIARIO DE COMBUSTIBLE — VENTAS (S.C.)',
+                  `Periodo: ${formatDate(store.filters.fecha_desde)} al ${formatDate(store.filters.fecha_hasta)}`,
+                  `Llenadero: ${getLlenaderoNombre(store.filters.id_llenadero)}`,
+                ]"
+                label="Venta Excel"
                 flat color="white"
                 class="q-mr-xs"
               />
