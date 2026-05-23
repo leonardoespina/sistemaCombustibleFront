@@ -101,7 +101,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted, onUnmounted, nextTick } from "vue";
+import { ref, onMounted, onUnmounted, nextTick, watch } from "vue";
 import { useReporteDespachoStore } from "../../stores/reporteDespachoStore";
 import OrganizationalHierarchy from "../../components/OrganizationalHierarchy.vue";
 import DispatchReportDialog from "../../components/dispatches/DispatchReportDialog.vue";
@@ -130,7 +130,6 @@ const handleSearch = async () => {
   if (store.reportData.length > 0) {
     reportFilters.value = { ...store.filters };
     showResultsDialog.value = true;
-    store.resetFilters();
   } else {
     $q.notify({ type: "warning", message: "No se encontraron registros." });
   }
@@ -154,5 +153,11 @@ onMounted(async () => {
 
 onUnmounted(() => {
   store.destroySocket();
+});
+
+watch(showResultsDialog, (isOpen) => {
+  if (!isOpen) {
+    store.resetFilters();
+  }
 });
 </script>
