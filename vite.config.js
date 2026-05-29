@@ -9,6 +9,7 @@ import { quasar, transformAssetUrls } from '@quasar/vite-plugin'
 export default defineConfig({
   server: {
     host: true,
+    hmr: false,
     allowedHosts: [
       'combustible.lespina.info',
       // <-- Agrega tu nuevo subdominio aquí
@@ -18,7 +19,8 @@ export default defineConfig({
       // Proxy para llamadas HTTP de Axios (rutas /api/...)
       // El target define hacia dónde se redirigen las peticiones durante el desarrollo.
       // - Desarrollo local:  'http://localhost:3000'
-      // - Desarrollo en red: 'http://10.60.0.21:3000'  (IP del servidor backend en la red)
+      // - Desarrollo en red: 'http://10.60.0.21:3000'
+      //   (IP del servidor backend en la red)
       '/api': {
         target: 'http://10.60.0.21:3000',
         changeOrigin: true,
