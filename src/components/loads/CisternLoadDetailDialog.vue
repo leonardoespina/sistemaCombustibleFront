@@ -59,6 +59,37 @@
             </div>
           </div>
 
+          <!-- SECCIÓN: REGISTRO DE PESAJES (BALANZA) -->
+          <div
+            class="q-pa-xs rounded-borders bg-teal-1 q-mt-xs"
+            style="border: 1px solid #b2dfdb"
+            v-if="data.peso_entrada || data.peso_salida"
+          >
+            <div class="text-caption text-teal-9 text-weight-bold q-mb-xs">
+              Registro de Pesaje (Balanza)
+            </div>
+            <div class="row justify-around text-center">
+              <div>
+                <div class="text-caption text-grey-7">Peso Entrada</div>
+                <div class="text-subtitle2 text-weight-bold text-teal-10">
+                  {{ data.peso_entrada ? formatNumber(data.peso_entrada) + ' Kg' : 'No Registrado' }}
+                </div>
+              </div>
+              <div>
+                <div class="text-caption text-grey-7">Peso Salida</div>
+                <div class="text-subtitle2 text-weight-bold text-teal-10">
+                  {{ data.peso_salida ? formatNumber(data.peso_salida) + ' Kg' : 'No Registrado' }}
+                </div>
+              </div>
+              <div v-if="data.peso_entrada && data.peso_salida">
+                <div class="text-caption text-grey-7">Peso Neto</div>
+                <div class="text-subtitle2 text-weight-bolder text-teal-9">
+                  {{ formatNumber(Math.abs(parseFloat(data.peso_entrada) - parseFloat(data.peso_salida))) }} Kg
+                </div>
+              </div>
+            </div>
+          </div>
+
           <!-- ITERADOR DE TANQUES RECEPTORES (SPLIT LOAD & LEGACY) -->
           <template v-for="(tq, index) in (data.tanques_descarga?.length ? data.tanques_descarga : [data])" :key="index">
             <!-- SECCIÓN: TANQUE RECEPTOR -->
