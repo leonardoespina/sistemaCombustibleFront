@@ -13,7 +13,11 @@ export const useReporteDependenciaStore = defineStore('reporteDependencia', () =
 
   const filters = ref({
     fechaDesde: firstOfMonthStr(),
-    fechaHasta: todayStr()
+    fechaHasta: todayStr(),
+    categoryId: null,
+    dependencyId: null,
+    subdependencyId: null,
+    fuelTypeId: null
   });
 
   // Actions
@@ -22,7 +26,11 @@ export const useReporteDependenciaStore = defineStore('reporteDependencia', () =
     try {
       const params = {
         fecha_desde: filters.value.fechaDesde,
-        fecha_hasta: filters.value.fechaHasta
+        fecha_hasta: filters.value.fechaHasta,
+        id_categoria: filters.value.categoryId,
+        id_dependencia: filters.value.dependencyId,
+        id_subdependencia: filters.value.subdependencyId,
+        id_tipo_combustible: filters.value.fuelTypeId
       };
 
       const { data } = await api.get('/reportes/consumo-dependencia', { params });
@@ -39,6 +47,10 @@ export const useReporteDependenciaStore = defineStore('reporteDependencia', () =
   const resetFilters = () => {
     filters.value.fechaDesde = date.formatDate(new Date(), 'YYYY-MM-01');
     filters.value.fechaHasta = date.formatDate(new Date(), 'YYYY-MM-DD');
+    filters.value.categoryId = null;
+    filters.value.dependencyId = null;
+    filters.value.subdependencyId = null;
+    filters.value.fuelTypeId = null;
   };
 
   // Socket Integration (Optional but standard for project consistency)

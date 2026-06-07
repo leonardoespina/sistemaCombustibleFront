@@ -24,30 +24,61 @@
           default-opened
         >
           <q-card-section :class="$q.screen.lt.sm ? 'q-pa-sm' : 'q-pa-md'">
-            <div class="row q-col-gutter-sm items-end">
-              <div class="col-6 col-sm-4">
-                <q-input
-                  dense outlined bg-color="white"
-                  v-model="store.filters.fechaDesde"
-                  type="date" label="Desde"
+            <div class="row q-col-gutter-md">
+              <!-- Jerarquía organizacional -->
+              <div class="col-12 col-md-5">
+                <OrganizationalHierarchy
+                  v-if="!isInitializing"
+                  :key="mountKey"
+                  :required="false"
+                  v-model:categoryId="store.filters.categoryId"
+                  v-model:dependencyId="store.filters.dependencyId"
+                  v-model:subdependencyId="store.filters.subdependencyId"
                 />
               </div>
-              <div class="col-6 col-sm-4">
-                <q-input
-                  dense outlined bg-color="white"
-                  v-model="store.filters.fechaHasta"
-                  type="date" label="Hasta"
-                />
-              </div>
-              <div class="col-12 col-sm-4">
-                <q-separator class="q-mb-sm gt-xs" />
-                <div class="row q-gutter-sm justify-end">
-                  <q-btn flat color="grey-7" label="Limpiar" @click="store.resetFilters" />
-                  <q-btn
-                    color="secondary" icon="analytics" label="Generar"
-                    unelevated @click="handleSearch" :loading="store.loading"
-                    :disable="!store.filters.fechaDesde || !store.filters.fechaHasta"
-                  />
+
+              <!-- Otros filtros -->
+              <div class="col-12 col-md-7">
+                <div class="row q-col-gutter-sm">
+                  <div class="col-12 col-sm-4">
+                    <q-select
+                      outlined dense bg-color="white"
+                      v-model="store.filters.fuelTypeId"
+                      :options="fuelTypeOptions"
+                      option-label="nombre"
+                      option-value="id_tipo_combustible"
+                      emit-value map-options
+                      label="Combustible"
+                      clearable
+                    >
+                      <template v-slot:prepend><q-icon name="local_gas_station" /></template>
+                    </q-select>
+                  </div>
+                  <div class="col-6 col-sm-4">
+                    <q-input
+                      dense outlined bg-color="white"
+                      v-model="store.filters.fechaDesde"
+                      type="date" label="Desde"
+                    />
+                  </div>
+                  <div class="col-6 col-sm-4">
+                    <q-input
+                      dense outlined bg-color="white"
+                      v-model="store.filters.fechaHasta"
+                      type="date" label="Hasta"
+                    />
+                  </div>
+                  <div class="col-12">
+                    <q-separator class="q-my-sm" />
+                    <div class="row justify-end q-gutter-sm">
+                      <q-btn flat color="grey-7" label="Limpiar" @click="store.resetFilters" />
+                      <q-btn
+                        color="secondary" icon="analytics" label="Generar"
+                        unelevated @click="handleSearch" :loading="store.loading"
+                        :disable="!store.filters.fechaDesde || !store.filters.fechaHasta"
+                      />
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>
@@ -75,9 +106,11 @@
 </template>
 
 <script setup>
-import { ref, onMounted, onUnmounted } from 'vue';
+import { ref, onMounted, onUnmounted, nextTick } from 'vue';
 import { useReporteDependenciaStore } from '../../stores/reporteDependenciaStore';
 import DependenciaReportDialog from '../../components/reports/DependenciaReportDialog.vue';
+import OrganizationalHierarchy from '../../components/OrganizationalHierarchy.vue';
+import api from '../../api';
 import { useQuasar } from 'quasar';
 
 const $q = useQuasar();
@@ -86,6 +119,18 @@ const store = useReporteDependenciaStore();
 const showDialog = ref(false);
 const hasSearched = ref(false);
 const reportFilters = ref({});
+const fuelTypeOptions = ref([]);
+const mountKey = ref(0);
+const isInitializing = ref(false);
+
+const loadFuelTypes = async () => {
+  try {
+    const { data } = await api.get("/tipos-combustible");
+    fuelTypeOptions.value = Array.isArray(data) ? data : data.data || [];
+  } catch (error) {
+    console.error("Error loading fuel types:", error);
+  }
+};
 
 const handleSearch = async () => {
   try {
@@ -102,9 +147,14 @@ const handleSearch = async () => {
   }
 };
 
-onMounted(() => {
+onMounted(async () => {
   store.resetFilters();
+  mountKey.value++;
+  isInitializing.value = true;
   store.initSocket();
+  await loadFuelTypes();
+  await nextTick();
+  isInitializing.value = false;
 });
 
 onUnmounted(() => {

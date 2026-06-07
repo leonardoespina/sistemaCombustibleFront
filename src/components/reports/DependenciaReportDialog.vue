@@ -153,8 +153,10 @@ const isOpen = computed({
 });
 
 // Altura dinámica: en horizontal crece con la cantidad de dependencias
+const getFullDepName = (d) => `${d.dependencia}${d.subdependencia && d.subdependencia !== 'General' ? ' - ' + d.subdependencia : ''}`;
+
 const chartHeight = computed(() => {
-  const dependencias = [...new Set((props.data || []).map(d => d.dependencia))];
+  const dependencias = [...new Set((props.data || []).map(d => getFullDepName(d)))];
   if (chartOrientation.value === 'horizontal') {
     const h = Math.max(300, dependencias.length * 50);
     return `width: 100%; height: ${h}px`;
@@ -170,6 +172,7 @@ watch(chartOrientation, () => {
 // Columnas Tabla
 const columns = [
   { name: 'dependencia', label: 'Dependencia / Gerencia', field: 'dependencia', align: 'left', sortable: true },
+  { name: 'subdependencia', label: 'Subdependencia', field: 'subdependencia', align: 'left', sortable: true },
   { name: 'tipo_combustible', label: 'Tipo de Combustible', field: 'tipo_combustible', align: 'center', sortable: true },
   { name: 'total_litros', label: 'Consumo Total (Lts)', field: 'total_litros', align: 'right', sortable: true },
 ];
@@ -188,20 +191,28 @@ function initChart() {
 
   myChart = echarts.init(chartRef.value);
 
-  const dependenciasSet = [...new Set(props.data.map(d => d.dependencia))];
+  const dependenciasSet = [...new Set(props.data.map(d => getFullDepName(d)))];
   const tiposSet = [...new Set(props.data.map(d => d.tipo_combustible))];
   const isHorizontal = chartOrientation.value === 'horizontal';
 
   // Truncar etiquetas largas
-  const truncate = (str, max = 18) =>
+  const truncate = (str, max = 22) =>
     str && str.length > max ? str.slice(0, max) + '...' : str;
+
+  const formatLabel = (v, max = 22) => {
+    if (v.includes(' - ')) {
+      const parts = v.split(' - ');
+      return truncate(parts[0], max) + '\n' + truncate(parts[1], max);
+    }
+    return truncate(v, max);
+  };
 
   const series = tiposSet.map(tipo => ({
     name: tipo,
     type: 'bar',
     barMaxWidth: isHorizontal ? 24 : 36,
     data: dependenciasSet.map(dep => {
-      const item = props.data.find(d => d.dependencia === dep && d.tipo_combustible === tipo);
+      const item = props.data.find(d => getFullDepName(d) === dep && d.tipo_combustible === tipo);
       return item ? item.total_litros : 0;
     }),
     itemStyle: {
@@ -242,7 +253,7 @@ function initChart() {
           axisLabel: {
             interval: 0,
             rotate: dependenciasSet.length > 4 ? 20 : 0,
-            formatter: v => truncate(v, 14),
+            formatter: v => formatLabel(v, 16),
             fontSize: 11,
           }
         },
@@ -250,7 +261,7 @@ function initChart() {
       ? {
           type: 'category',
           data: dependenciasSet,
-          axisLabel: { formatter: v => truncate(v, 20), fontSize: 11 }
+          axisLabel: { formatter: v => formatLabel(v, 22), fontSize: 11 }
         }
       : { type: 'value', name: 'Litros', axisLabel: { formatter: v => `${v}L` } },
     series,
