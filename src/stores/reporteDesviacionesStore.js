@@ -53,13 +53,17 @@ export const useReporteDesviacionesStore = defineStore("reporteDesviaciones", ()
       let resultData = response.data || [];
       
       if (fetchAmbos) {
+          let filterSingular = filters.value.tipoDesviacion;
+          if (filterSingular === 'Faltantes') filterSingular = 'Faltante';
+          if (filterSingular === 'Sobrantes') filterSingular = 'Sobrante';
+          
           resultData = resultData.filter(row => {
               let visualType = row.tipo_desviacion;
               if (row.origen === 'Recepción Cisterna') {
                   if (visualType === 'Sobrante') visualType = 'Faltante';
                   else if (visualType === 'Faltante') visualType = 'Sobrante';
               }
-              return visualType === filters.value.tipoDesviacion;
+              return visualType === filterSingular;
           });
       }
 
