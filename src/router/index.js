@@ -216,6 +216,12 @@ const routes = [
         meta: { requiresPermission: PERMISSIONS.VIEW_REPORTE_RECEPCION },
         component: () => import("../pages/reports/ReporteRecepcionCisternaPage.vue"),
       },
+      {
+        path: "reportes/desviaciones",
+        name: "reporte-desviaciones",
+        meta: { requiresPermission: PERMISSIONS.VIEW_REPORTES_GLOB },
+        component: () => import("../pages/reports/ReporteDesviacionesPage.vue"),
+      },
 
 
       {

@@ -290,6 +290,19 @@
           <q-item-section>Recepción de Combustibles</q-item-section>
         </q-item>
 
+        <!-- Reporte de Desviaciones -->
+        <q-item
+          v-if="can(PERMISSIONS.VIEW_REPORTES_GLOB)"
+          clickable
+          v-ripple
+          to="/reportes/desviaciones"
+        >
+          <q-item-section avatar>
+            <q-icon name="compare_arrows" size="xs" />
+          </q-item-section>
+          <q-item-section>Reporte de Desviaciones</q-item-section>
+        </q-item>
+
       </q-list>
     </q-expansion-item>
   </q-list>
