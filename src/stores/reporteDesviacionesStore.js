@@ -28,17 +28,42 @@ export const useReporteDesviacionesStore = defineStore("reporteDesviaciones", ()
   const fetchReport = async () => {
     loading.value = true;
     try {
+      let backendTipo = filters.value.tipoDesviacion;
+      let fetchAmbos = false;
+      
+      if (filters.value.tipoDesviacion === 'Faltantes' || filters.value.tipoDesviacion === 'Sobrantes') {
+          if (filters.value.origen === 'Todos') {
+              backendTipo = 'Ambos';
+              fetchAmbos = true;
+          } else if (filters.value.origen === 'Recepción Cisterna') {
+              backendTipo = filters.value.tipoDesviacion === 'Faltantes' ? 'Sobrantes' : 'Faltantes';
+          }
+      }
+
       const params = {
         fecha_desde: filters.value.fechaDesde,
         fecha_hasta: filters.value.fechaHasta,
         id_llenadero: filters.value.llenaderoId || "",
         id_tipo_combustible: filters.value.fuelTypeId || "",
-        tipo_desviacion: filters.value.tipoDesviacion,
+        tipo_desviacion: backendTipo,
         origen: filters.value.origen
       };
 
       const response = await api.get("/reportes/desviaciones", { params });
-      data.value = response.data || [];
+      let resultData = response.data || [];
+      
+      if (fetchAmbos) {
+          resultData = resultData.filter(row => {
+              let visualType = row.tipo_desviacion;
+              if (row.origen === 'Recepción Cisterna') {
+                  if (visualType === 'Sobrante') visualType = 'Faltante';
+                  else if (visualType === 'Faltante') visualType = 'Sobrante';
+              }
+              return visualType === filters.value.tipoDesviacion;
+          });
+      }
+
+      data.value = resultData;
     } catch (error) {
       console.error("Error fetching reporte de desviaciones:", error);
       throw error;

@@ -207,19 +207,25 @@
               dense
               outline
               :color="
-                props.row.tipo_desviacion === 'Sobrante'
-                  ? 'green'
-                  : props.row.tipo_desviacion === 'Evaporación'
-                    ? 'orange'
+                props.row.tipo_desviacion === 'Evaporación'
+                  ? 'orange'
+                  : (props.row.tipo_desviacion === 'Sobrante' && props.row.origen !== 'Recepción Cisterna') || (props.row.tipo_desviacion === 'Faltante' && props.row.origen === 'Recepción Cisterna')
+                    ? 'green'
                     : 'red'
               "
               :icon="
-                props.row.tipo_desviacion === 'Sobrante'
-                  ? 'arrow_upward'
-                  : 'arrow_downward'
+                props.row.tipo_desviacion === 'Evaporación'
+                  ? 'warning'
+                  : (props.row.tipo_desviacion === 'Sobrante' && props.row.origen !== 'Recepción Cisterna') || (props.row.tipo_desviacion === 'Faltante' && props.row.origen === 'Recepción Cisterna')
+                    ? 'arrow_upward'
+                    : 'arrow_downward'
               "
             >
-              {{ props.row.tipo_desviacion }}
+              {{
+                props.row.origen === 'Recepción Cisterna'
+                  ? (props.row.tipo_desviacion === 'Sobrante' ? 'Faltante' : (props.row.tipo_desviacion === 'Faltante' ? 'Sobrante' : props.row.tipo_desviacion))
+                  : props.row.tipo_desviacion
+              }}
             </q-chip>
           </q-td>
         </template>
@@ -229,7 +235,11 @@
           <q-td
             :props="props"
             class="text-weight-bold"
-            :class="props.value > 0 ? 'text-red-7' : 'text-green-7'"
+            :class="
+              (props.value > 0 && props.row.origen !== 'Recepción Cisterna') || (props.value < 0 && props.row.origen === 'Recepción Cisterna')
+                ? 'text-red-7'
+                : 'text-green-7'
+            "
           >
             {{
               Math.abs(props.value).toLocaleString("de-DE", {
@@ -318,25 +328,34 @@ const excelColumns = [
   { label: "Combustible", field: "tipo_combustible" },
   { label: "Origen", field: "origen" },
   { label: "Referencia", field: "referencia" },
-  { label: "Tipo", field: "tipo_desviacion" },
+  { 
+    label: "Tipo", 
+    field: "tipo_desviacion",
+    format: (val, row) => row.origen === 'Recepción Cisterna' ? (val === 'Sobrante' ? 'Faltante' : (val === 'Faltante' ? 'Sobrante' : val)) : val
+  },
   { label: "Cantidad", field: "cantidad" },
 ];
 
 const totalFaltantes = computed(() => {
   return store.data
-    .filter((d) => d.cantidad > 0)
-    .reduce((sum, d) => sum + parseFloat(d.cantidad), 0);
+    .filter((d) => {
+      let isRecepcion = d.origen === "Recepción Cisterna";
+      return (!isRecepcion && d.cantidad > 0) || (isRecepcion && d.cantidad < 0);
+    })
+    .reduce((sum, d) => sum + Math.abs(parseFloat(d.cantidad)), 0);
 });
 
 const totalSobrantes = computed(() => {
   return store.data
-    .filter((d) => d.cantidad < 0)
-    .reduce((sum, d) => sum + parseFloat(d.cantidad), 0);
+    .filter((d) => {
+      let isRecepcion = d.origen === "Recepción Cisterna";
+      return (!isRecepcion && d.cantidad < 0) || (isRecepcion && d.cantidad > 0);
+    })
+    .reduce((sum, d) => sum + Math.abs(parseFloat(d.cantidad)), 0);
 });
 
 const balanceNeto = computed(() => {
-  // Balance Neto = Faltantes (positivo) + Sobrantes (negativo)
-  return store.data.reduce((sum, d) => sum + parseFloat(d.cantidad), 0);
+  return totalFaltantes.value - totalSobrantes.value;
 });
 
 const loadInitialData = async () => {
