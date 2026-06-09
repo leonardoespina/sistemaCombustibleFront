@@ -152,6 +152,18 @@ const routes = [
           import("../pages/llenaderos/GestionEvaporacionPage.vue"),
       },
       {
+        path: 'recepcion-cisternas',
+        name: 'cistern_loads',
+        component: () => import('../pages/loads/CisternLoadPage.vue'),
+        meta: { requireAuth: true, title: 'Recepción de Cisternas', group: 'operaciones' }
+      },
+      {
+        path: 'recepcion-cisternas/reporte',
+        name: 'cistern_loads_report',
+        component: () => import('../pages/loads/CisternReportPage.vue'),
+        meta: { requireAuth: true, title: 'Reporte Ejec. de Recepciones', group: 'operaciones' }
+      },
+      {
         path: "solicitudes",
         name: "request-list",
         component: () => import("../pages/dispatches/RequestListPage.vue"),
