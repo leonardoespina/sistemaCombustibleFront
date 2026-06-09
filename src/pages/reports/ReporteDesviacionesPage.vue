@@ -230,6 +230,40 @@
           </q-td>
         </template>
 
+        <!-- Columna Facturado Guia -->
+        <template v-slot:body-cell-litros_segun_guia="props">
+          <q-td :props="props" class="text-weight-medium text-grey-8">
+            <template v-if="props.row.origen === 'Recepción Cisterna' && props.value !== undefined">
+              {{
+                Number(props.value).toLocaleString("de-DE", {
+                  minimumFractionDigits: 2,
+                })
+              }}
+              L
+            </template>
+            <template v-else>
+              <span class="text-grey-4">-</span>
+            </template>
+          </q-td>
+        </template>
+
+        <!-- Columna Litros Recibidos -->
+        <template v-slot:body-cell-litros_recibidos="props">
+          <q-td :props="props" class="text-weight-medium text-grey-8">
+            <template v-if="props.row.origen === 'Recepción Cisterna' && props.value !== undefined">
+              {{
+                Number(props.value).toLocaleString("de-DE", {
+                  minimumFractionDigits: 2,
+                })
+              }}
+              L
+            </template>
+            <template v-else>
+              <span class="text-grey-4">-</span>
+            </template>
+          </q-td>
+        </template>
+
         <!-- Columna de Cantidad -->
         <template v-slot:body-cell-cantidad="props">
           <q-td
@@ -267,74 +301,114 @@ const $q = useQuasar();
 const llenaderosList = ref([]);
 const fuelTypeList = ref([]);
 
-const columnas = [
-  {
-    name: "fecha",
-    label: "Fecha",
-    field: "fecha",
-    align: "left",
-    sortable: true,
-    format: (v) => date.formatDate(v, "DD/MM/YYYY"),
-  },
-  {
-    name: "llenadero",
-    label: "Llenadero",
-    field: "llenadero",
-    align: "left",
-    sortable: true,
-  },
-  {
-    name: "tipo_combustible",
-    label: "Combustible",
-    field: "tipo_combustible",
-    align: "left",
-    sortable: true,
-  },
-  {
-    name: "origen",
-    label: "Origen",
-    field: "origen",
-    align: "center",
-    sortable: true,
-  },
-  {
-    name: "referencia",
-    label: "Referencia / Detalle",
-    field: "referencia",
-    align: "left",
-  },
-  {
-    name: "tipo_desviacion",
-    label: "Tipo",
-    field: "tipo_desviacion",
-    align: "center",
-  },
-  {
+const columnas = computed(() => {
+  const baseCols = [
+    {
+      name: "fecha",
+      label: "Fecha",
+      field: "fecha",
+      align: "left",
+      sortable: true,
+      format: (v) => date.formatDate(v, "DD/MM/YYYY"),
+    },
+    {
+      name: "llenadero",
+      label: "Llenadero",
+      field: "llenadero",
+      align: "left",
+      sortable: true,
+    },
+    {
+      name: "tipo_combustible",
+      label: "Combustible",
+      field: "tipo_combustible",
+      align: "left",
+      sortable: true,
+    },
+    {
+      name: "origen",
+      label: "Origen",
+      field: "origen",
+      align: "center",
+      sortable: true,
+    },
+    {
+      name: "referencia",
+      label: "Referencia / Detalle",
+      field: "referencia",
+      align: "left",
+    },
+    {
+      name: "tipo_desviacion",
+      label: "Tipo",
+      field: "tipo_desviacion",
+      align: "center",
+    }
+  ];
+
+  if (store.filters.origen === 'Todos' || store.filters.origen === 'Recepción Cisterna') {
+    baseCols.push({
+      name: "litros_segun_guia",
+      label: "Facturado (Guía)",
+      field: "litros_segun_guia",
+      align: "right",
+      sortable: true,
+    });
+    baseCols.push({
+      name: "litros_recibidos",
+      label: "Recibido",
+      field: "litros_recibidos",
+      align: "right",
+      sortable: true,
+    });
+  }
+
+  baseCols.push({
     name: "cantidad",
     label: "Cantidad (Absoluta)",
     field: "cantidad",
     align: "right",
     sortable: true,
-  },
-];
+  });
 
-const excelColumns = [
-  {
-    label: "Fecha",
-    field: "fecha",
-    format: (v) => date.formatDate(v, "DD/MM/YYYY"),
-  },
-  { label: "Llenadero", field: "llenadero" },
-  { label: "Combustible", field: "tipo_combustible" },
-  { label: "Origen", field: "origen" },
-  { label: "Referencia", field: "referencia" },
-  { 
-    label: "Tipo", 
-    field: "tipo_desviacion",
-    format: (val, row) => row.origen === 'Recepción Cisterna' ? (val === 'Sobrante' ? 'Faltante' : (val === 'Faltante' ? 'Sobrante' : val)) : val
-  },
-  { label: "Cantidad", field: "cantidad" },
-];
+  return baseCols;
+});
+
+const excelColumns = computed(() => {
+  const cols = [
+    {
+      label: "Fecha",
+      field: "fecha",
+      format: (v) => date.formatDate(v, "DD/MM/YYYY"),
+    },
+    { label: "Llenadero", field: "llenadero" },
+    { label: "Combustible", field: "tipo_combustible" },
+    { label: "Origen", field: "origen" },
+    { label: "Referencia", field: "referencia" },
+    { 
+      label: "Tipo", 
+      field: "tipo_desviacion",
+      format: (val, row) => row.origen === 'Recepción Cisterna' ? (val === 'Sobrante' ? 'Faltante' : (val === 'Faltante' ? 'Sobrante' : val)) : val
+    }
+  ];
+
+  if (store.filters.origen === 'Todos' || store.filters.origen === 'Recepción Cisterna') {
+    cols.push({
+      label: "Facturado (Guía)",
+      field: "litros_segun_guia",
+      format: (val, row) => row.origen === 'Recepción Cisterna' && val !== undefined ? val : "-"
+    });
+    cols.push({
+      label: "Recibido",
+      field: "litros_recibidos",
+      format: (val, row) => row.origen === 'Recepción Cisterna' && val !== undefined ? val : "-"
+    });
+  }
+
+  cols.push({ label: "Cantidad", field: "cantidad" });
+
+  return cols;
+});
 
 const totalFaltantes = computed(() => {
   return store.data
