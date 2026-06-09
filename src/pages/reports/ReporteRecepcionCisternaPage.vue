@@ -70,6 +70,7 @@
       <div v-if="store.reportGroups.length > 0" class="q-gutter-y-lg">
         <!-- BOTONES DE ACCIÓN FLOTANTES O SUPERIORES -->
         <div class="row justify-end q-gutter-x-sm">
+          <q-btn outline color="secondary" icon="presentation_platform" label="Ver Modo Presentación" @click="isPresentacionOpen = true" />
           <q-btn outline color="primary" icon="print" label="Imprimir PDF" @click="printReport" />
           <ExportExcelBtn
             :rows="flattenedData"
@@ -130,6 +131,12 @@
       </div>
 
     </div>
+
+    <!-- MODAL DE PRESENTACIÓN (MOCKUP 1) -->
+    <ReportePresentacionDialog
+      v-model="isPresentacionOpen"
+      :report-groups="store.reportGroups"
+    />
   </q-page>
 </template>
 
@@ -139,9 +146,12 @@ import { useReporteRecepcionStore } from '../../stores/reporteRecepcionStore';
 import { date, useQuasar } from 'quasar';
 import api from '../../api';
 import ExportExcelBtn from '../../components/common/ExportExcelBtn.vue';
+import ReportePresentacionDialog from '../../components/reports/ReportePresentacionDialog.vue';
 
 const store = useReporteRecepcionStore();
 const $q = useQuasar();
+
+const isPresentacionOpen = ref(false);
 
 const llenaderosList = ref([]);
 const fuelTypeList = ref([]);
