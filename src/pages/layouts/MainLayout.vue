@@ -58,6 +58,13 @@
               <q-item-section>Cambiar Contraseña</q-item-section>
             </q-item>
 
+            <q-item clickable v-ripple @click="handleChangeLlenadero">
+              <q-item-section avatar>
+                <q-icon name="local_gas_station" color="primary" />
+              </q-item-section>
+              <q-item-section>Cambiar de Sede (Llenadero)</q-item-section>
+            </q-item>
+
             <q-item
               clickable
               v-ripple
@@ -99,13 +106,25 @@
       v-model="showChangePassword"
       @logout="handleLogoutLocal"
     />
+
+    <LlenaderoPrompt
+      ref="globalLlenaderoPromptRef"
+      :llenaderos-list="globalLlenaderosList"
+      @saved="onGlobalLlenaderoSaved"
+    />
   </q-layout>
 </template>
 
 <script setup>
+import { ref } from "vue";
+import { useQuasar } from "quasar";
+import api from "../../api";
 import { useMainLayout } from "./composables/useMainLayout.js";
 import SidebarMenu from "./components/SidebarMenu.vue";
 import ChangePasswordDialog from "../../components/users/ChangePasswordDialog.vue";
+import LlenaderoPrompt from "../../components/dispatches/LlenaderoPrompt.vue";
+
+const $q = useQuasar();
 
 // Extraemos toda la lógica al composable (Sockets, Inactividad, Auth, Menú)
 const {
@@ -122,6 +141,34 @@ const {
   handleLogoutLocal,
   canAccess,
 } = useMainLayout();
+
+const globalLlenaderoPromptRef = ref(null);
+const globalLlenaderosList = ref([]);
+
+const handleChangeLlenadero = async () => {
+  try {
+    $q.loading.show({ message: 'Cargando sedes disponibles...' });
+    const response = await api.get('/llenaderos');
+    globalLlenaderosList.value = response.data?.data || response.data || [];
+    if (globalLlenaderoPromptRef.value) {
+      globalLlenaderoPromptRef.value.openForce();
+    }
+  } catch (error) {
+    console.error("Error cargando llenaderos para menú", error);
+    $q.notify({ type: 'negative', message: 'No se pudieron cargar las sedes' });
+  } finally {
+    $q.loading.hide();
+  }
+};
+
+const onGlobalLlenaderoSaved = (id) => {
+  $q.notify({
+    type: 'positive',
+    message: 'Sedes actualizadas correctamente',
+    position: 'top'
+  });
+  window.dispatchEvent(new CustomEvent('globalLlenaderoUpdated'));
+};
 </script>
 
 <style scoped>

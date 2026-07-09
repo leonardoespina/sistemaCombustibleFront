@@ -120,10 +120,12 @@
                 :options="llenaderosList"
                 option-value="id_llenadero"
                 option-label="nombre_llenadero"
-                label="Llenadero"
+                label="Llenaderos"
                 dense
                 outlined
                 bg-color="white"
+                multiple
+                use-chips
                 emit-value
                 map-options
                 clearable
@@ -131,6 +133,16 @@
               >
                 <template v-slot:prepend>
                   <q-icon name="local_gas_station" color="primary" />
+                </template>
+                <template v-slot:option="{ itemProps, opt, selected, toggleOption }">
+                  <q-item v-bind="itemProps">
+                    <q-item-section side>
+                      <q-checkbox :model-value="selected" @update:model-value="toggleOption(opt)" />
+                    </q-item-section>
+                    <q-item-section>
+                      <q-item-label>{{ opt.nombre_llenadero }}</q-item-label>
+                    </q-item-section>
+                  </q-item>
                 </template>
               </q-select>
             </div>
@@ -299,6 +311,13 @@
       :request-data="selectedRequest"
       @print="openBiometricDialog"
     />
+
+    <!-- Popup de selección predeterminada de Llenadero -->
+    <LlenaderoPrompt
+      ref="llenaderoPromptRef"
+      :llenaderos-list="llenaderosList"
+      @saved="onLlenaderoPromptSaved"
+    />
   </q-page>
 </template>
 
@@ -309,6 +328,7 @@ import { useRequestStore } from '../../stores/requestStore';
 import { storeToRefs } from 'pinia';
 import api from '../../api';
 import socketServiceName from '../../services/socket';
+import LlenaderoPrompt from '../../components/dispatches/LlenaderoPrompt.vue';
 const SmartBiometricDialog = defineAsyncComponent(() => 
   import('../../components/dispatches/SmartBiometricDialog.vue')
 );
@@ -322,6 +342,7 @@ const RequestDetailsDialog = defineAsyncComponent(() =>
 const $q = useQuasar();
 const requestStore = useRequestStore();
 const loading = ref(false);
+const llenaderoPromptRef = ref(null);
 
 const isBiometricDialogVisible = ref(false);
 const isTicketVisible = ref(false);
@@ -336,8 +357,9 @@ const filterDate = ref(date.formatDate(new Date(), 'YYYY-MM-DD'));
 const filterText = ref('');
 const filterCode = ref('');
 const statusFilter = ref('APROBADA');
-const filterLlenadero = ref(null);
+const filterLlenadero = ref([]);
 const llenaderosList = ref([]);
+const allLlenaderosRaw = ref([]); // Store unfiltered list
 
 // --- PAGINACIÓN (Server-Side) ---
 const rows = ref([]);
@@ -383,8 +405,8 @@ const loadRequests = async (props = { pagination: pagination.value }) => {
   // Mapeo Inteligente de Filtros
   params.estado = statusFilter.value;
 
-  if (filterLlenadero.value) {
-    params.id_llenadero = filterLlenadero.value;
+  if (filterLlenadero.value && filterLlenadero.value.length > 0) {
+    params.id_llenadero = filterLlenadero.value.join(',');
   }
 
   // Búsqueda por texto (Global o por Solicitud)
@@ -491,22 +513,60 @@ const handleSocketUpdate = (data) => {
 const loadLlenaderos = async () => {
     try {
         const response = await api.get('/llenaderos');
-        llenaderosList.value = response.data?.data || response.data || [];
+        allLlenaderosRaw.value = response.data?.data || response.data || [];
+        applyLlenaderoPermissions();
     } catch (error) {
         console.error("Error cargando llenaderos", error);
+    } finally {
+        if (llenaderoPromptRef.value) {
+            llenaderoPromptRef.value.checkLlenadero();
+        } else {
+            triggerSearch();
+        }
     }
+};
+
+const applyLlenaderoPermissions = () => {
+    const stored = localStorage.getItem('defaultLlenaderoId');
+    if (stored) {
+        try {
+            const parsed = JSON.parse(stored);
+            const allowedIds = (Array.isArray(parsed) ? parsed : [parsed]).map(id => parseInt(id, 10));
+            llenaderosList.value = allLlenaderosRaw.value.filter(ll => allowedIds.includes(parseInt(ll.id_llenadero, 10)));
+            filterLlenadero.value = allowedIds; // Auto-seleccionar los permitidos
+        } catch (e) {
+            const allowedId = parseInt(stored, 10);
+            llenaderosList.value = allLlenaderosRaw.value.filter(ll => parseInt(ll.id_llenadero, 10) === allowedId);
+            filterLlenadero.value = [allowedId];
+        }
+    } else {
+        // Aún no hay permisos. El prompt se abrirá.
+        llenaderosList.value = allLlenaderosRaw.value; // Proveer opciones al prompt
+        filterLlenadero.value = []; // NO autoseleccionar en el fondo para que no se vean
+    }
+};
+
+const onLlenaderoPromptSaved = (idLlenadero) => {
+    applyLlenaderoPermissions();
+    triggerSearch();
+};
+
+const reloadFromGlobal = () => {
+    applyLlenaderoPermissions();
+    triggerSearch();
 };
 
 onMounted(() => {
     loadLlenaderos();
-    triggerSearch(); // Carga inicial
     socketServiceName.on('solicitud:actualizada', handleSocketUpdate);
     socketServiceName.on('solicitud:creada', handleSocketUpdate);
+    window.addEventListener('globalLlenaderoUpdated', reloadFromGlobal);
 });
 
 onBeforeUnmount(() => {
     socketServiceName.off('solicitud:actualizada', handleSocketUpdate);
     socketServiceName.off('solicitud:creada', handleSocketUpdate);
+    window.removeEventListener('globalLlenaderoUpdated', reloadFromGlobal);
 });
 
 const openBiometricDialog = (request) => {
