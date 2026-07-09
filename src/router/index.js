@@ -234,6 +234,18 @@ const routes = [
         meta: { requiresPermission: PERMISSIONS.VIEW_REPORTES_GLOB },
         component: () => import("../pages/reports/ReporteDesviacionesPage.vue"),
       },
+      {
+        path: "reportes/kardex-consolidado",
+        name: "reporte-kardex-consolidado",
+        meta: { requiresPermission: PERMISSIONS.VIEW_REPORTES_GLOB },
+        component: () => import("../pages/reports/ReporteKardexDinamicoPage.vue"),
+      },
+      {
+        path: "reportes/total-consolidado",
+        name: "reporte-total-consolidado",
+        meta: { requiresPermission: PERMISSIONS.VIEW_REPORTES_GLOB },
+        component: () => import("../pages/reports/ReporteTotalConsolidadoPage.vue"),
+      },
 
 
       {

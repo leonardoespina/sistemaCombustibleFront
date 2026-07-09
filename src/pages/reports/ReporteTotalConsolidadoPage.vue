@@ -1,0 +1,121 @@
+<template>
+  <q-page padding class="bg-grey-2">
+    <!-- Header y Tabs -->
+    <div class="row items-center justify-between q-mb-md">
+      <div>
+        <div class="text-h5 text-weight-bold text-primary">Consolidado Total (Global)</div>
+      </div>
+      <q-tabs v-model="tipoReporte" dense class="text-grey" active-color="primary">
+        <q-tab name="DIARIO" icon="today" label="Día a Día" />
+        <q-tab name="MENSUAL" icon="calendar_month" label="Consolidado Mensual" />
+      </q-tabs>
+    </div>
+
+    <!-- Panel de Filtros -->
+    <q-card flat bordered class="q-mb-lg bg-white">
+      <q-card-section class="row q-col-gutter-md items-center">
+        <div class="col-12 col-md-4">
+          <q-input outlined dense v-model="fechasFiltroLabel" readonly :label="tipoReporte === 'DIARIO' ? 'Rango de Fechas' : 'Rango de Meses'">
+            <template v-slot:append>
+              <q-icon name="event" class="cursor-pointer">
+                <q-popup-proxy cover transition-show="scale" transition-hide="scale">
+                  <q-date v-model="filtroFechas" range :default-view="tipoReporte === 'DIARIO' ? 'Calendar' : 'Months'">
+                    <div class="row items-center justify-end"><q-btn v-close-popup label="Cerrar" flat color="primary" /></div>
+                  </q-date>
+                </q-popup-proxy>
+              </q-icon>
+            </template>
+          </q-input>
+        </div>
+        <div class="col-12 col-md-2">
+          <q-btn color="primary" icon="search" label="Generar Consolidado" @click="cargarDatosKardex" :loading="cargando" class="full-width"/>
+        </div>
+      </q-card-section>
+    </q-card>
+
+    <!-- Dashboard Gerencial -->
+    <div class="row q-col-gutter-md q-mb-lg" v-if="dashboardData">
+      <div class="col-12 col-md-3">
+        <q-card class="bg-blue-8 text-white shadow-2">
+          <q-card-section>
+            <div class="text-overline text-blue-2">Stock Inicial Global</div>
+            <div class="text-h5 text-weight-bolder">{{ format(dashboardData.stockInicialGlobal) }} L</div>
+          </q-card-section>
+        </q-card>
+      </div>
+      <div class="col-12 col-md-3">
+        <q-card class="bg-green-8 text-white shadow-2">
+          <q-card-section>
+            <div class="text-overline text-green-2">Total Recepciones</div>
+            <div class="text-h5 text-weight-bolder">+ {{ format(dashboardData.totalRecepciones) }} L</div>
+          </q-card-section>
+        </q-card>
+      </div>
+      <div class="col-12 col-md-3">
+        <q-card class="bg-red-8 text-white shadow-2">
+          <q-card-section>
+            <div class="text-overline text-red-2">Total Despachos</div>
+            <div class="text-h5 text-weight-bolder">- {{ format(dashboardData.totalDespachos) }} L</div>
+          </q-card-section>
+        </q-card>
+      </div>
+      <div class="col-12 col-md-3">
+        <q-card class="bg-orange-9 text-white shadow-2">
+          <q-card-section>
+            <div class="text-overline text-orange-2">Stock Final Global</div>
+            <div class="text-h5 text-weight-bolder">{{ format(dashboardData.stockFinalGlobal) }} L</div>
+            <q-badge v-if="dashboardData.enProgreso" color="warning" class="absolute-top-right q-mt-sm q-mr-sm text-black">
+              <q-icon name="cached" spin class="q-mr-xs"/> Parcial
+            </q-badge>
+          </q-card-section>
+        </q-card>
+      </div>
+    </div>
+
+    <!-- Tabla Principal -->
+    <q-card flat bordered class="bg-white" v-if="datosKardex.length > 0">
+      <q-table :rows="datosKardex" :columns="columnasKardex" :loading="cargando" flat bordered separator="cell" :pagination="{ rowsPerPage: 31 }">
+        <template v-slot:body-cell-periodo="props">
+          <q-td :props="props" :class="props.row.estado === 'EN_PROGRESO' ? 'bg-yellow-1' : ''">
+            <span class="text-weight-bold">{{ props.value }}</span>
+            <q-badge v-if="props.row.estado === 'EN_PROGRESO'" color="warning" class="q-ml-sm text-black"><q-icon name="cached" spin /> Parcial</q-badge>
+          </q-td>
+        </template>
+        <template v-slot:body-cell-recepcion="props">
+          <q-td :props="props" class="text-green-8 text-weight-medium">
+            {{ props.value > 0 ? '+' : '' }}{{ format(props.value) }}
+          </q-td>
+        </template>
+        <template v-slot:body-cell-despacho="props">
+          <q-td :props="props" class="text-red-8 text-weight-medium">
+            {{ props.value > 0 ? '-' : '' }}{{ format(props.value) }}
+          </q-td>
+        </template>
+        <template v-slot:body-cell-stock_inicial="props">
+          <q-td :props="props">{{ format(props.value) }}</q-td>
+        </template>
+        <template v-slot:body-cell-stock_final="props">
+          <q-td :props="props" class="bg-grey-2 text-weight-bold">{{ format(props.value) }}</q-td>
+        </template>
+      </q-table>
+    </q-card>
+  </q-page>
+</template>
+
+<script setup>
+import { computed } from 'vue'
+import { useTotalConsolidado } from '../../composables/useTotalConsolidado'
+
+const { 
+  tipoReporte, cargando, datosKardex, filtroFechas, dashboardData, columnasKardex, cargarDatosKardex 
+} = useTotalConsolidado()
+
+const fechasFiltroLabel = computed(() => {
+  if (!filtroFechas.value) return ''
+  if (typeof filtroFechas.value === 'string') return filtroFechas.value
+  if (filtroFechas.value.from && filtroFechas.value.to) return `${filtroFechas.value.from} al ${filtroFechas.value.to}`
+  return ''
+})
+
+const format = (num) => Number(num).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+</script>
