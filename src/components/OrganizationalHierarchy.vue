@@ -27,6 +27,8 @@
     <q-select
       dense
       v-model="internalDependencyId"
+      :multiple="multipleDependencies"
+      :use-chips="multipleDependencies"
       :options="dependenciaOptions"
       label="Dependencia"
       :disable="!internalCategoryId"
@@ -48,7 +50,7 @@
     </q-select>
 
     <q-select
-      v-if="!hideSubdependency"
+      v-show="!hideSubdependency && (!multipleDependencies || !Array.isArray(internalDependencyId) || internalDependencyId.length <= 1)"
       dense
       v-model="internalSubdependencyId"
       :options="subdependenciaOptions"
@@ -82,8 +84,12 @@ const props = defineProps({
     default: null,
   },
   dependencyId: {
-    type: [Number, String, null],
+    type: [Number, String, Array, null],
     default: null,
+  },
+  multipleDependencies: {
+    type: Boolean,
+    default: false,
   },
   subdependencyId: {
     type: [Number, String, null],
@@ -208,7 +214,9 @@ watch(internalCategoryId, (newVal, oldVal) => {
 
 watch(internalDependencyId, (newVal, oldVal) => {
   if (isInitializing.value) return;
-  if (newVal !== oldVal) {
+  // Solo limpiar subdependencias si el valor realmente cambió, o si se convierte en un arreglo vacío
+  const valChanged = JSON.stringify(newVal) !== JSON.stringify(oldVal);
+  if (valChanged) {
     if (oldVal !== undefined) {
       internalSubdependencyId.value = null;
       subdependenciaOptions.value = [];

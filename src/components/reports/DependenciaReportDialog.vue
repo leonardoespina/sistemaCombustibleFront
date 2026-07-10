@@ -68,23 +68,35 @@
             </div>
           </div>
 
-          <!-- GRÁFICO ESTADÍSTICO -->
+          <!-- GRÁFICO ESTADÍSTICO NATIVO -->
           <div class="q-mb-lg no-print">
-            <div class="row items-center q-mb-sm">
-              <q-icon name="bar_chart" color="primary" class="q-mr-xs" />
-              <span class="text-subtitle2 text-grey-8">Distribución de Consumo por Tipo de Combustible</span>
-              <!-- Toggle horizontal/vertical en móvil -->
-              <q-space />
-              <q-btn-toggle
-                v-model="chartOrientation"
-                :options="[{icon:'bar_chart', value:'vertical'}, {icon:'align_horizontal_left', value:'horizontal'}]"
-                dense flat
-                color="grey-7"
-                toggle-color="primary"
-                size="sm"
-              />
+            <div class="row items-center q-mb-md">
+              <q-icon name="bar_chart" color="primary" class="q-mr-xs" size="sm" />
+              <span class="text-subtitle1 text-weight-bold text-grey-9">Top Consumo por Dependencia</span>
             </div>
-            <div ref="chartRef" :style="chartHeight" />
+
+            <div class="column q-gutter-y-sm">
+              <div v-for="(item, index) in chartData" :key="index" class="row items-center no-wrap">
+                <!-- Label -->
+                <div class="col-4 col-md-3 text-right q-pr-md text-caption text-weight-medium text-grey-8 ellipsis">
+                  <q-tooltip>{{ item.name }}</q-tooltip>
+                  {{ item.name }}
+                </div>
+                <!-- Bar -->
+                <div class="col-8 col-md-9 row items-center no-wrap">
+                  <div class="bg-grey-3 rounded-borders" style="width: 100%; height: 24px; position: relative; overflow: hidden;">
+                    <div 
+                      class="bg-green-6 absolute-left" 
+                      style="transition: width 0.5s ease-in-out;"
+                      :style="{ width: item.percentage + '%', height: '100%' }"
+                    ></div>
+                  </div>
+                  <div class="q-ml-sm text-caption text-weight-bold" style="min-width: 80px;">
+                    {{ item.total.toFixed(2) }} L
+                  </div>
+                </div>
+              </div>
+            </div>
           </div>
 
           <!-- TABLA DE DATOS -->
@@ -120,9 +132,8 @@
 </template>
 
 <script setup>
-import { ref, computed, watch, nextTick, onMounted, onBeforeUnmount } from 'vue';
+import { computed } from 'vue';
 import { date, useQuasar } from 'quasar';
-import * as echarts from 'echarts';
 import ExportExcelBtn from '../common/ExportExcelBtn.vue';
 
 const $q = useQuasar();
@@ -141,32 +152,31 @@ const props = defineProps({
 
 const emit = defineEmits(['update:modelValue']);
 
-const chartRef = ref(null);
-let myChart = null;
-
-// Orientación del gráfico: en móvil por defecto horizontal
-const chartOrientation = ref('vertical');
-
 const isOpen = computed({
   get: () => props.modelValue,
   set: (val) => emit('update:modelValue', val)
 });
 
-// Altura dinámica: en horizontal crece con la cantidad de dependencias
-const getFullDepName = (d) => `${d.dependencia}${d.subdependencia && d.subdependencia !== 'General' ? ' - ' + d.subdependencia : ''}`;
+// Lógica del Gráfico Nativo
+const chartData = computed(() => {
+  if (!props.data || props.data.length === 0) return [];
 
-const chartHeight = computed(() => {
-  const dependencias = [...new Set((props.data || []).map(d => getFullDepName(d)))];
-  if (chartOrientation.value === 'horizontal') {
-    const h = Math.max(300, dependencias.length * 50);
-    return `width: 100%; height: ${h}px`;
-  }
-  return 'width: 100%; height: 380px';
-});
+  const grouped = {};
+  props.data.forEach(d => {
+    const name = `${d.dependencia}${d.subdependencia && d.subdependencia !== 'General' ? ' - ' + d.subdependencia : ''}`;
+    if (!grouped[name]) {
+      grouped[name] = { name, total: 0 };
+    }
+    grouped[name].total += d.total_litros;
+  });
 
-// Redibujar cuando cambia orientación
-watch(chartOrientation, () => {
-  nextTick(initChart);
+  const sorted = Object.values(grouped).sort((a, b) => b.total - a.total);
+  const maxTotal = sorted.length > 0 ? sorted[0].total : 1;
+
+  return sorted.map(item => ({
+    ...item,
+    percentage: (item.total / maxTotal) * 100
+  }));
 });
 
 // Columnas Tabla
@@ -177,129 +187,12 @@ const columns = [
   { name: 'total_litros', label: 'Consumo Total (Lts)', field: 'total_litros', align: 'right', sortable: true },
 ];
 
-// Re-inicializar gráfico cuando se abre el diálogo o cambian los datos
-watch([isOpen, () => props.data], async ([open, data]) => {
-  if (open && data.length > 0) {
-    await nextTick();
-    initChart();
-  }
-}, { deep: true });
-
-function initChart() {
-  if (!chartRef.value) return;
-  if (myChart) myChart.dispose();
-
-  myChart = echarts.init(chartRef.value);
-
-  const dependenciasSet = [...new Set(props.data.map(d => getFullDepName(d)))];
-  const tiposSet = [...new Set(props.data.map(d => d.tipo_combustible))];
-  const isHorizontal = chartOrientation.value === 'horizontal';
-
-  // Truncar etiquetas largas
-  const truncate = (str, max = 22) =>
-    str && str.length > max ? str.slice(0, max) + '...' : str;
-
-  const formatLabel = (v, max = 22) => {
-    if (v.includes(' - ')) {
-      const parts = v.split(' - ');
-      return truncate(parts[0], max) + '\n' + truncate(parts[1], max);
-    }
-    return truncate(v, max);
-  };
-
-  const series = tiposSet.map(tipo => ({
-    name: tipo,
-    type: 'bar',
-    barMaxWidth: isHorizontal ? 24 : 36,
-    data: dependenciasSet.map(dep => {
-      const item = props.data.find(d => getFullDepName(d) === dep && d.tipo_combustible === tipo);
-      return item ? item.total_litros : 0;
-    }),
-    itemStyle: {
-      borderRadius: isHorizontal ? [0, 4, 4, 0] : [4, 4, 0, 0]
-    },
-    label: {
-      show: isHorizontal,
-      position: 'right',
-      formatter: p => p.value > 0 ? `${p.value.toFixed(0)} L` : '',
-      fontSize: 11,
-    }
-  }));
-
-  const option = {
-    tooltip: {
-      trigger: 'axis',
-      axisPointer: { type: 'shadow' },
-      formatter: (params) => {
-        // Mostrar nombre completo en tooltip
-        const dep = isHorizontal ? params[0]?.axisValue : params[0]?.axisValue;
-        let html = `<b>${dep}</b><br/>`;
-        params.forEach(p => {
-          if (p.value > 0) html += `${p.marker} ${p.seriesName}: <b>${p.value.toFixed(2)} L</b><br/>`;
-        });
-        return html;
-      }
-    },
-    legend: { bottom: 0, itemGap: 12 },
-    grid: isHorizontal
-      ? { left: '2%', right: '10%', top: '5%', bottom: '10%', containLabel: true }
-      : { left: '3%', right: '4%', bottom: '18%', top: '8%',  containLabel: true },
-    // Ejes se intercambian según orientación
-    xAxis: isHorizontal
-      ? { type: 'value', name: 'Litros', nameLocation: 'end', axisLabel: { formatter: v => `${v}L` } }
-      : {
-          type: 'category',
-          data: dependenciasSet,
-          axisLabel: {
-            interval: 0,
-            rotate: dependenciasSet.length > 4 ? 20 : 0,
-            formatter: v => formatLabel(v, 16),
-            fontSize: 11,
-          }
-        },
-    yAxis: isHorizontal
-      ? {
-          type: 'category',
-          data: dependenciasSet,
-          axisLabel: { formatter: v => formatLabel(v, 22), fontSize: 11 }
-        }
-      : { type: 'value', name: 'Litros', axisLabel: { formatter: v => `${v}L` } },
-    series,
-    color: ['#4CAF50', '#FF9800', '#2196F3', '#9C27B0'],
-  };
-
-  myChart.setOption(option);
-}
-
 function formatDate(fechaStr) {
   if (!fechaStr) return "";
   return date.formatDate(fechaStr.replace(/-/g, '/'), "DD/MM/YYYY");
 }
 
 function printReport() { window.print(); }
-
-const resizeHandler = () => {
-  if (myChart) {
-    myChart.resize();
-  }
-};
-
-// Al abrir el diálogo: inicializar en horizontal si es móvil
-watch(isOpen, async (open) => {
-  if (open) {
-    chartOrientation.value = $q.screen.lt.sm ? 'horizontal' : 'vertical';
-    if (props.data?.length > 0) {
-      await nextTick();
-      initChart();
-    }
-  }
-});
-
-onMounted(() => { window.addEventListener('resize', resizeHandler); });
-onBeforeUnmount(() => {
-  window.removeEventListener('resize', resizeHandler);
-  if (myChart) myChart.dispose();
-});
 </script>
 
 <style scoped>

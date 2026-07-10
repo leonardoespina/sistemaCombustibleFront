@@ -30,6 +30,7 @@
                 <OrganizationalHierarchy
                   v-if="!isInitializing"
                   :key="mountKey"
+                  :multiple-dependencies="true"
                   :required="false"
                   v-model:categoryId="store.filters.categoryId"
                   v-model:dependencyId="store.filters.dependencyId"

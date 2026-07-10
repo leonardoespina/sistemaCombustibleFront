@@ -28,7 +28,9 @@ export const useReporteDependenciaStore = defineStore('reporteDependencia', () =
         fecha_desde: filters.value.fechaDesde,
         fecha_hasta: filters.value.fechaHasta,
         id_categoria: filters.value.categoryId,
-        id_dependencia: filters.value.dependencyId,
+        id_dependencia: Array.isArray(filters.value.dependencyId) 
+                        ? filters.value.dependencyId.join(',') 
+                        : filters.value.dependencyId,
         id_subdependencia: filters.value.subdependencyId,
         id_tipo_combustible: filters.value.fuelTypeId
       };
