@@ -14,18 +14,12 @@
     <!-- Panel de Filtros -->
     <q-card flat bordered class="q-mb-lg bg-white">
       <q-card-section class="row q-col-gutter-md items-center">
-        <div class="col-12 col-md-4">
-          <q-input outlined dense v-model="fechasFiltroLabel" readonly :label="tipoReporte === 'DIARIO' ? 'Rango de Fechas' : 'Rango de Meses'">
-            <template v-slot:append>
-              <q-icon name="event" class="cursor-pointer">
-                <q-popup-proxy cover transition-show="scale" transition-hide="scale">
-                  <q-date v-model="filtroFechas" range :default-view="tipoReporte === 'DIARIO' ? 'Calendar' : 'Months'">
-                    <div class="row items-center justify-end"><q-btn v-close-popup label="Cerrar" flat color="primary" /></div>
-                  </q-date>
-                </q-popup-proxy>
-              </q-icon>
-            </template>
-          </q-input>
+        <div class="col-12 col-md-3">
+          <DatePickerGlobal 
+            v-model="filtroFechas" 
+            :label="tipoReporte === 'DIARIO' ? 'Rango de Fechas' : 'Rango de Meses'"
+            :default-view="tipoReporte === 'DIARIO' ? 'Calendar' : 'Months'"
+          />
         </div>
         <div class="col-12 col-md-2">
           <q-btn color="primary" icon="search" label="Generar Consolidado" @click="cargarDatosKardex" :loading="cargando" class="full-width"/>
@@ -103,19 +97,12 @@
 </template>
 
 <script setup>
-import { computed } from 'vue'
 import { useTotalConsolidado } from '../../composables/useTotalConsolidado'
+import DatePickerGlobal from '../../components/DatePickerGlobal.vue'
 
 const { 
   tipoReporte, cargando, datosKardex, filtroFechas, dashboardData, columnasKardex, cargarDatosKardex 
 } = useTotalConsolidado()
-
-const fechasFiltroLabel = computed(() => {
-  if (!filtroFechas.value) return ''
-  if (typeof filtroFechas.value === 'string') return filtroFechas.value
-  if (filtroFechas.value.from && filtroFechas.value.to) return `${filtroFechas.value.from} al ${filtroFechas.value.to}`
-  return ''
-})
 
 const format = (num) => Number(num).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
 </script>
