@@ -37,7 +37,7 @@
         </div>
 
         <!-- Filtro Múltiple de Sedes -->
-        <div class="col-12 col-md-4">
+        <div class="col-12 col-md-3">
           <q-select
             outlined
             dense
@@ -48,12 +48,28 @@
             multiple
             use-chips
             clearable
-            label="Filtrar por Sedes (Todas por defecto)"
+            label="Filtrar por Sedes"
+          />
+        </div>
+
+        <!-- Filtro Múltiple de Combustibles -->
+        <div class="col-12 col-md-3">
+          <q-select
+            outlined
+            dense
+            v-model="combustiblesSeleccionados"
+            :options="combustibles"
+            option-label="nombre"
+            option-value="id_tipo_combustible"
+            multiple
+            use-chips
+            clearable
+            label="Filtrar por Combustible"
           />
         </div>
 
         <!-- Botones de Acción -->
-        <div class="col-12 col-md-5 row q-gutter-sm justify-end">
+        <div class="col-12 col-md-3 row q-gutter-sm justify-end">
           <q-btn
             color="primary"
             icon="search"
@@ -167,6 +183,11 @@
             format(props.value)
           }}</q-td>
         </template>
+        <template v-slot:body-cell-intercambio="props">
+          <q-td :props="props" class="text-primary text-weight-bold">
+            {{ format(props.value) }}
+          </q-td>
+        </template>
       </q-table>
     </q-card>
   </q-page>
@@ -190,7 +211,9 @@ const {
   datosKardex,
   filtroFechas,
   sedesSeleccionadas,
+  combustiblesSeleccionados,
   llenaderos,
+  combustibles,
   dashboardData,
   columnasKardex,
   cargarDatosKardex,

@@ -21,8 +21,22 @@
             :default-view="tipoReporte === 'DIARIO' ? 'Calendar' : 'Months'"
           />
         </div>
-        <div class="col-12 col-md-2">
-          <q-btn color="primary" icon="search" label="Generar Consolidado" @click="cargarDatosKardex" :loading="cargando" class="full-width"/>
+        <div class="col-12 col-md-3">
+          <q-select
+            outlined
+            dense
+            v-model="combustiblesSeleccionados"
+            :options="combustibles"
+            option-label="nombre"
+            option-value="id_tipo_combustible"
+            multiple
+            use-chips
+            clearable
+            label="Filtrar por Combustible"
+          />
+        </div>
+        <div class="col-12 col-md-3 row justify-end">
+          <q-btn color="primary" icon="search" label="Generar Consolidado" @click="cargarDatosKardex" :loading="cargando" />
         </div>
       </q-card-section>
     </q-card>
@@ -91,6 +105,11 @@
         <template v-slot:body-cell-stock_final="props">
           <q-td :props="props" class="bg-grey-2 text-weight-bold">{{ format(props.value) }}</q-td>
         </template>
+        <template v-slot:body-cell-intercambio="props">
+          <q-td :props="props" class="text-primary text-weight-bold">
+            {{ format(props.value) }}
+          </q-td>
+        </template>
       </q-table>
     </q-card>
   </q-page>
@@ -101,7 +120,8 @@ import { useTotalConsolidado } from '../../composables/useTotalConsolidado'
 import DatePickerGlobal from '../../components/DatePickerGlobal.vue'
 
 const { 
-  tipoReporte, cargando, datosKardex, filtroFechas, dashboardData, columnasKardex, cargarDatosKardex 
+  tipoReporte, cargando, datosKardex, filtroFechas, 
+  combustiblesSeleccionados, combustibles, dashboardData, columnasKardex, cargarDatosKardex 
 } = useTotalConsolidado()
 
 const format = (num) => Number(num).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })

@@ -2,6 +2,7 @@ import { ref, computed, watch, onMounted } from 'vue'
 import api from '../api'
 import { useQuasar, exportFile } from 'quasar'
 import { useLlenaderoStore } from '../stores/llenaderoStore'
+import { useTipoCombustibleStore } from '../stores/tipoCombustibleStore'
 import * as XLSX from 'xlsx'
 
 export function useKardex() {
@@ -13,12 +14,15 @@ export function useKardex() {
   const datosKardex = ref([])
   const filtroFechas = ref(null)
   const sedesSeleccionadas = ref([])
+  const combustiblesSeleccionados = ref([])
 
   // Stores
   const llenaderoStore = useLlenaderoStore()
+  const combustibleStore = useTipoCombustibleStore()
 
   onMounted(() => {
     llenaderoStore.fetchLlenaderos()
+    combustibleStore.fetchTiposCombustible()
   })
 
   // Reseteo inteligente al cambiar de Pestaña
@@ -26,6 +30,7 @@ export function useKardex() {
     filtroFechas.value = null
     datosKardex.value = []
     sedesSeleccionadas.value = []
+    combustiblesSeleccionados.value = []
   })
 
   // Computado: Resumen para el Dashboard Superior
@@ -65,6 +70,7 @@ export function useKardex() {
     { name: 'tr_salida', label: 'TR. SALIDA (-)', field: 'tr_salida', align: 'right', format: formatNumber },
     { name: 'ajustes', label: 'AJUSTES (±)', field: 'ajustes', align: 'right', format: formatNumber },
     { name: 'stock_final', label: 'FINAL (L)', field: 'stock_final', align: 'right', classes: 'bg-grey-2 text-weight-bold' },
+    { name: 'intercambio', label: 'INTERCAMBIO (L)', field: 'intercambio', align: 'right', classes: 'text-primary text-weight-bold' },
   ])
 
   // Método de Acción: Consumir el Backend
@@ -97,6 +103,10 @@ export function useKardex() {
       if (sedesSeleccionadas.value && sedesSeleccionadas.value.length > 0) {
         params.llenaderos_ids = sedesSeleccionadas.value.map(s => s.id_llenadero).join(',')
       }
+      
+      if (combustiblesSeleccionados.value && combustiblesSeleccionados.value.length > 0) {
+        params.combustibles_ids = combustiblesSeleccionados.value.map(c => c.id_tipo_combustible).join(',')
+      }
 
       const { data } = await api.get('/reportes/kardex-dinamico', { params })
       if (data.success) {
@@ -127,7 +137,8 @@ export function useKardex() {
       'DESPACHO (-)': Number(row.despacho),
       'TR. SALIDA (-)': Number(row.tr_salida),
       'AJUSTES (±)': Number(row.ajustes),
-      'FINAL (L)': Number(row.stock_final)
+      'FINAL (L)': Number(row.stock_final),
+      'INTERCAMBIO (L)': Number(row.intercambio)
     }))
 
     const worksheet = XLSX.utils.json_to_sheet(dataExcel)
@@ -143,7 +154,9 @@ export function useKardex() {
     datosKardex,
     filtroFechas,
     sedesSeleccionadas,
+    combustiblesSeleccionados,
     llenaderos: computed(() => llenaderoStore.rows),
+    combustibles: computed(() => combustibleStore.rows),
     dashboardData,
     columnasKardex,
     cargarDatosKardex,

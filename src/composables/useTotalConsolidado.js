@@ -1,6 +1,8 @@
 import { ref, computed, watch } from 'vue'
 import api from '../api'
 import { useQuasar } from 'quasar'
+import { useTipoCombustibleStore } from '../stores/tipoCombustibleStore'
+import { onMounted } from 'vue'
 
 export function useTotalConsolidado() {
   const $q = useQuasar()
@@ -10,11 +12,19 @@ export function useTotalConsolidado() {
   const cargando = ref(false)
   const datosKardex = ref([])
   const filtroFechas = ref(null)
+  const combustiblesSeleccionados = ref([])
+  
+  const combustibleStore = useTipoCombustibleStore()
+
+  onMounted(() => {
+    combustibleStore.fetchTiposCombustible()
+  })
 
   // Reseteo inteligente al cambiar de Pestaña
   watch(tipoReporte, () => {
     filtroFechas.value = null
     datosKardex.value = []
+    combustiblesSeleccionados.value = []
   })
 
   // Computado: Resumen para el Dashboard Superior
@@ -53,6 +63,7 @@ export function useTotalConsolidado() {
     { name: 'tr_salida', label: 'TR. SALIDA (-)', field: 'tr_salida', align: 'right', format: formatNumber },
     { name: 'ajustes', label: 'AJUSTES (±)', field: 'ajustes', align: 'right', format: formatNumber },
     { name: 'stock_final', label: 'FINAL (L)', field: 'stock_final', align: 'right', classes: 'bg-grey-2 text-weight-bold' },
+    { name: 'intercambio', label: 'INTERCAMBIO (L)', field: 'intercambio', align: 'right', classes: 'text-primary text-weight-bold' },
   ])
 
   // Método de Acción: Consumir el Backend
@@ -75,14 +86,17 @@ export function useTotalConsolidado() {
 
     cargando.value = true
     try {
+      const params = {
+        fecha_desde: fromDate,
+        fecha_hasta: toDate,
+        tipo_reporte: tipoReporte.value
+      }
+      if (combustiblesSeleccionados.value && combustiblesSeleccionados.value.length > 0) {
+        params.combustibles_ids = combustiblesSeleccionados.value.map(c => c.id_tipo_combustible).join(',')
+      }
+
       // Llamada al nuevo endpoint global
-      const { data } = await api.get('/reportes/total-consolidado', {
-        params: {
-          fecha_desde: fromDate,
-          fecha_hasta: toDate,
-          tipo_reporte: tipoReporte.value
-        }
-      })
+      const { data } = await api.get('/reportes/total-consolidado', { params })
       if (data.success) {
         datosKardex.value = data.data
         $q.notify({ type: 'positive', message: 'Consolidado Total generado correctamente.' })
@@ -99,6 +113,8 @@ export function useTotalConsolidado() {
     cargando,
     datosKardex,
     filtroFechas,
+    combustiblesSeleccionados,
+    combustibles: computed(() => combustibleStore.rows),
     dashboardData,
     columnasKardex,
     cargarDatosKardex
