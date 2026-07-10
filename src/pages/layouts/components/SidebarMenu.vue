@@ -265,24 +265,40 @@
       class="text-grey-8"
     >
       <q-list class="q-pl-md">
-        
         <!-- ================================== -->
         <!-- CATEGORÍA 1: MIS REPORTES          -->
         <!-- ================================== -->
         <q-expansion-item
-          v-if="can(PERMISSIONS.VIEW_MIS_CUPOS) || can(PERMISSIONS.VIEW_MIS_DESPACHOS)"
+          v-if="
+            can(PERMISSIONS.VIEW_MIS_CUPOS) ||
+            can(PERMISSIONS.VIEW_MIS_DESPACHOS)
+          "
           :content-inset-level="0.5"
           expand-separator
           icon="account_circle"
           label="Mis Reportes"
           header-class="text-primary"
         >
-          <q-item v-if="can(PERMISSIONS.VIEW_MIS_CUPOS)" clickable v-ripple to="/reportes/mis-cupos">
-            <q-item-section avatar><q-icon name="assignment_ind" size="xs" /></q-item-section>
+          <q-item
+            v-if="can(PERMISSIONS.VIEW_MIS_CUPOS)"
+            clickable
+            v-ripple
+            to="/reportes/mis-cupos"
+          >
+            <q-item-section avatar
+              ><q-icon name="assignment_ind" size="xs"
+            /></q-item-section>
             <q-item-section>Mis Cupos</q-item-section>
           </q-item>
-          <q-item v-if="can(PERMISSIONS.VIEW_MIS_DESPACHOS)" clickable v-ripple to="/reportes/mis-despachos">
-            <q-item-section avatar><q-icon name="receipt_long" size="xs" /></q-item-section>
+          <q-item
+            v-if="can(PERMISSIONS.VIEW_MIS_DESPACHOS)"
+            clickable
+            v-ripple
+            to="/reportes/mis-despachos"
+          >
+            <q-item-section avatar
+              ><q-icon name="receipt_long" size="xs"
+            /></q-item-section>
             <q-item-section>Mis Despachos</q-item-section>
           </q-item>
         </q-expansion-item>
@@ -291,27 +307,60 @@
         <!-- CATEGORÍA 2: OPERATIVA             -->
         <!-- ================================== -->
         <q-expansion-item
-          v-if="can(PERMISSIONS.VIEW_REPORTE_DIARIO) || can(PERMISSIONS.VIEW_REPORTE_VENTAS) || can(PERMISSIONS.VIEW_REPORTE_DESPACHOS) || can(PERMISSIONS.VIEW_REPORTE_RECEPCION)"
+          v-if="
+            can(PERMISSIONS.VIEW_REPORTE_DIARIO) ||
+            can(PERMISSIONS.VIEW_REPORTE_VENTAS) ||
+            can(PERMISSIONS.VIEW_REPORTE_DESPACHOS) ||
+            can(PERMISSIONS.VIEW_REPORTE_RECEPCION)
+          "
           :content-inset-level="0.5"
           expand-separator
           icon="sync_alt"
           label="Operativa y Transacciones"
           header-class="text-primary"
         >
-          <q-item v-if="can(PERMISSIONS.VIEW_REPORTE_DIARIO)" clickable v-ripple to="/reportes/diario">
-            <q-item-section avatar><q-icon name="today" size="xs" /></q-item-section>
+          <q-item
+            v-if="can(PERMISSIONS.VIEW_REPORTE_DIARIO)"
+            clickable
+            v-ripple
+            to="/reportes/diario"
+          >
+            <q-item-section avatar
+              ><q-icon name="today" size="xs"
+            /></q-item-section>
             <q-item-section>Reporte Diario</q-item-section>
           </q-item>
-          <q-item v-if="can(PERMISSIONS.VIEW_REPORTE_VENTAS)" clickable v-ripple to="/reportes/ventas">
-            <q-item-section avatar><q-icon name="point_of_sale" size="xs" /></q-item-section>
+          <q-item
+            v-if="can(PERMISSIONS.VIEW_REPORTE_VENTAS)"
+            clickable
+            v-ripple
+            to="/reportes/ventas"
+          >
+            <q-item-section avatar
+              ><q-icon name="point_of_sale" size="xs"
+            /></q-item-section>
             <q-item-section>Reporte de Ventas</q-item-section>
           </q-item>
-          <q-item v-if="can(PERMISSIONS.VIEW_REPORTE_DESPACHOS)" clickable v-ripple to="/reportes/despachos">
-            <q-item-section avatar><q-icon name="list_alt" size="xs" /></q-item-section>
+          <q-item
+            v-if="can(PERMISSIONS.VIEW_REPORTE_DESPACHOS)"
+            clickable
+            v-ripple
+            to="/reportes/despachos"
+          >
+            <q-item-section avatar
+              ><q-icon name="list_alt" size="xs"
+            /></q-item-section>
             <q-item-section>Reporte de Despachos</q-item-section>
           </q-item>
-          <q-item v-if="can(PERMISSIONS.VIEW_REPORTE_RECEPCION)" clickable v-ripple to="/reportes/recepcion-cisternas">
-            <q-item-section avatar><q-icon name="local_shipping" size="xs" /></q-item-section>
+          <q-item
+            v-if="can(PERMISSIONS.VIEW_REPORTE_RECEPCION)"
+            clickable
+            v-ripple
+            to="/reportes/recepcion-cisternas"
+          >
+            <q-item-section avatar
+              ><q-icon name="local_shipping" size="xs"
+            /></q-item-section>
             <q-item-section>Recepción de Combustibles</q-item-section>
           </q-item>
         </q-expansion-item>
@@ -320,23 +369,47 @@
         <!-- CATEGORÍA 3: AUDITORÍA             -->
         <!-- ================================== -->
         <q-expansion-item
-          v-if="can(PERMISSIONS.VIEW_REPORTES_GLOB) || can(PERMISSIONS.VIEW_REPORTE_CONSUMO)"
+          v-if="
+            can(PERMISSIONS.VIEW_REPORTES_GLOB) ||
+            can(PERMISSIONS.VIEW_REPORTE_CONSUMO)
+          "
           :content-inset-level="0.5"
           expand-separator
           icon="fact_check"
           label="Auditoría e Inventario"
           header-class="text-primary"
         >
-          <q-item v-if="can(PERMISSIONS.VIEW_REPORTE_CONSUMO)" clickable v-ripple to="/reportes/consumo-dependencia">
-            <q-item-section avatar><q-icon name="bar_chart" size="xs" /></q-item-section>
+          <q-item
+            v-if="can(PERMISSIONS.VIEW_REPORTE_CONSUMO)"
+            clickable
+            v-ripple
+            to="/reportes/consumo-dependencia"
+          >
+            <q-item-section avatar
+              ><q-icon name="bar_chart" size="xs"
+            /></q-item-section>
             <q-item-section>Consumo por Dependencia</q-item-section>
           </q-item>
-          <q-item v-if="can(PERMISSIONS.VIEW_REPORTES_GLOB)" clickable v-ripple to="/reportes/situacion-combustible">
-            <q-item-section avatar><q-icon name="local_gas_station" size="xs" /></q-item-section>
+          <q-item
+            v-if="can(PERMISSIONS.VIEW_REPORTES_GLOB)"
+            clickable
+            v-ripple
+            to="/reportes/situacion-combustible"
+          >
+            <q-item-section avatar
+              ><q-icon name="local_gas_station" size="xs"
+            /></q-item-section>
             <q-item-section>Situación del Combustible</q-item-section>
           </q-item>
-          <q-item v-if="can(PERMISSIONS.VIEW_REPORTES_GLOB)" clickable v-ripple to="/reportes/desviaciones">
-            <q-item-section avatar><q-icon name="compare_arrows" size="xs" /></q-item-section>
+          <q-item
+            v-if="can(PERMISSIONS.VIEW_REPORTES_GLOB)"
+            clickable
+            v-ripple
+            to="/reportes/desviaciones"
+          >
+            <q-item-section avatar
+              ><q-icon name="compare_arrows" size="xs"
+            /></q-item-section>
             <q-item-section>Reporte de Desviaciones</q-item-section>
           </q-item>
         </q-expansion-item>
@@ -352,22 +425,35 @@
           label="Gerencia (Consolidados)"
           header-class="text-primary"
         >
-          <q-item v-if="can(PERMISSIONS.VIEW_REPORTES_GLOB)" clickable v-ripple to="/reportes/kardex-consolidado">
-            <q-item-section avatar><q-icon name="analytics" color="primary" size="xs" /></q-item-section>
+          <q-item
+            v-if="can(PERMISSIONS.VIEW_REPORTES_GLOB)"
+            clickable
+            v-ripple
+            to="/reportes/kardex-consolidado"
+          >
+            <q-item-section avatar
+              ><q-icon name="analytics" color="primary" size="xs"
+            /></q-item-section>
             <q-item-section>
               <q-item-label>Reporte Consolidado</q-item-label>
               <q-item-label caption>Desglose por Sedes</q-item-label>
             </q-item-section>
           </q-item>
-          <q-item v-if="can(PERMISSIONS.VIEW_REPORTES_GLOB)" clickable v-ripple to="/reportes/total-consolidado">
-            <q-item-section avatar><q-icon name="language" color="positive" size="xs" /></q-item-section>
+          <q-item
+            v-if="can(PERMISSIONS.VIEW_REPORTES_GLOB)"
+            clickable
+            v-ripple
+            to="/reportes/total-consolidado"
+          >
+            <q-item-section avatar
+              ><q-icon name="language" color="positive" size="xs"
+            /></q-item-section>
             <q-item-section>
               <q-item-label>Consolidado Total</q-item-label>
-              <q-item-label caption>Vista Global (País)</q-item-label>
+              <q-item-label caption>Vista Global </q-item-label>
             </q-item-section>
           </q-item>
         </q-expansion-item>
-        
       </q-list>
     </q-expansion-item>
   </q-list>
