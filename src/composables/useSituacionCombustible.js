@@ -23,7 +23,11 @@ export function useSituacionCombustible() {
 
     // ─── Helpers de Formato (Lógica de Presentación) ───────────
     function fmt(fechaStr) {
-        return fechaStr ? date.formatDate(fechaStr, 'DD/MM/YYYY') : '';
+        if (!fechaStr) return '';
+        const parts = fechaStr.split('-');
+        // Si viene como YYYY-MM-DD sin hora, extraemos y formateamos crudo (evita -4 hrs de timezone local)
+        if (parts.length === 3) return `${parts[2]}/${parts[1]}/${parts[0]}`;
+        return date.formatDate(fechaStr, 'DD/MM/YYYY');
     }
 
     function fmtTimestamp(iso) {

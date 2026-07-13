@@ -29,11 +29,12 @@ export function useExcelExport() {
                     ? col.field(row)
                     : row[col.field];
 
-                const formatted = col.format ? col.format(raw, row) : raw;
-                // Preservar números como número para que Excel calcule totales
-                if (formatted !== null && formatted !== undefined && !isNaN(Number(formatted)) && formatted !== '') {
-                    return Number(formatted);
+                // Si raw es un número válido de por sí, enviamos el número crudo para evitar corromper los decimales en Excel.
+                if (raw !== null && raw !== undefined && !isNaN(Number(raw)) && raw !== '') {
+                    return Number(raw);
                 }
+
+                const formatted = col.format ? col.format(raw, row) : raw;
                 return formatted ?? '';
             })
         );
