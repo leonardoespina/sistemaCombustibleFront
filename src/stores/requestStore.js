@@ -54,6 +54,7 @@ export const useRequestStore = defineStore("requests", () => {
    * Crear nueva solicitud de combustible (Retiene cupo)
    */
   async function createRequest(requestData) {
+    if (loading.value) return null; // Prevenir concurrencia de interfaz (Doble clic)
     loading.value = true;
     try {
       console.log("=== DEBUG requestStore.createRequest ===");
