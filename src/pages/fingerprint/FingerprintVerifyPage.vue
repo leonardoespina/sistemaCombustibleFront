@@ -256,7 +256,39 @@ const verifyFmd = async (fmd) => {
   statusMessage.value = "Procesando...";
 
   try {
-    // 1. Intentar matching via backend (comparación 1:1 optimizada)
+    // 1. Obtener huellas desde el backend
+    const templatesRes = await api.get("/despacho/templates-legacy", {
+        params: { cedula: cedulaBusqueda.value }
+    });
+    const templates = templatesRes.data.templates;
+    
+    // 2. Validar localmente (Frontend -> C#)
+    let isMatch = false;
+    for (const template of templates) {
+        const localRes = await axios.post(`${LOCAL_BIO_API}/compare-legacy`, {
+            Templates: [fmd, template]
+        });
+        if (localRes.data.match) {
+            isMatch = true;
+            break;
+        }
+    }
+
+    if (isMatch) {
+      // 3. Buscar detalles del usuario validado
+      const userRes = await api.get('/biometria', { params: { search: cedulaBusqueda.value } });
+      const persona = userRes.data.data.find(u => u.cedula === cedulaBusqueda.value);
+
+      statusColor.value = "positive";
+      statusIcon.value = "check_circle";
+      statusMessage.value = "¡Verificación Exitosa!";
+      personaIdentificada.value = persona;
+      await stopCapture();
+    } else {
+      handleVerificationFailure();
+    }
+
+    /* ⚠️ DEUDA TÉCNICA DESACTIVADA: Validación desde el backend
     const { data } = await api.post("/biometria/verificar", {
       cedula: cedulaBusqueda.value,
       muestraActual: fmd,
@@ -271,6 +303,7 @@ const verifyFmd = async (fmd) => {
     } else {
       handleVerificationFailure();
     }
+    */
   } catch (error) {
     console.error("Error en verificación:", error);
     handleVerificationFailure();

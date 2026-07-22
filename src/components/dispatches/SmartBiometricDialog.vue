@@ -348,6 +348,39 @@ const validarFase1 = async (huellaBase64) => {
     validating.value = true;
     statusMessage.value = "Validando Solicitante...";
     try {
+        // 1. Obtener huellas (templates legacy) desde el backend
+        const templatesRes = await api.get("/despacho/templates-legacy", {
+            params: { cedula: cedulaInput.value }
+        });
+        const templates = templatesRes.data.templates;
+        
+        // 2. Validar localmente (Frontend -> C#)
+        let isMatch = false;
+        for (const template of templates) {
+            const localRes = await axios.post(`${LOCAL_BIO_API}/compare-legacy`, {
+                Templates: [huellaBase64, template]
+            });
+            if (localRes.data.match) {
+                isMatch = true;
+                break;
+            }
+        }
+
+        if (!isMatch) {
+            throw new Error("La huella no coincide.");
+        }
+
+        // 3. Notificar al backend que la validación local fue exitosa
+        const res = await api.post("/despacho/validar-firma", {
+            cedula: cedulaInput.value,
+            huella: huellaBase64,
+            id_solicitud: props.requestData.id_solicitud,
+            id_subdependencia: props.requestData.id_subdependencia,
+            validar_pertenencia: true,
+            huella_validada_localmente: true
+        });
+
+        /* ⚠️ DEUDA TÉCNICA DESACTIVADA: Validación desde el backend
         const res = await api.post("/despacho/validar-firma", {
             cedula: cedulaInput.value,
             huella: huellaBase64,
@@ -355,6 +388,7 @@ const validarFase1 = async (huellaBase64) => {
             id_subdependencia: props.requestData.id_subdependencia,
             validar_pertenencia: true
         });
+        */
 
         usuarioIdentificado.value = res.data.usuario;
         biometriaSolicitante.value = res.data.id_biometria;
@@ -377,7 +411,7 @@ const validarFase1 = async (huellaBase64) => {
     } catch (error) {
         statusColor.value = "negative";
         statusMessage.value = "No autorizado. Reintentando...";
-        $q.notify({type: 'negative', message: error.response?.data?.msg || 'Error'});
+        $q.notify({type: 'negative', message: error.response?.data?.msg || error.message || 'Error'});
         if (props.modelValue) retryTimer = setTimeout(() => captureFingerprint(1), 1000);
     } finally {
         validating.value = false;
@@ -391,11 +425,43 @@ const validarFase3 = async (huellaBase64) => {
     const cedula = cedulaAlmacenistaInput.value || currentUser.value?.cedula;
     
     try {
+        // 1. Obtener huellas desde el backend
+        const templatesRes = await api.get("/despacho/templates-legacy", {
+            params: { cedula }
+        });
+        const templates = templatesRes.data.templates;
+        
+        // 2. Validar localmente (Frontend -> C#)
+        let isMatch = false;
+        for (const template of templates) {
+            const localRes = await axios.post(`${LOCAL_BIO_API}/compare-legacy`, {
+                Templates: [huellaBase64, template]
+            });
+            if (localRes.data.match) {
+                isMatch = true;
+                break;
+            }
+        }
+
+        if (!isMatch) {
+            throw new Error("La huella no coincide.");
+        }
+
+        // 3. Notificar validación local exitosa al backend
+        const res = await api.post("/despacho/validar-firma", {
+            cedula: cedula,
+            huella: huellaBase64,
+            id_solicitud: props.requestData.id_solicitud,
+            huella_validada_localmente: true
+        });
+
+        /* ⚠️ DEUDA TÉCNICA DESACTIVADA: Validación desde el backend
         const res = await api.post("/despacho/validar-firma", {
             cedula: cedula,
             huella: huellaBase64,
             id_solicitud: props.requestData.id_solicitud
         });
+        */
         
         const rol = res.data.usuario.rol_biometrico;
         if (rol === "ALMACEN" || rol === "AMBOS") {
@@ -411,7 +477,7 @@ const validarFase3 = async (huellaBase64) => {
     } catch (error) {
         statusColor.value = "negative";
         statusMessage.value = "Error. Reintentando...";
-        $q.notify({type: 'negative', message: error.response?.data?.msg || 'Fallo de validación'});
+        $q.notify({type: 'negative', message: error.response?.data?.msg || error.message || 'Fallo de validación'});
         if (props.modelValue) retryTimer = setTimeout(() => captureFingerprint(2), 1000);
     } finally {
         validating.value = false;

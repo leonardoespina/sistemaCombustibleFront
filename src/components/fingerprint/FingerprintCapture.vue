@@ -622,10 +622,17 @@ const processAcquiredSample = async (imageBase64, fmdBase64) => {
       validating.value = true;
       validationError.value = false;
       try {
+        // NUEVA LÓGICA: Validación de consistencia en el Frontend (C# Middleware)
+        const response = await axios.post(`${LOCAL_BIO_API}/compare-legacy`, {
+            Templates: [samples.value[0].data, imageBase64]
+        });
+
+        /* ⚠️ DEUDA TÉCNICA DESACTIVADA: Validación desde el backend
         const response = await api.post("/biometria/comparar", {
           muestra1: samples.value[0].data,
           muestra2: imageBase64,
         });
+        */
 
         if (!response.data.match) {
           validationError.value = true;
