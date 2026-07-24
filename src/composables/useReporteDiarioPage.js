@@ -69,7 +69,8 @@ export function useReporteDiarioPage() {
     }
 
     function formatDate(fechaStr) {
-        return date.formatDate(fechaStr, 'DD/MM/YYYY');
+        if (!fechaStr) return '';
+        return date.formatDate(`${fechaStr}T12:00:00`, 'DD/MM/YYYY');
     }
 
     function printReport() { window.print(); }

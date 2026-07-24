@@ -499,7 +499,8 @@ const finalizeTicketGeneration = async () => {
            huella_almacenista: rawFingerprintAlmacenista.value,
            huella_receptor: rawFingerprintSolicitante.value,
            cedula_receptor: usuarioIdentificado.value.cedula,
-           cedula_almacenista: cedulaAlmacenistaInput.value || currentUser.value?.cedula
+           cedula_almacenista: cedulaAlmacenistaInput.value || currentUser.value?.cedula,
+           huella_validada_localmente: true
         }, { timeout: 30000 }); // 30s: evita colgar si hay mala conexión
         emit("ticketGenerated", response.data.ticket);
         visible.value = false;
