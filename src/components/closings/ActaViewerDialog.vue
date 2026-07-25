@@ -310,6 +310,26 @@
                 </td>
                 <td style="border: 1px solid black; padding: 20px"></td>
               </tr>
+
+              <!-- FILA DGCIM -->
+              <tr>
+                <td
+                  style="
+                    border: 1px solid black;
+                    padding: 20px;
+                    font-weight: 600;
+                  "
+                >
+                  DGCIM
+                </td>
+                <td style="border: 1px solid black; padding: 20px">
+                  ___________________
+                </td>
+                <td style="border: 1px solid black; padding: 20px">
+                  ___________
+                </td>
+                <td style="border: 1px solid black; padding: 20px"></td>
+              </tr>
             </tbody>
           </table>
         </div>
@@ -560,7 +580,8 @@ async function downloadPDF() {
   // 3. Firmas
   const signatures = [
     { dept: "PCP", name: datosInspector.value.nombre, id: datosInspector.value.cedula },
-    { dept: "ALMACENISTA", name: datosAlmacenista.value.nombre, id: datosAlmacenista.value.cedula }
+    { dept: "ALMACENISTA", name: datosAlmacenista.value.nombre, id: datosAlmacenista.value.cedula },
+    { dept: "DGCIM", name: "___________________", id: "___________" }
   ];
 
   // 4. Invocar servicio
