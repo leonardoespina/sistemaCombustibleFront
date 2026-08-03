@@ -1,8 +1,8 @@
-import { ref, computed, watch } from 'vue'
+import { ref, computed, watch, onMounted } from 'vue'
 import api from '../api'
 import { useQuasar } from 'quasar'
 import { useTipoCombustibleStore } from '../stores/tipoCombustibleStore'
-import { onMounted } from 'vue'
+import * as XLSX from 'xlsx'
 
 export function useTotalConsolidado() {
   const $q = useQuasar()
@@ -108,6 +108,33 @@ export function useTotalConsolidado() {
     }
   }
 
+  // Exportación a Excel
+  const exportarExcel = () => {
+    if (datosKardex.value.length === 0) {
+      $q.notify({ type: 'warning', message: 'No hay datos para exportar' })
+      return
+    }
+
+    const dataExcel = datosKardex.value.map(row => ({
+      'FECHA/MES': tipoReporte.value === 'DIARIO' ? formatDate(row.periodo) : row.periodo,
+      'COMBUSTIBLE': row.nombre_combustible,
+      'INICIAL (L)': Number(row.stock_inicial),
+      'RECEPCIÓN (+)': Number(row.recepcion),
+      'TR. ENTRADA (+)': Number(row.tr_entrada),
+      'DESPACHO (-)': Number(row.despacho),
+      'TR. SALIDA (-)': Number(row.tr_salida),
+      'AJUSTES (±)': Number(row.ajustes),
+      'FINAL (L)': Number(row.stock_final),
+      'INTERCAMBIO (L)': Number(row.intercambio)
+    }))
+
+    const worksheet = XLSX.utils.json_to_sheet(dataExcel)
+    const workbook = XLSX.utils.book_new()
+    XLSX.utils.book_append_sheet(workbook, worksheet, 'Consolidado Total')
+
+    XLSX.writeFile(workbook, `Reporte_Total_Consolidado_${tipoReporte.value}.xlsx`)
+  }
+
   return {
     tipoReporte,
     cargando,
@@ -117,6 +144,7 @@ export function useTotalConsolidado() {
     combustibles: computed(() => combustibleStore.rows),
     dashboardData,
     columnasKardex,
-    cargarDatosKardex
+    cargarDatosKardex,
+    exportarExcel
   }
 }
