@@ -58,20 +58,32 @@ export function useKardex() {
     return dateStr
   }
 
+  const mostrarColumnaAjustes = ref(false)
+
   // Computado: Definición de Columnas de la Tabla
-  const columnasKardex = computed(() => [
-    { name: 'periodo', label: tipoReporte.value === 'DIARIO' ? 'FECHA' : 'MES', field: 'periodo', align: 'left', sortable: true, format: val => tipoReporte.value === 'DIARIO' ? formatDate(val) : val },
-    { name: 'nombre_llenadero', label: 'SEDE', field: 'nombre_llenadero', align: 'left' },
-    { name: 'nombre_combustible', label: 'COMBUSTIBLE', field: 'nombre_combustible', align: 'left' },
-    { name: 'stock_inicial', label: 'INICIAL (L)', field: 'stock_inicial', align: 'right' },
-    { name: 'recepcion', label: 'RECEPCIÓN (+)', field: 'recepcion', align: 'right' },
-    { name: 'tr_entrada', label: 'TR. ENTRADA (+)', field: 'tr_entrada', align: 'right', format: formatNumber },
-    { name: 'despacho', label: 'DESPACHO (-)', field: 'despacho', align: 'right' },
-    { name: 'tr_salida', label: 'TR. SALIDA (-)', field: 'tr_salida', align: 'right', format: formatNumber },
-    { name: 'ajustes', label: 'AJUSTES (±)', field: 'ajustes', align: 'right', format: formatNumber },
-    { name: 'stock_final', label: 'FINAL (L)', field: 'stock_final', align: 'right', classes: 'bg-grey-2 text-weight-bold' },
-    { name: 'intercambio', label: 'INTERCAMBIO (L)', field: 'intercambio', align: 'right', classes: 'text-primary text-weight-bold' },
-  ])
+  const columnasKardex = computed(() => {
+    const cols = [
+      { name: 'periodo', label: tipoReporte.value === 'DIARIO' ? 'FECHA' : 'MES', field: 'periodo', align: 'left', sortable: true, format: val => tipoReporte.value === 'DIARIO' ? formatDate(val) : val },
+      { name: 'nombre_llenadero', label: 'SEDE', field: 'nombre_llenadero', align: 'left' },
+      { name: 'nombre_combustible', label: 'COMBUSTIBLE', field: 'nombre_combustible', align: 'left' },
+      { name: 'stock_inicial', label: 'INICIAL (L)', field: 'stock_inicial', align: 'right' },
+      { name: 'recepcion', label: 'RECEPCIÓN (+)', field: 'recepcion', align: 'right' },
+      { name: 'tr_entrada', label: 'TR. ENTRADA (+)', field: 'tr_entrada', align: 'right', format: formatNumber },
+      { name: 'despacho', label: 'DESPACHO (-)', field: 'despacho', align: 'right' },
+      { name: 'tr_salida', label: 'TR. SALIDA (-)', field: 'tr_salida', align: 'right', format: formatNumber }
+    ]
+
+    if (mostrarColumnaAjustes.value) {
+      cols.push({ name: 'ajustes', label: 'AJUSTES (±)', field: 'ajustes', align: 'right', format: formatNumber })
+    }
+
+    cols.push(
+      { name: 'stock_final', label: 'FINAL (L)', field: 'stock_final', align: 'right', classes: 'bg-grey-2 text-weight-bold' },
+      { name: 'intercambio', label: 'INTERCAMBIO (L)', field: 'intercambio', align: 'right', classes: 'text-primary text-weight-bold' }
+    )
+
+    return cols
+  })
 
   // Método de Acción: Consumir el Backend
   const cargarDatosKardex = async () => {
@@ -127,19 +139,27 @@ export function useKardex() {
       return
     }
 
-    const dataExcel = datosKardex.value.map(row => ({
-      'FECHA/MES': tipoReporte.value === 'DIARIO' ? formatDate(row.periodo) : row.periodo,
-      'SEDE': row.nombre_llenadero,
-      'COMBUSTIBLE': row.nombre_combustible,
-      'INICIAL (L)': Number(row.stock_inicial),
-      'RECEPCIÓN (+)': Number(row.recepcion),
-      'TR. ENTRADA (+)': Number(row.tr_entrada),
-      'DESPACHO (-)': Number(row.despacho),
-      'TR. SALIDA (-)': Number(row.tr_salida),
-      'AJUSTES (±)': Number(row.ajustes),
-      'FINAL (L)': Number(row.stock_final),
-      'INTERCAMBIO (L)': Number(row.intercambio)
-    }))
+    const dataExcel = datosKardex.value.map(row => {
+      const fila = {
+        'FECHA/MES': tipoReporte.value === 'DIARIO' ? formatDate(row.periodo) : row.periodo,
+        'SEDE': row.nombre_llenadero,
+        'COMBUSTIBLE': row.nombre_combustible,
+        'INICIAL (L)': Number(row.stock_inicial),
+        'RECEPCIÓN (+)': Number(row.recepcion),
+        'TR. ENTRADA (+)': Number(row.tr_entrada),
+        'DESPACHO (-)': Number(row.despacho),
+        'TR. SALIDA (-)': Number(row.tr_salida)
+      }
+
+      if (mostrarColumnaAjustes.value) {
+        fila['AJUSTES (±)'] = Number(row.ajustes)
+      }
+
+      fila['FINAL (L)'] = Number(row.stock_final)
+      fila['INTERCAMBIO (L)'] = Number(row.intercambio)
+
+      return fila
+    })
 
     const worksheet = XLSX.utils.json_to_sheet(dataExcel)
     const workbook = XLSX.utils.book_new()
@@ -160,6 +180,7 @@ export function useKardex() {
     dashboardData,
     columnasKardex,
     cargarDatosKardex,
-    exportarExcel
+    exportarExcel,
+    mostrarColumnaAjustes
   }
 }

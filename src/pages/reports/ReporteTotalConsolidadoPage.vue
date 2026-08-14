@@ -35,7 +35,15 @@
             label="Filtrar por Combustible"
           />
         </div>
-        <div class="col-12 col-md-3 row q-gutter-sm justify-end">
+        <div class="col-12 col-md-3 row q-gutter-sm justify-end items-center">
+          <q-toggle
+            v-if="datosKardex.length > 0"
+            v-model="mostrarColumnaAjustes"
+            label="Ver Ajustes"
+            color="primary"
+            dense
+            class="q-mr-sm text-grey-8"
+          />
           <q-btn color="primary" icon="search" label="Generar Consolidado" @click="cargarDatosKardex" :loading="cargando" />
           <q-btn
             v-if="datosKardex.length > 0"
@@ -128,7 +136,7 @@ import DatePickerGlobal from '../../components/DatePickerGlobal.vue'
 
 const { 
   tipoReporte, cargando, datosKardex, filtroFechas, 
-  combustiblesSeleccionados, combustibles, dashboardData, columnasKardex, cargarDatosKardex, exportarExcel 
+  combustiblesSeleccionados, combustibles, dashboardData, columnasKardex, cargarDatosKardex, exportarExcel, mostrarColumnaAjustes 
 } = useTotalConsolidado()
 
 const format = (num) => Number(num).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })

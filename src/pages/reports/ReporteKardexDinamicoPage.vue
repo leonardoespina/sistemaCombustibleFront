@@ -69,7 +69,15 @@
         </div>
 
         <!-- Botones de Acción -->
-        <div class="col-12 col-md-3 row q-gutter-sm justify-end">
+        <div class="col-12 col-md-3 row q-gutter-sm justify-end items-center">
+          <q-toggle
+            v-if="datosKardex.length > 0"
+            v-model="mostrarColumnaAjustes"
+            label="Ver Ajustes"
+            color="primary"
+            dense
+            class="q-mr-sm text-grey-8"
+          />
           <q-btn
             color="primary"
             icon="search"
@@ -218,6 +226,7 @@ const {
   columnasKardex,
   cargarDatosKardex,
   exportarExcel,
+  mostrarColumnaAjustes,
 } = useKardex();
 
 const format = (num) =>
