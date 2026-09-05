@@ -52,6 +52,8 @@
                     label="Turno *"
                     class="q-mb-md"
                   />
+              </div>
+              <div class="col-12 col-md-6">
                   <q-input
                     dense filled
                     v-model="lote.fecha_lote"
@@ -60,8 +62,6 @@
                     class="q-mb-md"
                     :rules="[(v) => !!v || 'Requerido']"
                   />
-              </div>
-              <div class="col-12 col-md-6">
                   <div class="row q-col-gutter-sm q-mb-md">
                     <div class="col-6">
                         <q-input dense filled v-model="lote.hora_inicio_lote" type="time" label="Hora Inicio *" />
@@ -70,13 +70,6 @@
                         <q-input dense filled v-model="lote.hora_cierre_lote" type="time" label="Hora Cierre *" />
                     </div>
                   </div>
-                  <q-input
-                    dense filled
-                    v-model="lote.observaciones"
-                    type="textarea"
-                    label="Observaciones"
-                    rows="4"
-                  />
               </div>
             </div>
           </q-step>
@@ -226,6 +219,28 @@
                         </div>
                       </div>
                     </div>
+                  </div>
+
+                  <!-- ── Observaciones del Cierre (Mínimo 30 caracteres) ── -->
+                  <div class="q-mt-lg">
+                    <q-separator class="q-my-md" />
+                    <div class="text-subtitle2 text-weight-bold text-primary q-mb-xs">
+                      <q-icon name="edit_note" size="sm" class="q-mr-xs" />
+                      Observaciones del Cierre *
+                    </div>
+                    <q-input
+                      dense filled
+                      v-model="lote.observaciones"
+                      type="textarea"
+                      placeholder="Ejemplo: No hubo novedad las mediciones se realizaron en presencia de PCP y DGCIM."
+                      rows="3"
+                      counter
+                      maxlength="600"
+                      hint="Mínimo 100 caracteres obligatorios describiendo las novedades u observaciones del turno"
+                      :rules="[
+                        (v) => (v && v.trim().length >= 100) || 'Debe ingresar al menos 100 caracteres descriptivos'
+                      ]"
+                    />
                   </div>
               </div>
           </q-step>

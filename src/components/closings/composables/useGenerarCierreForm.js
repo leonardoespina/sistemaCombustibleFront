@@ -188,6 +188,19 @@ export function useGenerarCierreForm(props, emit) {
              return; // Abortar confirmación
         }
 
+        // Validar observaciones con mínimo 30 caracteres obligatorios
+        const obs = (lote.value.observaciones || "").trim();
+        if (!obs || obs.length < 30) {
+            $q.notify({
+                type: "warning",
+                message: "Debe ingresar una observación detallada de al menos 30 caracteres antes de generar el cierre.",
+                icon: "warning",
+                position: "top",
+                timeout: 5000
+            });
+            return; // Abortar confirmación
+        }
+
         // Obtener información del lote para mostrar en el diálogo
         const llenaderoNombre = props.llenaderosList?.find(l => l.id_llenadero === lote.value.id_llenadero)?.nombre_llenadero || 'N/A';
         const tanquesCount = tanquesSeleccionados.value.length;
@@ -241,6 +254,11 @@ export function useGenerarCierreForm(props, emit) {
                     <div style="margin-bottom: 16px; padding: 12px; background: #f8f9fa; border-radius: 8px; border-left: 4px solid #28a745;">
                         <div style="font-weight: bold; color: #28a745; margin-bottom: 8px;">📋 Resumen de Mediciones</div>
                         ${resumenTanques}
+                    </div>
+
+                    <div style="margin-bottom: 16px; padding: 12px; background: #e3f2fd; border-radius: 8px; border-left: 4px solid #1976d2;">
+                        <div style="font-weight: bold; color: #1976d2; margin-bottom: 4px;">📝 Observaciones del Turno</div>
+                        <div style="font-size: 13px; color: #333; white-space: pre-wrap;">${obs}</div>
                     </div>
                     
                     <div style="padding: 12px; background: #fff3cd; border-radius: 8px; border-left: 4px solid #ffc107; margin-bottom: 16px;">
