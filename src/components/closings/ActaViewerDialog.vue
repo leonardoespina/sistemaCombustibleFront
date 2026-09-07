@@ -154,10 +154,10 @@
                 >
               </div>
               <div>
-                <strong>Total de Evaporizacion:</strong>
+                <strong>Diferencia:</strong>
                 <span style="text-decoration: underline"
                   >{{
-                    formatNumber(acta?.inventario_gasolina?.evaporizacion_total)
+                    formatNumber(totalGasolinaDiferencia)
                   }}
                   Lts</span
                 >
@@ -448,6 +448,16 @@ const totalGasolinaConsumo = computed(() => {
   return props.acta?.inventario_gasolina?.consumo_total_despachos || 0;
 });
 
+const totalGasolinaDiferencia = computed(() => {
+  if (props.acta?.inventario_gasolina?.diferencia_total != null) {
+    return props.acta.inventario_gasolina.diferencia_total;
+  }
+  return tanquesGasolina.value.reduce(
+    (acc, t) => acc + (parseFloat(t.diferencia) || 0),
+    0
+  );
+});
+
 // Calculamos el inicio de turno dinamico por combustibles
 const inicioTurnoTexto = computed(() => {
   if (!props.acta) return '';
@@ -574,7 +584,7 @@ async function downloadPDF() {
     // Línea anterior para restaurar si se requiere deducir evaporación del stock:
     // { label: "STOCK", value: formatNumber(props.acta?.inventario_gasolina?.stock_total - props.acta?.inventario_gasolina?.evaporizacion_total) + " Lts" },
     { label: "STOCK", value: formatNumber(props.acta?.inventario_gasolina?.stock_total) + " Lts" },
-    { label: "Total de Evaporizacion", value: formatNumber(props.acta?.inventario_gasolina?.evaporizacion_total) + " Lts" }
+    { label: "Diferencia", value: formatNumber(totalGasolinaDiferencia.value) + " Lts" }
   ];
 
   const totalGasoilVal = formatNumber(props.acta?.inventario_gasoil?.stock_total) + " Lts";

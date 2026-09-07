@@ -189,6 +189,7 @@
                                   suffix="Lts"
                                   label="Evaporación"
                                   placeholder="Ej: 50"
+                                  disable
                               />
                               </div>
                           </div>
