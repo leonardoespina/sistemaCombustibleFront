@@ -145,10 +145,10 @@
                 <strong>STOCK:</strong>
                 <span style="text-decoration: underline"
                   >{{
-                    formatNumber(
-                      acta?.inventario_gasolina?.stock_total -
-                        acta?.inventario_gasolina?.evaporizacion_total
-                    )
+                    /* NOTA: Se muestra el stock físico real medido en tanques.
+                       Línea anterior para restaurar si se requiere deducir evaporación:
+                       formatNumber(acta?.inventario_gasolina?.stock_total - acta?.inventario_gasolina?.evaporizacion_total) */
+                    formatNumber(acta?.inventario_gasolina?.stock_total)
                   }}
                   Lts</span
                 >
@@ -571,7 +571,9 @@ async function downloadPDF() {
   const resumenGasolina = [
     { label: "INICIO", value: formatNumber(totalGasolinaInicio.value) + " Lts" },
     { label: "CONSUMO", value: formatNumber(totalGasolinaConsumo.value) + " Lts" },
-    { label: "STOCK", value: formatNumber(props.acta?.inventario_gasolina?.stock_total - props.acta?.inventario_gasolina?.evaporizacion_total) + " Lts" },
+    // Línea anterior para restaurar si se requiere deducir evaporación del stock:
+    // { label: "STOCK", value: formatNumber(props.acta?.inventario_gasolina?.stock_total - props.acta?.inventario_gasolina?.evaporizacion_total) + " Lts" },
+    { label: "STOCK", value: formatNumber(props.acta?.inventario_gasolina?.stock_total) + " Lts" },
     { label: "Total de Evaporizacion", value: formatNumber(props.acta?.inventario_gasolina?.evaporizacion_total) + " Lts" }
   ];
 
