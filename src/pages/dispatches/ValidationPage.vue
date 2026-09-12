@@ -2,28 +2,33 @@
   <q-page :class="$q.screen.lt.sm ? 'q-pa-sm bg-grey-2' : 'q-pa-md bg-grey-2'">
     <!-- TARJETA SUPERIOR: VALIDACIÓN Y CIERRE DE TICKET (ESTILO ORIGINAL) -->
     <q-card class="shadow-1 rounded-borders q-mb-md bg-white">
-      <q-card-section class="q-pb-none">
-        <div class="row items-center justify-between no-wrap">
-          <div>
-            <div class="text-h5 text-primary text-weight-bold">
+      <q-card-section class="q-pb-xs">
+        <div class="row items-center justify-between q-col-gutter-xs">
+          <div class="col-12 col-sm-auto">
+            <div
+              class="text-primary text-weight-bold"
+              :class="$q.screen.gt.xs ? 'text-h5' : 'text-h6'"
+            >
               Validación y Cierre de Ticket
             </div>
-            <div class="text-subtitle2 text-grey-7">
+            <div class="text-caption text-grey-7">
               Escanee el código QR del ticket despachado
             </div>
           </div>
-          <q-badge
-            :color="isOnline ? 'positive' : 'negative'"
-            class="q-py-xs q-px-sm text-weight-bold shadow-1"
-            style="font-size: 0.85rem"
-          >
-            <q-icon
-              :name="isOnline ? 'wifi' : 'wifi_off'"
-              size="16px"
-              class="q-mr-xs"
-            />
-            {{ isOnline ? "En Línea" : "Sin Conexión" }}
-          </q-badge>
+          <div class="col-12 col-sm-auto text-left text-sm-right q-mt-xs q-mt-sm-none">
+            <q-badge
+              :color="isOnline ? 'positive' : 'negative'"
+              class="q-py-xs q-px-sm text-weight-bold shadow-1"
+              style="font-size: 0.82rem"
+            >
+              <q-icon
+                :name="isOnline ? 'wifi' : 'wifi_off'"
+                size="15px"
+                class="q-mr-xs"
+              />
+              {{ isOnline ? "En Línea" : "Sin Conexión" }}
+            </q-badge>
+          </div>
         </div>
       </q-card-section>
 
@@ -182,14 +187,14 @@
 
           <q-separator />
 
-          <q-card-actions align="center" class="q-pa-md q-gutter-sm">
+          <q-card-actions align="center" class="q-pa-md q-gutter-sm row">
             <q-btn
               push
               color="positive"
               icon="check_circle"
-              label="Carga Completa (Confirmar)"
+              label="Carga Completa"
               size="md"
-              class="col-grow text-weight-bold"
+              class="col-12 col-sm-grow text-weight-bold"
               @click="openDialog('CONFIRMATION')"
             />
             <q-btn
@@ -199,7 +204,7 @@
               icon="warning"
               label="Reportar Diferencia"
               size="md"
-              class="col-grow text-weight-bold"
+              class="col-12 col-sm-grow text-weight-bold"
               @click="openDialog('DIFFERENCE')"
             />
           </q-card-actions>
@@ -220,26 +225,25 @@
         </div>
 
         <!-- TARJETAS DE MÉTRICAS (KPIS EN VIVO) - DEBAJO DE LA INFORMACIÓN DEL TICKET -->
-        <div class="row q-col-gutter-sm">
+        <div class="row q-col-gutter-xs q-mb-md">
           <!-- Tickets Validados -->
-          <div class="col-12">
-            <q-card class="shadow-1 rounded-borders bg-white">
-              <q-card-section class="q-pa-sm row items-center no-wrap">
+          <div class="col-6 col-md-12">
+            <q-card class="shadow-1 rounded-borders bg-white full-height">
+              <q-card-section class="q-pa-xs q-pa-sm-sm row items-center no-wrap">
                 <q-avatar
-                  size="44px"
-                  font-size="22px"
+                  size="38px"
+                  font-size="18px"
                   color="primary"
                   text-color="white"
                   icon="confirmation_number"
-                  class="q-mr-sm shadow-1"
+                  class="q-mr-xs shadow-1"
                 />
-                <div class="ellipsis">
-                  <div class="text-caption text-grey-7 text-weight-medium">
-                    Tickets Validados
+                <div style="min-width: 0">
+                  <div class="text-caption text-grey-7 text-weight-medium" style="font-size: 0.72rem; line-height: 1.1">
+                    Tickets
                   </div>
-                  <div class="text-h6 text-weight-bolder text-primary">
+                  <div class="text-subtitle1 text-weight-bolder text-primary" style="line-height: 1.2">
                     {{ totalTickets }}
-                    <span class="text-caption text-grey-6 text-weight-normal">tickets</span>
                   </div>
                 </div>
               </q-card-section>
@@ -247,24 +251,23 @@
           </div>
 
           <!-- Total Litros Despachados -->
-          <div class="col-12">
-            <q-card class="shadow-1 rounded-borders bg-white">
-              <q-card-section class="q-pa-sm row items-center no-wrap">
+          <div class="col-6 col-md-12">
+            <q-card class="shadow-1 rounded-borders bg-white full-height">
+              <q-card-section class="q-pa-xs q-pa-sm-sm row items-center no-wrap">
                 <q-avatar
-                  size="44px"
-                  font-size="22px"
+                  size="38px"
+                  font-size="18px"
                   color="blue-grey-8"
                   text-color="white"
                   icon="opacity"
-                  class="q-mr-sm shadow-1"
+                  class="q-mr-xs shadow-1"
                 />
-                <div class="ellipsis">
-                  <div class="text-caption text-grey-7 text-weight-medium">
+                <div style="min-width: 0">
+                  <div class="text-caption text-grey-7 text-weight-medium" style="font-size: 0.72rem; line-height: 1.1">
                     Total Litros
                   </div>
-                  <div class="text-h6 text-weight-bolder text-blue-grey-9">
+                  <div class="text-subtitle2 text-sm-subtitle1 text-weight-bolder text-blue-grey-9" style="line-height: 1.2">
                     {{ formatLitros(totalLitrosGeneral) }}
-                    <span class="text-caption text-grey-6 text-weight-normal">Lts</span>
                   </div>
                 </div>
               </q-card-section>
@@ -272,24 +275,23 @@
           </div>
 
           <!-- Total Gasoil Despachado -->
-          <div class="col-12">
-            <q-card class="shadow-1 rounded-borders bg-white">
-              <q-card-section class="q-pa-sm row items-center no-wrap">
+          <div class="col-6 col-md-12">
+            <q-card class="shadow-1 rounded-borders bg-white full-height">
+              <q-card-section class="q-pa-xs q-pa-sm-sm row items-center no-wrap">
                 <q-avatar
-                  size="44px"
-                  font-size="22px"
+                  size="38px"
+                  font-size="18px"
                   color="amber-9"
                   text-color="white"
                   icon="local_gas_station"
-                  class="q-mr-sm shadow-1"
+                  class="q-mr-xs shadow-1"
                 />
-                <div class="ellipsis">
-                  <div class="text-caption text-grey-7 text-weight-medium">
-                    Total Gasoil
+                <div style="min-width: 0">
+                  <div class="text-caption text-grey-7 text-weight-medium" style="font-size: 0.72rem; line-height: 1.1">
+                    Gasoil
                   </div>
-                  <div class="text-h6 text-weight-bolder text-amber-10">
+                  <div class="text-subtitle2 text-sm-subtitle1 text-weight-bolder text-amber-10" style="line-height: 1.2">
                     {{ formatLitros(totalGasoil) }}
-                    <span class="text-caption text-grey-6 text-weight-normal">Lts</span>
                   </div>
                 </div>
               </q-card-section>
@@ -297,24 +299,23 @@
           </div>
 
           <!-- Total Gasolina Despachada -->
-          <div class="col-12">
-            <q-card class="shadow-1 rounded-borders bg-white">
-              <q-card-section class="q-pa-sm row items-center no-wrap">
+          <div class="col-6 col-md-12">
+            <q-card class="shadow-1 rounded-borders bg-white full-height">
+              <q-card-section class="q-pa-xs q-pa-sm-sm row items-center no-wrap">
                 <q-avatar
-                  size="44px"
-                  font-size="22px"
+                  size="38px"
+                  font-size="18px"
                   color="teal"
                   text-color="white"
                   icon="directions_car"
-                  class="q-mr-sm shadow-1"
+                  class="q-mr-xs shadow-1"
                 />
-                <div class="ellipsis">
-                  <div class="text-caption text-grey-7 text-weight-medium">
-                    Total Gasolina
+                <div style="min-width: 0">
+                  <div class="text-caption text-grey-7 text-weight-medium" style="font-size: 0.72rem; line-height: 1.1">
+                    Gasolina
                   </div>
-                  <div class="text-h6 text-weight-bolder text-teal-9">
+                  <div class="text-subtitle2 text-sm-subtitle1 text-weight-bolder text-teal-9" style="line-height: 1.2">
                     {{ formatLitros(totalGasolina) }}
-                    <span class="text-caption text-grey-6 text-weight-normal">Lts</span>
                   </div>
                 </div>
               </q-card-section>
@@ -384,7 +385,8 @@
                   dense
                   outlined
                   bg-color="white"
-                  label="Fecha Desde"
+                  label="Desde"
+                  stack-label
                 />
               </div>
               <div class="col-6 col-md-2">
@@ -394,10 +396,11 @@
                   dense
                   outlined
                   bg-color="white"
-                  label="Hora Inicio"
+                  label="Hora"
+                  stack-label
                 >
                   <template v-slot:prepend>
-                    <q-icon name="schedule" color="primary" />
+                    <q-icon name="schedule" size="xs" color="primary" />
                   </template>
                 </q-input>
               </div>
@@ -410,7 +413,8 @@
                   dense
                   outlined
                   bg-color="white"
-                  label="Fecha Hasta"
+                  label="Hasta"
+                  stack-label
                 />
               </div>
               <div class="col-6 col-md-2">
@@ -420,10 +424,11 @@
                   dense
                   outlined
                   bg-color="white"
-                  label="Hora Fin"
+                  label="Hora"
+                  stack-label
                 >
                   <template v-slot:prepend>
-                    <q-icon name="schedule" color="primary" />
+                    <q-icon name="schedule" size="xs" color="primary" />
                   </template>
                 </q-input>
               </div>
@@ -483,32 +488,33 @@
                   </q-item-section>
 
                   <q-item-section>
-                    <div class="row items-center justify-between no-wrap">
-                      <div class="row items-center q-gutter-x-xs wrap">
-                        <span class="text-subtitle1 text-weight-bolder text-primary">
-                          #{{ item.codigo_ticket }}
-                        </span>
-                        <q-badge color="blue-1" text-color="primary" class="q-ml-xs text-caption text-weight-bold">
-                          Sol: {{ formatLitros(getLitrosSolicitados(item)) }} Lts
-                        </q-badge>
-                        <q-badge
-                          :color="getLitrosDespachados(item) < getLitrosSolicitados(item) ? 'orange-2' : 'positive'"
-                          :text-color="getLitrosDespachados(item) < getLitrosSolicitados(item) ? 'orange-9' : 'white'"
-                          class="q-ml-xs text-caption text-weight-bold"
-                        >
-                          Desp: {{ formatLitros(getLitrosDespachados(item)) }} Lts
-                        </q-badge>
-                      </div>
+                    <div class="row items-center q-gutter-xs wrap">
+                      <span class="text-subtitle1 text-weight-bolder text-primary">
+                        #{{ item.codigo_ticket }}
+                      </span>
+                      <q-badge color="blue-1" text-color="primary" class="text-caption text-weight-bold">
+                        Sol: {{ formatLitros(getLitrosSolicitados(item)) }} Lts
+                      </q-badge>
+                      <q-badge
+                        :color="getLitrosDespachados(item) < getLitrosSolicitados(item) ? 'orange-2' : 'positive'"
+                        :text-color="getLitrosDespachados(item) < getLitrosSolicitados(item) ? 'orange-9' : 'white'"
+                        class="text-caption text-weight-bold"
+                      >
+                        Desp: {{ formatLitros(getLitrosDespachados(item)) }} Lts
+                      </q-badge>
                     </div>
-                    <div class="row items-center text-caption text-grey-7 q-gutter-x-xs">
-                      <span>{{ formatHoraItem(item.fecha_validacion) }}</span>
+                    <div class="row items-center text-caption text-grey-7 q-gutter-x-xs wrap q-mt-xs">
+                      <span class="text-weight-medium">{{ formatHoraItem(item.fecha_validacion) }}</span>
+                      <span v-if="item.placa" class="text-weight-bold text-dark">
+                        • Placa: {{ item.placa }}
+                      </span>
                       <span v-if="item.validador_nombre || item.Validador?.nombre" class="text-grey-6">
                         • PCP: {{ item.validador_nombre || item.Validador?.nombre }}
                       </span>
                     </div>
                   </q-item-section>
 
-                  <q-item-section side>
+                  <q-item-section side class="q-pl-xs">
                     <q-btn
                       flat
                       round
@@ -529,11 +535,11 @@
 
           <!-- SUMATORIA Y TOTALES DE LA BITÁCORA -->
           <q-card-section class="bg-grey-1 q-py-sm">
-            <div class="row items-center justify-between no-wrap">
+            <div class="row items-center justify-between wrap q-gutter-xs">
               <div class="text-caption text-weight-bolder text-grey-9">
                 TOTAL VALIDADO:
               </div>
-              <div class="row items-center q-gutter-x-xs">
+              <div class="row items-center q-gutter-x-xs wrap">
                 <q-badge color="primary" class="text-weight-bold text-caption q-px-sm shadow-1">
                   {{ totalTickets }} Tickets
                 </q-badge>
@@ -544,7 +550,7 @@
             </div>
 
             <!-- Desglose por Combustible -->
-            <div class="row items-center justify-end q-gutter-x-md text-caption text-grey-8 q-mt-xs">
+            <div class="row items-center justify-between text-caption text-grey-8 q-mt-xs wrap q-gutter-xs">
               <div>
                 Gasoil: <strong class="text-amber-10">{{ formatLitros(totalGasoil) }} Lts</strong>
               </div>
@@ -607,6 +613,7 @@ import { ref, computed, watch, onMounted, onUnmounted } from "vue";
 import { date, useQuasar } from "quasar";
 import { QrcodeStream } from "vue-qrcode-reader";
 import api from "../../api";
+import socket from "../../services/socket";
 import ValidationDialog from "../../components/dispatches/ValidationDialog.vue";
 import TicketPreviewDialog from "../../components/dispatches/TicketPreviewDialog.vue";
 
@@ -745,36 +752,24 @@ const nombreInspector = computed(() => {
   return `${u.nombre} ${u.apellido || ""}`.trim();
 });
 
-// --- PERSISTENCIA LOCAL EN LOCALSTORAGE ---
-const getStorageKey = () => {
-  const llenaderoId = filtroLlenadero.value || "todos";
-  return `pcp_validaciones_${llenaderoId}`;
-};
-
-const guardarEnLocalStorage = () => {
+// --- LIMPIEZA DE CACHÉ LOCAL OBSOLETA (Previene consumos viejos o congelados) ---
+const limpiarCacheAntigua = () => {
   try {
-    localStorage.setItem(getStorageKey(), JSON.stringify(validacionesHoy.value));
-  } catch (e) {
-    console.warn("No se pudo guardar bitácora en localStorage:", e);
-  }
-};
-
-const cargarDesdeLocalStorage = () => {
-  try {
-    const raw = localStorage.getItem(getStorageKey());
-    if (raw) {
-      const parsed = JSON.parse(raw);
-      if (Array.isArray(parsed)) {
-        validacionesHoy.value = parsed;
+    const keys = Object.keys(localStorage);
+    keys.forEach((k) => {
+      if (k.startsWith("pcp_validaciones_")) {
+        localStorage.removeItem(k);
       }
-    }
+    });
   } catch (e) {
-    console.warn("Error leyendo localStorage:", e);
+    console.warn("Error limpiando caché antigua:", e);
   }
 };
+
+// Tickets validados localmente durante la sesión viva actual
+const ticketsSesionActual = ref([]);
 
 const onCambioLlenadero = () => {
-  cargarDesdeLocalStorage();
   cargarValidaciones();
 };
 
@@ -812,7 +807,7 @@ const coincideLlenadero = (item) => {
   return Number(itemLlenadero) === Number(filtroLlenadero.value);
 };
 
-// --- CONSULTA AL SERVIDOR (SIN RESTRICCIÓN DE USUARIO - SOPORTE MULTI-INSPECTOR) ---
+// --- CONSULTA AL SERVIDOR (FUENTE DE LA VERDAD - DATOS SIEMPRE FRESCOS) ---
 const cargarValidaciones = async () => {
   loadingReporte.value = true;
   try {
@@ -821,6 +816,7 @@ const cargarValidaciones = async () => {
       limit: 200,
       sortBy: "fecha_validacion",
       descending: true,
+      _t: Date.now(), // Anti-cache para obligar respuesta fresca
     };
     if (filtroLlenadero.value) {
       params.id_llenadero = filtroLlenadero.value;
@@ -832,36 +828,54 @@ const cargarValidaciones = async () => {
     const mapeados = listaServidor.map((d) => ({
       ...d,
       cantidad_despachada: getItemLiters(d),
-      hora_validacion: formatHoraItem(d.fecha_validacion),
+      hora_validacion: formatHoraItem(d.fecha_validacion || d.fecha_despacho || d.fecha_solicitud),
       estado: d.estado || "FINALIZADA",
     }));
 
-    // Fusionamos preservando escaneos locales recientes de primero
-    const mapCodigos = new Set();
-    const fusionados = [];
+    // El servidor es la FUENTE DE LA VERDAD.
+    // Solo anteponemos los tickets recién validados en esta sesión viva que aún no vengan en el lote
+    const codigosServidor = new Set(mapeados.map((m) => m.codigo_ticket));
+    const localesNoSincronizados = ticketsSesionActual.value.filter(
+      (s) => !codigosServidor.has(s.codigo_ticket)
+    );
 
-    // 1. Primero los de la sesión actual
-    validacionesHoy.value.forEach((v) => {
-      if (!mapCodigos.has(v.codigo_ticket)) {
-        mapCodigos.add(v.codigo_ticket);
-        fusionados.push(v);
-      }
-    });
-
-    // 2. Luego los que vengan del servidor
-    mapeados.forEach((m) => {
-      if (!mapCodigos.has(m.codigo_ticket)) {
-        mapCodigos.add(m.codigo_ticket);
-        fusionados.push(m);
-      }
-    });
-
-    validacionesHoy.value = fusionados;
-    guardarEnLocalStorage();
+    validacionesHoy.value = [...localesNoSincronizados, ...mapeados];
   } catch (error) {
-    console.warn("No se pudo sincronizar reporte del servidor (modo local activo):", error.message);
+    console.warn("No se pudo sincronizar validaciones del servidor:", error.message);
   } finally {
     loadingReporte.value = false;
+  }
+};
+
+// --- ACTUALIZACIÓN EN TIEMPO REAL VÍA WEBSOCKET (MULTI-USUARIO) ---
+const handleSocketSolicitud = (solicitud) => {
+  if (!solicitud) return;
+
+  if (solicitud.estado === "FINALIZADA") {
+    // Si coincide con el llenadero seleccionado (o está en Todos)
+    if (!filtroLlenadero.value || Number(solicitud.id_llenadero) === Number(filtroLlenadero.value)) {
+      const idx = validacionesHoy.value.findIndex(
+        (v) => v.codigo_ticket === solicitud.codigo_ticket || (v.id_solicitud && v.id_solicitud === solicitud.id_solicitud)
+      );
+
+      const itemMapeado = {
+        ...solicitud,
+        cantidad_despachada: getItemLiters(solicitud),
+        hora_validacion: formatHoraItem(solicitud.fecha_validacion || solicitud.fecha_despacho || solicitud.fecha_solicitud),
+        estado: "FINALIZADA",
+      };
+
+      if (idx !== -1) {
+        validacionesHoy.value.splice(idx, 1, itemMapeado);
+      } else {
+        validacionesHoy.value.unshift(itemMapeado);
+      }
+    }
+  } else {
+    // Si la solicitud fue anulada, revertida o cambió de estado, se remueve de la bitácora
+    validacionesHoy.value = validacionesHoy.value.filter(
+      (v) => v.codigo_ticket !== solicitud.codigo_ticket && v.id_solicitud !== solicitud.id_solicitud
+    );
   }
 };
 
@@ -1037,8 +1051,8 @@ const handleValidation = async (payload) => {
     };
 
     validacionesHoy.value.unshift(nuevoRegistro);
+    ticketsSesionActual.value.unshift(nuevoRegistro);
     ultimoTicketProcesado.value = nuevoRegistro;
-    guardarEnLocalStorage();
 
     // Limpiamos pantalla de búsqueda activa
     showDialog.value = false;
@@ -1110,16 +1124,27 @@ const getFuelName = (item) => {
 
 // --- CICLO DE VIDA ---
 onMounted(async () => {
+  limpiarCacheAntigua();
   window.addEventListener("online", updateOnlineStatus);
   window.addEventListener("offline", updateOnlineStatus);
+
+  if (socket) {
+    socket.on("solicitud:actualizada", handleSocketSolicitud);
+    socket.on("solicitud:despachada", handleSocketSolicitud);
+  }
+
   await cargarLlenaderos();
-  cargarDesdeLocalStorage();
   cargarValidaciones();
 });
 
 onUnmounted(() => {
   window.removeEventListener("online", updateOnlineStatus);
   window.removeEventListener("offline", updateOnlineStatus);
+
+  if (socket) {
+    socket.off("solicitud:actualizada", handleSocketSolicitud);
+    socket.off("solicitud:despachada", handleSocketSolicitud);
+  }
 });
 </script>
 
