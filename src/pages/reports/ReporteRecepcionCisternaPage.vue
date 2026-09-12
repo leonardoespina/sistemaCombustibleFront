@@ -156,11 +156,21 @@ const isPresentacionOpen = ref(false);
 const llenaderosList = ref([]);
 const fuelTypeList = ref([]);
 
+// Formateador seguro de fechas para evitar desfase de zona horaria (UTC-4)
+const formatDate = (val) => {
+  if (!val) return '';
+  if (typeof val === 'string' && val.length === 10 && val.includes('-')) {
+    const [year, month, day] = val.split('-');
+    return `${day}/${month}/${year}`;
+  }
+  return date.formatDate(val, 'DD/MM/YYYY');
+};
+
 const columns = [
   { name: 'nro', label: 'N°', field: 'nro', align: 'center', style: 'width: 50px' },
   { name: 'placa', label: 'Placa Vehículo (Gandola)', field: 'placa', align: 'left', classes: 'text-weight-bold' },
   { name: 'factura', label: 'N° Factura', field: 'factura', align: 'left' },
-  { name: 'fecha_factura', label: 'Fecha Factura', field: 'fecha_factura', align: 'center', format: v => date.formatDate(v, 'DD/MM/YYYY') },
+  { name: 'fecha_factura', label: 'Fecha Factura', field: 'fecha_factura', align: 'center', format: v => formatDate(v) },
   { name: 'combustible', label: 'Tipo Combustible', field: 'combustible', align: 'left' },
   { name: 'mes', label: 'MES', field: 'mes', align: 'center' },
   { name: 'litros', label: 'Litros Factura', field: 'litros', align: 'right', format: v => Number(v).toLocaleString('de-DE', { minimumFractionDigits: 3 }) },
@@ -172,7 +182,7 @@ const excelColumns = [
   { label: 'N°', field: 'nro' },
   { label: 'Placa Vehículo (Gandola)', field: 'placa' },
   { label: 'N° Factura', field: 'factura' },
-  { label: 'Fecha Factura', field: 'fecha_factura', format: v => date.formatDate(v, 'DD/MM/YYYY') },
+  { label: 'Fecha Factura', field: 'fecha_factura', format: v => formatDate(v) },
   { label: 'Tipo Combustible', field: 'combustible' },
   { label: 'MES', field: 'mes' },
   { label: 'Litros Factura', field: 'litros' },
@@ -215,8 +225,6 @@ const generateReport = async () => {
     $q.notify({ type: 'negative', message: 'Error al generar el reporte.' });
   }
 };
-
-const formatDate = (val) => date.formatDate(val, 'DD/MM/YYYY');
 
 const printReport = () => {
   window.print();

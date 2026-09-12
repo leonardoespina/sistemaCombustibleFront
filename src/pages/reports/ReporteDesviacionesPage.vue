@@ -301,6 +301,15 @@ const $q = useQuasar();
 const llenaderosList = ref([]);
 const fuelTypeList = ref([]);
 
+const formatDate = (dateStr) => {
+  if (!dateStr) return "";
+  if (typeof dateStr === "string" && dateStr.length === 10 && dateStr.includes("-")) {
+    const [year, month, day] = dateStr.split("-");
+    return `${day}/${month}/${year}`;
+  }
+  return date.formatDate(dateStr, "DD/MM/YYYY");
+};
+
 const columnas = computed(() => {
   const baseCols = [
     {
@@ -309,7 +318,7 @@ const columnas = computed(() => {
       field: "fecha",
       align: "left",
       sortable: true,
-      format: (v) => date.formatDate(v, "DD/MM/YYYY"),
+      format: (v) => formatDate(v),
     },
     {
       name: "llenadero",
@@ -379,7 +388,7 @@ const excelColumns = computed(() => {
     {
       label: "Fecha",
       field: "fecha",
-      format: (v) => date.formatDate(v, "DD/MM/YYYY"),
+      format: (v) => formatDate(v),
     },
     { label: "Llenadero", field: "llenadero" },
     { label: "Combustible", field: "tipo_combustible" },
