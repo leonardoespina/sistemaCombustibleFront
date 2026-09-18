@@ -72,7 +72,7 @@
         <template v-slot:body-cell-guia="props">
           <q-td :props="props">
             <div class="text-weight-bold text-primary">{{ props.value }}</div>
-            <div class="text-xxs text-grey-6">{{ props.row.Vehiculo?.placa || 'S/I' }}</div>
+            <div class="text-xxs text-grey-6">{{ props.row.placa_cisterna || 'S/I' }}</div>
           </q-td>
         </template>
 

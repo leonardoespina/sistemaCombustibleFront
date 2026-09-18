@@ -83,7 +83,7 @@
                 class="p-4 hover:bg-gray-50 transition"
               >
                 <div class="flex justify-between items-center mb-1">
-                  <span class="font-bold text-gray-800 text-lg">🚚 {{ carga.Vehiculo?.placa || 'S/I' }}</span>
+                  <span class="font-bold text-gray-800 text-lg">🚚 {{ carga.placa_cisterna || 'S/I' }}</span>
                   <span :class="getTextColorClass(llenaderoName) + ' font-bold'">{{ Number(carga.litros_recibidos || 0).toLocaleString() }} L</span>
                 </div>
                 <div class="flex justify-between text-sm text-gray-500">
@@ -188,7 +188,7 @@ const exportToExcel = () => {
 
       excelData.push({
         llenadero: llenaderoName,
-        placa: carga.Vehiculo?.placa || 'S/I',
+        placa: carga.placa_cisterna || 'S/I',
         factura: carga.numero_guia,
         fecha: carga.fecha_llegada,
         combustible: combustibleName,
