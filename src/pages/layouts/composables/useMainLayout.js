@@ -103,9 +103,9 @@ export function useMainLayout() {
     }
   });
 
-  // Activar control de inactividad (3 min para pruebas, ajustar luego)
+  // Activar control de inactividad (60 min para permitir evaluación de reportes)
   useInactivity({
-    idleTime: 180000,
+    idleTime: 3600000,
     warningTime: 60000,
   });
 
