@@ -128,7 +128,6 @@
                 use-chips
                 emit-value
                 map-options
-                clearable
                 @update:model-value="onLlenaderoChange"
               >
                 <template v-slot:prepend>
@@ -407,6 +406,12 @@ const loadRequests = async (props = { pagination: pagination.value }) => {
 
   if (filterLlenadero.value && filterLlenadero.value.length > 0) {
     params.id_llenadero = filterLlenadero.value.join(',');
+  } else {
+    // Si el usuario vacía manualmente el filtro, mostramos 0 resultados
+    rows.value = [];
+    pagination.value.rowsNumber = 0;
+    loading.value = false;
+    return;
   }
 
   // Búsqueda por texto (Global o por Solicitud)
@@ -487,13 +492,26 @@ const handleSocketUpdate = (data) => {
     
     const idx = rows.value.findIndex(r => r.id_solicitud === data.id_solicitud);
     
-    // Si el filtro no es 'TODAS' y el estado nuevo no coincide con el filtro, lo quitamos de la vista
+    // 1. Filtrado por estado
     if (statusFilter.value !== 'TODAS' && statusFilter.value !== data.estado) {
         if (idx >= 0) {
             rows.value.splice(idx, 1);
             pagination.value.rowsNumber--;
         }
         return;
+    }
+
+    // 2. Filtrado por Llenadero
+    if (filterLlenadero.value && filterLlenadero.value.length > 0) {
+        const ticketLlenaderoId = data.id_llenadero || (data.Llenadero ? data.Llenadero.id_llenadero : null);
+        const isAllowed = ticketLlenaderoId ? filterLlenadero.value.some(id => String(id) === String(ticketLlenaderoId)) : false;
+        if (!isAllowed) {
+            if (idx >= 0) {
+                rows.value.splice(idx, 1);
+                pagination.value.rowsNumber--;
+            }
+            return;
+        }
     }
 
     // Si coincide con el filtro o estamos en 'TODAS'
