@@ -76,6 +76,19 @@
           </q-td>
         </template>
 
+        <!-- PROVEEDOR BADGE -->
+        <template v-slot:body-cell-proveedor="props">
+          <q-td :props="props">
+            <q-badge
+              :color="props.value === 'CVM' ? 'purple-7' : (props.value === 'MIBITURVEN' ? 'blue-8' : 'grey-6')"
+              rounded
+              class="text-weight-bold q-px-sm"
+            >
+              {{ props.value || 'N/A' }}
+            </q-badge>
+          </q-td>
+        </template>
+
         <!-- VOLUMEN RECIBIDO -->
         <template v-slot:body-cell-recibido="props">
           <q-td :props="props" class="text-weight-bold text-blue-9">
@@ -176,6 +189,7 @@ const {
 const columns = [
   { name: "fecha", label: "Llegada", field: row => date.formatDate(row.fecha_llegada, "DD/MM HH:mm"), align: "left", sortable: true },
   { name: "guia", label: "N° Guía / Cisterna", field: "numero_guia", align: "left" },
+  { name: "proveedor", label: "Proveedor", field: "proveedor", align: "center", sortable: true },
   { name: "tanque", label: "Tanque Receptor", field: row => {
       const tanques = row.tanques_descarga || [];
       if (tanques.length > 0) {

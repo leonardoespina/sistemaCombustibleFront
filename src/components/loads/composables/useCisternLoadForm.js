@@ -330,6 +330,7 @@ export function useCisternLoadForm(props, emit) {
       id_vehiculo: init.id_vehiculo || null,
       placa_cisterna: init.placa_cisterna || "",
       nombre_chofer: init.nombre_chofer || "",
+      proveedor: init.proveedor || "MIBITURVEN",
       id_chofer: init.id_chofer || null,
       id_almacenista: init.id_almacenista || null,
       litros_segun_guia: init.litros_segun_guia || null,
@@ -438,8 +439,10 @@ export function useCisternLoadForm(props, emit) {
     };
   });
 
+  const proveedorOptions = ["MIBITURVEN", "CVM"];
+
   return {
-    formData, isInternalCistern, tipoCombustible, pesoNeto, step,
+    formData, isInternalCistern, tipoCombustible, pesoNeto, step, proveedorOptions,
     tanquesForm, globalLiters, addTanqueRow, removeTanqueRow,
     handleLlenaderoChange, handleTanqueChange, loadTanksListFor,
     calculateAll, calculateTank, startEditTank, finishEditTank, cancelEditTank,

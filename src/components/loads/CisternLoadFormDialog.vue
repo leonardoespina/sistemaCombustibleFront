@@ -61,6 +61,17 @@
                 </div>
               </div>
               <div class="col-12 col-md-3">
+                <q-select
+                  dense
+                  outlined
+                  v-model="formData.proveedor"
+                  :options="proveedorOptions"
+                  label="Proveedor"
+                  :readonly="isReadOnly"
+                  :rules="[(val) => !!val || 'Requerido']"
+                />
+              </div>
+              <div class="col-12 col-md-3">
                 <q-input dense outlined v-model="formData.fecha_emision" type="date" label="Fecha Emisión" :readonly="isReadOnly" />
               </div>
               <div class="col-12 col-md-3">
@@ -440,7 +451,7 @@ const emit = defineEmits(["update:modelValue", "save", "llenadero-changed", "tan
 const $q = useQuasar();
 
 const {
-    formData, isInternalCistern, tipoCombustible, pesoNeto, step,
+    formData, isInternalCistern, tipoCombustible, pesoNeto, step, proveedorOptions,
     tanquesForm, globalLiters, addTanqueRow, removeTanqueRow, 
     handleLlenaderoChange, handleTanqueChange, loadTanksListFor, 
     calculateAll, calculateTank, startEditTank, finishEditTank, cancelEditTank,
@@ -585,6 +596,7 @@ function confirmarCarga() {
         <div style="margin-bottom: 16px; padding: 12px; background: #f5f5f5; border-radius: 8px; border-left: 4px solid #1976d2;">
           <div style="font-weight: bold; color: #1976d2; margin-bottom: 8px;">📍 Detalles de la Carga</div>
           <div style="margin-bottom: 4px;"><strong>📋 N° Guía:</strong> ${formData.value.numero_guia || 'N/A'}</div>
+          <div style="margin-bottom: 4px;"><strong>🏢 Proveedor:</strong> ${formData.value.proveedor || 'N/A'}</div>
           <div style="margin-bottom: 4px;"><strong>🚛 Placa:</strong> ${formData.value.placa_cisterna || 'N/A'}</div>
           <div style="margin-bottom: 4px;"><strong>📅 Fecha:</strong> ${fechaFormateada}</div>
           <div style="margin-bottom: 4px;"><strong>⏰ Hora:</strong> ${formData.value.hora}</div>

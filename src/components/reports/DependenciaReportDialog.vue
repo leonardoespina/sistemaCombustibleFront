@@ -72,26 +72,28 @@
           <div class="q-mb-lg no-print">
             <div class="row items-center q-mb-md">
               <q-icon name="bar_chart" color="primary" class="q-mr-xs" size="sm" />
-              <span class="text-subtitle1 text-weight-bold text-grey-9">Top Consumo por Dependencia</span>
+              <span class="text-subtitle1 text-weight-bold text-grey-9">Top Consumo por Subdependencia / Gerencia</span>
             </div>
 
             <div class="column q-gutter-y-sm">
               <div v-for="(item, index) in chartData" :key="index" class="row items-center no-wrap">
-                <!-- Label -->
-                <div class="col-4 col-md-3 text-right q-pr-md text-caption text-weight-medium text-grey-8 ellipsis">
-                  <q-tooltip>{{ item.name }}</q-tooltip>
-                  {{ item.name }}
+                <!-- Label: Muestra claramente la Subdependencia (en negritas) -->
+                <div class="col-5 col-md-4 text-right q-pr-md text-caption text-weight-bold text-grey-9 ellipsis">
+                  <q-tooltip anchor="top middle" self="bottom middle">{{ item.fullName }}</q-tooltip>
+                  {{ item.displayName }}
                 </div>
                 <!-- Bar -->
-                <div class="col-8 col-md-9 row items-center no-wrap">
+                <div class="col-7 col-md-8 row items-center no-wrap">
                   <div class="bg-grey-3 rounded-borders" style="width: 100%; height: 24px; position: relative; overflow: hidden;">
                     <div 
                       class="bg-green-6 absolute-left" 
                       style="transition: width 0.5s ease-in-out;"
                       :style="{ width: item.percentage + '%', height: '100%' }"
-                    ></div>
+                    >
+                      <q-tooltip>{{ item.fullName }}: {{ item.total.toFixed(2) }} L</q-tooltip>
+                    </div>
                   </div>
-                  <div class="q-ml-sm text-caption text-weight-bold" style="min-width: 80px;">
+                  <div class="q-ml-sm text-caption text-weight-bold" style="min-width: 85px;">
                     {{ item.total.toFixed(2) }} L
                   </div>
                 </div>
@@ -163,11 +165,18 @@ const chartData = computed(() => {
 
   const grouped = {};
   props.data.forEach(d => {
-    const name = `${d.dependencia}${d.subdependencia && d.subdependencia !== 'General' ? ' - ' + d.subdependencia : ''}`;
-    if (!grouped[name]) {
-      grouped[name] = { name, total: 0 };
+    const hasSub = d.subdependencia && d.subdependencia !== 'General';
+    // Clave de agrupación única: Dependencia - Subdependencia
+    const key = hasSub ? `${d.dependencia} - ${d.subdependencia}` : d.dependencia;
+    // Nombre visible en la etiqueta del gráfico: Priorizar Subdependencia si existe
+    const displayName = hasSub ? d.subdependencia : d.dependencia;
+    // Nombre completo para el tooltip: Jerarquía Completa
+    const fullName = hasSub ? `${d.dependencia} → ${d.subdependencia}` : d.dependencia;
+
+    if (!grouped[key]) {
+      grouped[key] = { key, displayName, fullName, total: 0 };
     }
-    grouped[name].total += d.total_litros;
+    grouped[key].total += d.total_litros;
   });
 
   const sorted = Object.values(grouped).sort((a, b) => b.total - a.total);
