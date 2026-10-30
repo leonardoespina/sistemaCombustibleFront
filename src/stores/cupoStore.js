@@ -181,6 +181,39 @@ export const useCupoStore = defineStore("cupos", () => {
     }
   }
 
+  /**
+   * Obtener el historial de recargas de un cupo actual
+   */
+  async function fetchRecargas(idCupoActual) {
+    try {
+      const response = await api.get(`/cupos/recargas/${idCupoActual}`);
+      return response.data || [];
+    } catch (error) {
+      const errorMsg = error.response?.data?.msg || "Error al obtener recargas";
+      $q.notify({ type: "negative", message: errorMsg });
+      return [];
+    }
+  }
+
+  /**
+   * Editar una recarga existente
+   */
+  async function updateRecarga(idRecarga, payload) {
+    loading.value = true;
+    try {
+      const response = await api.put(`/cupos/recargas/${idRecarga}`, payload);
+      $q.notify({ type: "positive", message: response.data.msg || "Recarga actualizada" });
+      await fetchCuposActuales();
+      return true;
+    } catch (error) {
+      const errorMsg = error.response?.data?.msg || "Error al editar la recarga";
+      $q.notify({ type: "negative", message: errorMsg });
+      return false;
+    } finally {
+      loading.value = false;
+    }
+  }
+
   return {
     // Estado
     loading,
@@ -203,5 +236,7 @@ export const useCupoStore = defineStore("cupos", () => {
     recargarCupo,
     reiniciarMes,
     fetchCupoEspecifico,
+    fetchRecargas,
+    updateRecarga,
   };
 });

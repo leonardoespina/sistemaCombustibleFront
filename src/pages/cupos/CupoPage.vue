@@ -153,6 +153,16 @@
                   >
                     <q-tooltip>Recargar Cupo Extra</q-tooltip>
                   </q-btn>
+                  <q-btn
+                    dense
+                    round
+                    flat
+                    color="primary"
+                    icon="history"
+                    @click="openHistorialDialog(props.row)"
+                  >
+                    <q-tooltip>Ver y Editar Recargas</q-tooltip>
+                  </q-btn>
                 </q-td>
               </template>
             </q-table>
@@ -237,6 +247,11 @@
       :cupo="selectedCupoActual"
       :loading="loading"
     />
+
+    <HistorialRecargasDialog
+      v-model="isHistorialDialogVisible"
+      :cupo="selectedCupoHistorial"
+    />
   </q-page>
 </template>
 
@@ -252,6 +267,7 @@ import { useQuasar, date } from "quasar";
 
 import CupoFormDialog from "../../components/cupos/CupoFormDialog.vue";
 import RecargaCupoDialog from "../../components/cupos/RecargaCupoDialog.vue";
+import HistorialRecargasDialog from "../../components/cupos/HistorialRecargasDialog.vue";
 import { useCupoPage } from "./composables/useCupoPage.js";
 
 // ============================================
@@ -294,6 +310,13 @@ const {
 
 // Tab activo ('actual' para saldos, 'base' para configuración)
 const tab = ref("actual");
+const isHistorialDialogVisible = ref(false);
+const selectedCupoHistorial = ref(null);
+
+const openHistorialDialog = (cupo) => {
+  selectedCupoHistorial.value = cupo;
+  isHistorialDialogVisible.value = true;
+};
 
 // ============================================
 // COMPUTED
