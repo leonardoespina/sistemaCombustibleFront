@@ -153,15 +153,7 @@
                   Lts</span
                 >
               </div>
-              <div>
-                <strong>Diferencia:</strong>
-                <span style="text-decoration: underline"
-                  >{{
-                    formatNumber(totalGasolinaDiferencia)
-                  }}
-                  Lts</span
-                >
-              </div>
+
             </div>
           </div>
 
@@ -583,8 +575,7 @@ async function downloadPDF() {
     { label: "CONSUMO", value: formatNumber(totalGasolinaConsumo.value) + " Lts" },
     // Línea anterior para restaurar si se requiere deducir evaporación del stock:
     // { label: "STOCK", value: formatNumber(props.acta?.inventario_gasolina?.stock_total - props.acta?.inventario_gasolina?.evaporizacion_total) + " Lts" },
-    { label: "STOCK", value: formatNumber(props.acta?.inventario_gasolina?.stock_total) + " Lts" },
-    { label: "Diferencia", value: formatNumber(totalGasolinaDiferencia.value) + " Lts" }
+    { label: "STOCK", value: formatNumber(props.acta?.inventario_gasolina?.stock_total) + " Lts" }
   ];
 
   const totalGasoilVal = formatNumber(props.acta?.inventario_gasoil?.stock_total) + " Lts";
