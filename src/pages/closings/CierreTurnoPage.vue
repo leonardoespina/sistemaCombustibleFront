@@ -363,59 +363,11 @@
                           <div
                             class="row items-center justify-between text-caption q-mb-xs"
                           >
-                            <span class="text-grey-8">Vol. Real:</span>
+                            <span class="text-grey-8">Vol. por Consumo:</span>
                             <span class="text-weight-bold text-primary"
                               >{{
                                 Number(
-                                  m.MedicionCierre?.volumen_real || 0,
-                                ).toLocaleString()
-                              }}
-                              L</span
-                            >
-                          </div>
-                          <div
-                            class="row items-center justify-between text-caption q-mb-xs"
-                          >
-                            <span class="text-grey-8">Vol. Teórico:</span>
-                            <span
-                              >{{
-                                Number(
                                   m.MedicionCierre?.volumen_teorico || 0,
-                                ).toLocaleString()
-                              }}
-                              L</span
-                            >
-                          </div>
-                          <div
-                            class="row items-center justify-between text-caption q-mb-xs"
-                          >
-                            <span class="text-grey-8">Diferencia:</span>
-                            <span
-                              :class="
-                                m.MedicionCierre?.diferencia > 0
-                                  ? 'text-negative'
-                                  : m.MedicionCierre?.diferencia < 0
-                                    ? 'text-positive '
-                                    : 'text-positive'
-                              "
-                            >
-                              {{
-                                Number(
-                                  m.MedicionCierre?.diferencia || 0,
-                                ).toLocaleString()
-                              }}
-                              L
-                            </span>
-                          </div>
-                          <div
-                            class="row items-center justify-between text-caption q-mb-xs"
-                            v-if="m.MedicionCierre?.merma_evaporacion"
-                          >
-                            <span class="text-grey-8">Evaporación:</span>
-                            <span
-                              >{{
-                                Number(
-                                  m.MedicionCierre?.merma_evaporacion,
                                 ).toLocaleString()
                               }}
                               L</span
