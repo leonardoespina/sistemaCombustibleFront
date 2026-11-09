@@ -170,6 +170,17 @@
                                     :rules="[(v) => (v !== null && v !== '') || 'Debe ingresar la medida de la vara']"
                                     @update:model-value="calcular(t)"
                                 />
+                                <!-- Valor referencial discreto debajo del input -->
+                                <div
+                                  v-if="t.volumen_calculado != null"
+                                  class="row justify-end items-center text-caption text-grey-7 q-mt-xs"
+                                >
+                                  <q-icon name="straighten" size="14px" class="q-mr-xs text-grey-5" />
+                                  <span>Vol. Referencial: </span>
+                                  <span class="text-weight-bold text-primary q-ml-xs">
+                                    {{ Number(t.volumen_calculado).toLocaleString() }} L
+                                  </span>
+                                </div>
                               </div>
                               <!-- Si el tanque no tiene fórmula ni aforo, permitir ingreso directo de volumen -->
                               <div class="col-12" v-else>
