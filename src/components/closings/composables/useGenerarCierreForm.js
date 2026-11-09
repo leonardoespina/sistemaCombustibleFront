@@ -222,17 +222,15 @@ export function useGenerarCierreForm(props, emit) {
         );
 
         const resumenTanques = tanquesSeleccionadosData.map(t => {
-            const volumenReal = t.volumen_calculado ? Number(t.volumen_calculado).toLocaleString() : 'No medido';
-            const diferencia = t.diferencia !== null ? Number(t.diferencia).toLocaleString() : '--';
-            const evaporacion = t.merma_evaporacion ? Number(t.merma_evaporacion).toLocaleString() : '0';
+            const altura = t.medida_vara !== null && t.medida_vara !== '' 
+                ? `${t.medida_vara} ${t.unidad_medida || 'cm'}` 
+                : (t.volumen_calculado ? `${Number(t.volumen_calculado).toLocaleString()} L` : 'No medido');
 
             return `
                 <div style="margin-bottom: 8px; padding: 8px; background: white; border-radius: 4px; border: 1px solid #e0e0e0;">
                     <div style="font-weight: bold; color: #1976d2; margin-bottom: 4px;">${t.codigo} - ${t.nombre}</div>
                     <div style="font-size: 13px; color: #666;">
-                        <span style="margin-right: 12px;">📊 Real: <strong>${volumenReal} L</strong></span>
-                        <span style="margin-right: 12px;">📈 Dif: <strong>${diferencia} L</strong></span>
-                        <span>💨 Evap: <strong>${evaporacion} L</strong></span>
+                        <span>📏 Altura: <strong>${altura}</strong></span>
                     </div>
                 </div>
             `;

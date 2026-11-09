@@ -159,64 +159,31 @@
                           </div>
 
                           <div class="row q-col-gutter-md q-mb-sm">
-                              <div class="col-12 col-sm-4" v-if="getModo(t) !== 'MANUAL'">
-                              <q-input
-                                  dense filled
-                                  v-model.number="t.medida_vara"
-                                  type="number"
-                                  :label="`Vara (${t.unidad_medida || 'cm'})`"
-                                  @update:model-value="calcular(t)"
-                              />
+                              <!-- Solo se muestra la entrada de Vara a ancho completo -->
+                              <div class="col-12" v-if="getModo(t) !== 'MANUAL'">
+                                <q-input
+                                    dense filled
+                                    v-model.number="t.medida_vara"
+                                    type="number"
+                                    :label="`Vara (${t.unidad_medida || 'cm'}) *`"
+                                    placeholder="Ingrese la medida de la vara"
+                                    :rules="[(v) => (v !== null && v !== '') || 'Debe ingresar la medida de la vara']"
+                                    @update:model-value="calcular(t)"
+                                />
                               </div>
-                              <div :class="getModo(t) === 'MANUAL' ? 'col-12 col-sm-6' : 'col-12 col-sm-4'">
-                              <q-input
-                                  dense filled
-                                  v-model.number="t.volumen_calculado"
-                                  type="number"
-                                  suffix="Lts"
-                                  :label="getModo(t) === 'MANUAL' ? 'Volumen Medido (L) *' : 'Volumen Calc. (L)'"
-                                  :readonly="getModo(t) !== 'MANUAL'"
-                                  :bg-color="getModo(t) !== 'MANUAL' ? 'grey-2' : undefined"
-                                  :rules="[(v) => (v !== null && v !== '') || 'Requerido']"
-                                  @update:model-value="getModo(t) === 'MANUAL' && onVolumenManual(t)"
-                              />
-                              </div>
-                              <div :class="getModo(t) === 'MANUAL' ? 'col-12 col-sm-6' : 'col-12 col-sm-4'">
-                              <q-input
-                                  dense filled
-                                  v-model.number="t.merma_evaporacion"
-                                  type="number"
-                                  suffix="Lts"
-                                  label="Evaporación"
-                                  placeholder="Ej: 50"
-                                  disable
-                              />
+                              <!-- Si el tanque no tiene fórmula ni aforo, permitir ingreso directo de volumen -->
+                              <div class="col-12" v-else>
+                                <q-input
+                                    dense filled
+                                    v-model.number="t.volumen_calculado"
+                                    type="number"
+                                    suffix="Lts"
+                                    label="Volumen Medido (L) *"
+                                    :rules="[(v) => (v !== null && v !== '') || 'Requerido']"
+                                    @update:model-value="onVolumenManual(t)"
+                                />
                               </div>
                           </div>
-
-                          <q-card flat bordered class="bg-grey-1">
-                              <q-card-section class="row q-col-gutter-md text-center q-py-sm">
-                              <div class="col-4">
-                                  <div class="text-caption text-grey-8">Sistema</div>
-                                  <div class="text-h6">{{ (t.nivel_actual ?? 0).toLocaleString() }} L</div>
-                              </div>
-                              <div class="col-4">
-                                  <div class="text-caption text-grey-8">Real</div>
-                                  <div class="text-h6 text-primary text-weight-bold">
-                                  {{ t.volumen_calculado != null ? Number(t.volumen_calculado).toLocaleString() : '—' }} L
-                                  </div>
-                              </div>
-                              <div class="col-4">
-                                  <div class="text-caption text-grey-8">Diferencia</div>
-                                  <div
-                                  class="text-h6"
-                                  :class="t.diferencia > 0 ? 'text-negative' : t.diferencia < 0 ? 'text-warning' : 'text-positive'"
-                                  >
-                                  {{ t.diferencia != null ? Number(t.diferencia).toLocaleString() : '—' }} L
-                                  </div>
-                              </div>
-                              </q-card-section>
-                          </q-card>
                         </div>
                       </div>
                     </div>
