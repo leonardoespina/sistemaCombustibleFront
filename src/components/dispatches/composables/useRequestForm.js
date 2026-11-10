@@ -29,6 +29,7 @@ export function useRequestForm(emit, requestStore) {
     id_llenadero: null,
     cantidad_litros: null,
     tipo_suministro: "REGULAR",
+    es_nodriza: false,
     tipo_solicitud: "INSTITUCIONAL",
     id_precio: null,
   });
@@ -117,8 +118,10 @@ export function useRequestForm(emit, requestStore) {
     if (availableFuelInTank.value <= 0) return false;
     if (parseFloat(formData.value.cantidad_litros) > availableFuelInTank.value) return false;
 
-    // BIDÓN+VENTA no requiere vehículo seleccionado
-    if (vehicleDisabled.value) return Boolean(baseOk);
+    // BIDÓN+VENTA no requiere vehículo seleccionado, y BIDÓN con es_nodriza tampoco requiere vehículo obligatorio
+    if (vehicleDisabled.value || (formData.value.tipo_suministro === "BIDON" && formData.value.es_nodriza)) {
+      return Boolean(baseOk);
+    }
 
     return Boolean(baseOk && selectedVehicle.value);
   });
@@ -156,6 +159,7 @@ export function useRequestForm(emit, requestStore) {
       id_llenadero: null,
       cantidad_litros: null,
       tipo_suministro: "REGULAR",
+      es_nodriza: false,
       tipo_solicitud: "INSTITUCIONAL",
       id_precio: null,
     };
@@ -181,15 +185,18 @@ export function useRequestForm(emit, requestStore) {
       return;
     }
 
+    const noVehiculo =
+      vehicleDisabled.value ||
+      (formData.value.tipo_suministro === "BIDON" && formData.value.es_nodriza && !selectedVehicle.value);
 
     const payload = {
       ...formData.value,
-      // Datos de vehículo: null solo para BIDÓN + VENTA
-      id_vehiculo: vehicleDisabled.value ? null : selectedVehicle.value?.id_vehiculo,
-      placa: vehicleDisabled.value ? null : selectedVehicle.value?.placa,
-      marca: vehicleDisabled.value ? null : (selectedVehicle.value?.Marca?.nombre || ""),
-      modelo: vehicleDisabled.value ? null : (selectedVehicle.value?.Modelo?.nombre || ""),
-      flota: vehicleDisabled.value ? null : (selectedVehicle.value?.flota || "GENERAL"),
+      es_nodriza: Boolean(formData.value.es_nodriza),
+      id_vehiculo: noVehiculo ? null : selectedVehicle.value?.id_vehiculo,
+      placa: noVehiculo ? null : selectedVehicle.value?.placa,
+      marca: noVehiculo ? null : (selectedVehicle.value?.Marca?.nombre || ""),
+      modelo: noVehiculo ? null : (selectedVehicle.value?.Modelo?.nombre || ""),
+      flota: noVehiculo ? null : (selectedVehicle.value?.flota || "GENERAL"),
       id_tipo_combustible: selectedCombustible.value,
       id_subdependencia: selectedSubdependencia.value,
       id_precio: selectedPrecioObj.value?.id_precio || null,

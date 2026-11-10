@@ -84,6 +84,7 @@
                 @update:tipo-solicitud="onTipoSolicitudChange"
                 @update:precio-obj="selectedPrecioObj = $event"
                 @update:tipo-suministro="onTipoSuministroChange"
+                @update:es-nodriza="formData.es_nodriza = $event"
               />
 
               <!-- Cupo Mensual -->
@@ -375,6 +376,9 @@ function handleReset() {
 
 function onTipoSuministroChange(val) {
   formData.value.tipo_suministro = val;
+  if (val !== "BIDON") {
+    formData.value.es_nodriza = false;
+  }
   // Limpiar vehículo solo si queda en modo BIDÓN + VENTA
   if (vehicleDisabled.value) {
     selectedVehicle.value = null;

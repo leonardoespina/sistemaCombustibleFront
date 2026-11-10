@@ -12,7 +12,7 @@ export function useReporteDiarioPage() {
     // ─── UI State ────────────────────────────────────────────
     const showReportDialog = ref(false);
 
-    // ─── Columnas ────────────────────────────────────────────
+    // ─── Columnas Despachos ──────────────────────────────────
     const columnsInstitucional = [
         {
             name: 'fecha_hora', label: 'Fecha/Hora', align: 'left',
@@ -22,6 +22,7 @@ export function useReporteDiarioPage() {
                 return `${date.formatDate(row.fecha, 'DD/MM/YYYY')} ${row.hora || ''}`;
             }
         },
+        { name: 'codigo_ticket', label: 'Ticket', field: 'codigo_ticket', align: 'left' },
         { name: 'solicitante', label: 'Solicitante', field: 'solicitante', align: 'left' },
         { name: 'aprobador', label: 'Aprobador', field: 'aprobador', align: 'left' },
         { name: 'recibido', label: 'Recibido', field: 'recibido', align: 'left' },
@@ -32,6 +33,7 @@ export function useReporteDiarioPage() {
         { name: 'tipo_combustible', label: 'Combustible', field: 'tipo_combustible', align: 'left' },
         { name: 'cant_solic', label: 'Cant. Solic', field: 'cant_solic', align: 'right', format: v => Number(v).toFixed(2) },
         { name: 'cant_desp', label: 'Cant. Desp', field: 'cant_desp', align: 'right', format: v => Number(v).toFixed(2) },
+        { name: 'estado_rendicion', label: 'Rendición / Destino', field: row => row.es_nodriza ? row.estado_rendicion : '-', align: 'left' },
     ];
 
     const columnsVenta = [
@@ -44,7 +46,91 @@ export function useReporteDiarioPage() {
         ] : [])
     ];
 
+    // ─── Columnas Hoja de Distribución ───────────────────────
+    const columnsDistribucion = [
+        { name: 'ticket_maestro', label: 'Ticket Maestro', field: 'ticket_maestro', align: 'left' },
+        { name: 'fecha_hora', label: 'Fecha / Hora Entrega', field: 'fecha_hora', align: 'left' },
+        { name: 'vehiculo', label: 'Equipo / Vehículo Receptor', field: 'vehiculo', align: 'left' },
+        { name: 'placa', label: 'Placa', field: 'placa', align: 'left' },
+        { name: 'litros', label: 'Litros Entregados', field: 'litros', align: 'right', format: v => Number(v).toFixed(2) },
+        { name: 'frente', label: 'Frente / Ubicación / Observaciones', field: 'frente', align: 'left' },
+        { name: 'registrador', label: 'Registrado Por', field: 'registrador', align: 'left' },
+    ];
 
+    // ─── Hojas Excel Multi-Pestaña (Opción 1) ─────────────────
+    const excelSheetsInstitucional = computed(() => {
+        const sheets = [];
+        const instRows = store.reportData?.institucional || [];
+        if (instRows.length > 0) {
+            sheets.push({
+                sheetName: 'Despachos Institucional',
+                columns: columnsInstitucional,
+                rows: instRows,
+                meta: [
+                    'REPORTE DIARIO DE COMBUSTIBLE — DESPACHOS INSTITUCIONALES',
+                    `Periodo: ${formatDate(store.filters.fecha_desde)} al ${formatDate(store.filters.fecha_hasta)}`,
+                    `Llenadero: ${getLlenaderoNombre(store.filters.id_llenadero)}`,
+                ],
+            });
+        }
+
+        // Obtener todas las entregas internas de tickets maestros en institucional
+        const distRows = (store.reportData?.distribuciones || []).filter(d =>
+            instRows.some(i => i.codigo_ticket === d.ticket_maestro)
+        );
+
+        if (distRows.length > 0) {
+            sheets.push({
+                sheetName: 'Detalle Distribución',
+                columns: columnsDistribucion,
+                rows: distRows,
+                meta: [
+                    'REPORTE DIARIO DE COMBUSTIBLE — DETALLE DE DISTRIBUCIÓN INTERNA A EQUIPOS',
+                    `Periodo: ${formatDate(store.filters.fecha_desde)} al ${formatDate(store.filters.fecha_hasta)}`,
+                    `Llenadero: ${getLlenaderoNombre(store.filters.id_llenadero)}`,
+                    'Nota: Este detalle refleja la entrega en campo/mina proveniente de los Tickets Maestros.',
+                ],
+            });
+        }
+
+        return sheets;
+    });
+
+    const excelSheetsVenta = computed(() => {
+        const sheets = [];
+        const ventaRows = store.reportData?.venta || [];
+        if (ventaRows.length > 0) {
+            sheets.push({
+                sheetName: 'Despachos Venta',
+                columns: columnsVenta,
+                rows: ventaRows,
+                meta: [
+                    'REPORTE DIARIO DE COMBUSTIBLE — VENTAS (S.C.)',
+                    `Periodo: ${formatDate(store.filters.fecha_desde)} al ${formatDate(store.filters.fecha_hasta)}`,
+                    `Llenadero: ${getLlenaderoNombre(store.filters.id_llenadero)}`,
+                ],
+            });
+        }
+
+        const distRows = (store.reportData?.distribuciones || []).filter(d =>
+            ventaRows.some(v => v.codigo_ticket === d.ticket_maestro)
+        );
+
+        if (distRows.length > 0) {
+            sheets.push({
+                sheetName: 'Detalle Distribución',
+                columns: columnsDistribucion,
+                rows: distRows,
+                meta: [
+                    'REPORTE DIARIO DE COMBUSTIBLE — DETALLE DE DISTRIBUCIÓN INTERNA A EQUIPOS (VENTAS)',
+                    `Periodo: ${formatDate(store.filters.fecha_desde)} al ${formatDate(store.filters.fecha_hasta)}`,
+                    `Llenadero: ${getLlenaderoNombre(store.filters.id_llenadero)}`,
+                ],
+            });
+        }
+
+        return sheets;
+    });
 
     // ─── Acciones ────────────────────────────────────────────
     async function consultarReporte(page = 1, limit = 50) {
@@ -90,6 +176,9 @@ export function useReporteDiarioPage() {
         store, showReportDialog,
         columnsInstitucional,
         columnsVenta,
+        columnsDistribucion,
+        excelSheetsInstitucional,
+        excelSheetsVenta,
         canViewFinancial,
         consultarReporte, onRequest,
         getLlenaderoNombre, formatDate,

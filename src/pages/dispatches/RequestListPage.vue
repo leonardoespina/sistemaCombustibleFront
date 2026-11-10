@@ -35,12 +35,40 @@
           </q-input>
         </template>
 
+        <!-- Celda Ticket con distintivo Nodriza -->
+        <template v-slot:body-cell-ticket="props">
+          <q-td :props="props">
+            <div class="text-weight-bold">
+              {{ props.row.codigo_ticket || 'PENDIENTE' }}
+            </div>
+            <q-badge
+              v-if="props.row.es_nodriza"
+              color="amber-9"
+              text-color="white"
+              class="q-px-xs text-weight-bolder"
+              style="font-size: 10px;"
+            >
+              MAESTRO
+            </q-badge>
+          </q-td>
+        </template>
+
         <!-- Celda Estatus -->
         <template v-slot:body-cell-estatus="props">
-          <q-td :props="props">
+          <q-td :props="props" class="text-center">
             <q-badge :color="getStatusColor(props.value)" class="q-pa-xs">
               {{ props.value.replace("_", " ") }}
             </q-badge>
+            <!-- Badge de Rendición para Nodrizas Finalizadas -->
+            <div v-if="props.row.es_nodriza && props.row.estado === 'FINALIZADA'" class="q-mt-xs">
+              <q-badge
+                :color="getRendicionBadge(props.row).color"
+                class="q-px-xs text-caption"
+                outline
+              >
+                {{ getRendicionBadge(props.row).label }}
+              </q-badge>
+            </div>
           </q-td>
         </template>
 
@@ -125,6 +153,18 @@
             >
               <q-tooltip>Simular Escaneo (Finalización Extemporánea)</q-tooltip>
             </q-btn>
+            <!-- Rendir / Distribuir Combustible (Solo Nodrizas FINALIZADAS) -->
+            <q-btn
+              v-if="props.row.es_nodriza && props.row.estado === 'FINALIZADA'"
+              dense
+              round
+              flat
+              color="amber-10"
+              icon="alt_route"
+              @click="onOpenDistribucion(props.row)"
+            >
+              <q-tooltip>Rendir / Distribuir en Equipos (Ticket Maestro)</q-tooltip>
+            </q-btn>
           </q-td>
         </template>
       </q-table>
@@ -138,6 +178,13 @@
       v-model="isDetailsVisible"
       :request-data="selectedRequest"
     />
+
+    <!-- Diálogo de Distribución Nodriza -->
+    <DistribucionNodrizaDialog
+      v-model="isDistribucionVisible"
+      :solicitud-id="selectedNodrizaId"
+      @changed="requestStore.fetchRequests()"
+    />
   </q-page>
 </template>
 
@@ -149,6 +196,7 @@ import { PERMISSIONS, hasPermission } from "../../utils/permissions.js";
 import RequestFormDialog from "../../components/dispatches/RequestFormDialog.vue";
 //import TicketPreviewDialog from "../../components/dispatches/TicketPreviewDialog.vue";
 import RequestDetailsDialog from "../../components/dispatches/RequestDetailsDialog.vue";
+import DistribucionNodrizaDialog from "../../components/dispatches/DistribucionNodrizaDialog.vue";
 import { useQuasar } from "quasar";
 
 const $q = useQuasar();
@@ -163,6 +211,8 @@ const can = (permission) => hasPermission(userData, permission);
 const isFormDialogVisible = ref(false);
 //const isTicketVisible = ref(false);
 const isDetailsVisible = ref(false);
+const isDistribucionVisible = ref(false);
+const selectedNodrizaId = ref(null);
 //const selectedTicket = ref(null);
 const selectedRequest = ref(null);
 
@@ -230,6 +280,24 @@ function handleRequest(props) {
 
 function openAddDialog() {
   isFormDialogVisible.value = true;
+}
+
+function onOpenDistribucion(row) {
+  selectedNodrizaId.value = row.id_solicitud;
+  isDistribucionVisible.value = true;
+}
+
+function getRendicionBadge(row) {
+  const desp = parseFloat(row.cantidad_despachada || row.cantidad_litros || 0);
+  const dist = (row.Distribuciones || []).reduce(
+    (acc, curr) => acc + parseFloat(curr.cantidad_litros || 0),
+    0
+  );
+  if (desp <= 0) return { label: "0 L", color: "grey" };
+  const pct = Math.min(100, Math.round((dist / desp) * 100));
+  if (pct >= 100) return { label: "100% Rendido", color: "positive" };
+  if (pct > 0) return { label: `${pct}% Rendido`, color: "primary" };
+  return { label: "Sin Rendir", color: "amber-9" };
 }
 
 function onFormSave(response) {

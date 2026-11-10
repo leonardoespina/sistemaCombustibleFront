@@ -166,6 +166,26 @@
           />
         </div>
       </div>
+
+      <!-- Opción Despacho Maestro / Distribución Interna -->
+      <div
+        v-if="formData.tipo_suministro === 'BIDON'"
+        class="row items-center bg-amber-1 q-pa-sm rounded-borders q-mt-xs"
+        style="border: 1px dashed #f59e0b;"
+      >
+        <div class="col-12">
+          <q-toggle
+            :model-value="formData.es_nodriza"
+            @update:model-value="$emit('update:esNodriza', $event)"
+            color="amber-9"
+            label="¿Despacho Maestro / Para Distribución Interna?"
+            class="text-weight-bolder text-grey-9 text-caption"
+          />
+          <div class="text-caption text-grey-7 q-pl-md" style="font-size: 11px; line-height: 1.2;">
+            Active esta opción si el combustible será trasladado para distribuir internamente en campo entre múltiples generadores, maquinarias o equipos.
+          </div>
+        </div>
+      </div>
     </q-card-section>
   </q-card>
 </template>
